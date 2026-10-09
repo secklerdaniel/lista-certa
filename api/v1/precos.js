@@ -1,6 +1,7 @@
 /* POST /api/v1/precos  — o mercado envia preços (em lote, por GTIN)   [chave do mercado]
    GET  /api/v1/precos  — consulta pública de preços (ou os de teste, com chave de teste) */
 const { sql, enviar, erro, corpo, gtinValido, autenticar } = require("../_lib");
+const { resolverPendentes } = require("../_ia");
 
 const MAX_LOTE = 1000;
 const num = v => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && /^\d+([.,]\d{1,4})?$/.test(v) ? parseFloat(v.replace(",", ".")) : NaN);
@@ -64,7 +65,11 @@ async function enviarPrecos(req, res, m) {
     r = q[0];
   }
   const aceitos = L.length;
+  /* IA: normaliza o nome dos GTINs que ainda não conhecemos (falha nunca derruba o envio) */
+  let ia = { resolvidos: 0 };
+  if (m.ambiente === "producao") { try { ia = await resolverPendentes(); } catch (e) { ia = { resolvidos: 0, erro: true }; } }
   enviar(res, 200, {
+    produtosNormalizadosPorIA: ia.resolvidos,
     ok: true, ambiente: m.ambiente === "teste" ? "teste (homologação)" : "producao", mercado: m.nome,
     recebidos: b.itens.length, aceitos, atualizados: r.atualizados, ignoradosPorDataAntiga: aceitos - r.atualizados,
     mudancasDePreco: r.historico, rejeitados,
@@ -88,8 +93,9 @@ async function consultar(req, res, m) {
   ps.push(limite);
   const rows = await sql().query(
     `select p.gtin, p.descricao, p.unidade, p.preco::float as preco, p.promocao_preco::float as promo_preco, p.promocao_ate,
-            p.atualizado_em, m.id as mercado_id, m.nome as mercado, m.cidade
-       from precos p join mercados m on m.id = p.mercado_id
+            p.atualizado_em, m.id as mercado_id, m.nome as mercado, m.cidade,
+            pr.nome as pr_nome, pr.marca as pr_marca, pr.quantidade::float as pr_qtd, pr.unidade as pr_un, pr.categoria as pr_cat, pr.catalogo_id as pr_cat_id
+       from precos p join mercados m on m.id = p.mercado_id left join produtos pr on pr.gtin = p.gtin
       where ${w.join(" and ")} and m.ativo
       order by coalesce(case when p.promocao_ate >= current_date then p.promocao_preco end, p.preco) asc, p.atualizado_em desc
       limit $${ps.length}`, ps);
@@ -101,6 +107,7 @@ async function consultar(req, res, m) {
         ? { preco: r.promo_preco, ate: new Date(r.promocao_ate).toISOString().slice(0, 10) } : null,
       atualizadoEm: new Date(r.atualizado_em).toISOString(),
       mercado: { id: r.mercado_id, nome: r.mercado, cidade: r.cidade },
+      produto: r.pr_nome ? { nome: r.pr_nome, marca: r.pr_marca, quantidade: r.pr_qtd, unidade: r.pr_un, categoria: r.pr_cat, catalogoId: r.pr_cat_id } : null,
     })),
   });
 }

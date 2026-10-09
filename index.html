@@ -548,16 +548,30 @@ async function buscarItens(c,raw){
 /* GTIN = identidade do produto. 1ª vez que um código aparece, ligamos ao item do catálogo (pelo nome) e guardamos;
    depois, qualquer mercado que mande o mesmo código cai no mesmo item, não importa como escreva o nome.
    O fator guarda a conversão de embalagem (ex.: pacote de 20 ovos → dúzia). */
-const GT={};try{Object.assign(GT,JSON.parse(localStorage.getItem("lc-gtin")||"{}"))}catch(e){}
+const GT={};try{Object.assign(GT,JSON.parse(localStorage.getItem("lc-gtin2")||"{}"))}catch(e){}
+const salvarGT=()=>{try{localStorage.setItem("lc-gtin2",JSON.stringify(GT))}catch(e){}};
+/* produto que a IA do servidor normalizou e que não é um item genérico do catálogo: vira item novo, preso ao GTIN */
+function extraPorGtin(x,pr,p){
+  const key="gtin:"+x.gtin;
+  let c=CATALOG.find(i=>i.key===key);
+  if(!c){
+    c={id:CATALOG.length,name:pr.nome+(pr.marca?" "+pr.marca:""),unit:pr.quantidade&&pr.unidade?`${pr.quantidade} ${pr.unidade}`:(x.unidade||"un").toLowerCase(),base:p,key,extra:true};
+    CATALOG.push(c);
+    try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:c.base,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}
+  }
+  return c;
+}
 function resolverGtin(x){
   const p=x.promocao?x.promocao.preco:x.preco;
   const g=GT[x.gtin];
   if(g&&CATALOG[g.id])return {c:CATALOG[g.id],p:Math.round(p*g.f*100)/100};
-  const y=resolver({nome:x.descricao||x.gtin,unit:p,un:x.unidade||"UN"});
-  if(!y)return null;
-  GT[x.gtin]={id:y.c.id,f:y.p/p};
-  try{localStorage.setItem("lc-gtin",JSON.stringify(GT))}catch(e){}
-  return y;
+  const pr=x.produto; // normalizado pela IA no servidor
+  if(pr){
+    const c=pr.catalogoId!=null&&CATALOG[pr.catalogoId]?CATALOG[pr.catalogoId]:extraPorGtin(x,pr,p);
+    GT[x.gtin]={id:c.id,f:1};salvarGT();
+    return {c,p};
+  }
+  return resolver({nome:x.descricao||x.gtin,unit:p,un:x.unidade||"UN"}); // IA ainda não resolveu: casa pelo nome, sem fixar
 }
 /* mercados integrados pela API (/api/v1/precos): os preços que o próprio mercado envia entram na comparação */
 let apiBusy=false;
