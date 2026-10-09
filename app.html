@@ -192,7 +192,7 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
 /* ABERTURA estilo app nativo: cobre a tela com uma cor forte, anima a marca e revela o app */
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   background:radial-gradient(120% 90% at 50% 38%,#17c27a 0%,#0c9d62 45%,#087a4b 100%);color:#fff;overflow:hidden;
-  animation:splashFallback .01s 3.2s forwards}
+  animation:splashFallback .01s 5.5s forwards}
 #splash.sai{animation:splashSai .5s cubic-bezier(.6,0,.2,1) forwards;pointer-events:none}
 #splash .anel{position:absolute;width:140px;height:140px;border-radius:50%;border:2px solid rgba(255,255,255,.35);animation:onda 1.8s ease-out infinite}
 #splash .anel.b{animation-delay:.6s}
@@ -201,7 +201,7 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
 #splash .logo2 path{stroke-dasharray:30;stroke-dashoffset:30;animation:desenha .5s ease-out .55s forwards}
 #splash .nome{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:34px;letter-spacing:-.02em;animation:sobe .6s ease-out .6s both}
 #splash .frase{font-size:14.5px;opacity:.9;margin-top:-10px;animation:sobe .6s ease-out .85s both;letter-spacing:.02em}
-#splash .carr{position:absolute;bottom:14%;left:0;width:56px;opacity:.9;animation:carrinho 1.7s ease-in-out .2s both}
+#splash .carr{position:absolute;bottom:14%;left:0;width:56px;opacity:.9;animation:carrinho 3.2s ease-in-out .2s both}
 @keyframes logoPop{from{transform:scale(.2) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
 @keyframes desenha{to{stroke-dashoffset:0}}
 @keyframes sobe{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
@@ -272,9 +272,9 @@ nav.tabs button.on::before{background:#15191A;height:4px}
   var s=document.getElementById("splash");
   var t0=Date.now(),pronto=false,saiu=false;
   function sair(){if(saiu)return;saiu=true;s.classList.add("sai");setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},600)}
-  function tentar(){var resta=1900-(Date.now()-t0);if(pronto&&resta<=0)sair();else setTimeout(tentar,Math.max(60,resta))}
+  function tentar(){var resta=3400-(Date.now()-t0);if(pronto&&resta<=0)sair();else setTimeout(tentar,Math.max(60,resta))}
   window.addEventListener("load",function(){pronto=true;tentar()});
-  setTimeout(function(){pronto=true;tentar()},2600);
+  setTimeout(function(){pronto=true;tentar()},4200);
 })();
 </script>
 <div class="app">
