@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Lista Certa | Para mercados</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
+<style>
+  body{margin:0;background:#f5f2ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  .topo{background:#12513a;color:#fff;padding:22px 20px}
+  .topo h1{margin:0;font-size:22px}.topo p{margin:6px 0 0;opacity:.85;font-size:14px}
+  #ui{max-width:1000px;margin:0 auto}
+  .foot{text-align:center;font-size:12px;color:#6b7a71;padding:18px}
+  .foot a{color:#12513a;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="topo"><div style="max-width:1000px;margin:0 auto"><h1>Lista Certa · API de preços para mercados</h1><p>Integre seu ERP, PDV ou e-commerce e apareça na comparação de preços da sua cidade.</p></div></div>
+<div id="ui"></div>
+<p class="foot">Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a></p>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+<script>
+  SwaggerUIBundle({ url: "/openapi.json", dom_id: "#ui", deepLinking: true, docExpansion: "list", tryItOutEnabled: false });
+</script>
+</body>
+</html>
