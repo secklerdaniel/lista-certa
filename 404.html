@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#12513a">
+<title>Página fora de estoque | Lista Certa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f2ea;--card:#fffdf8;--ink:#1b2a22;--muted:#6b7a71;--line:#e4dfd2;--green:#12513a;--green2:#1c7a57;--mint:#dff2e6;--gold:#f2c23c;--gold-ink:#5a4300;--bad:#b4432f}
+@media (prefers-color-scheme:dark){:root{--bg:#121a16;--card:#1a2520;--ink:#e8efe9;--muted:#93a399;--line:#2a3830;--green:#7fd1a8;--green2:#4fb585;--mint:#1f3a2d;--bad:#e8806c}}
+*{box-sizing:border-box;margin:0}
+body{min-height:100dvh;display:grid;place-items:center;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;padding:14px 16px;overflow-x:hidden}
+.wrap{width:100%;max-width:440px;text-align:center}
+.brand{display:inline-flex;align-items:center;gap:9px;margin-bottom:14px;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:19px;color:var(--green);text-decoration:none}
+.logo{width:30px;height:30px;border-radius:9px;background:#12513a;display:grid;place-items:center}
+
+/* etiqueta de preço */
+.tag{display:inline-block;position:relative;transform-origin:50% 0;animation:balanca 3s ease-in-out infinite;margin:6px 0 4px}
+.tag::before{content:"";position:absolute;left:50%;top:-16px;width:2px;height:16px;background:var(--muted);transform:translateX(-50%)}
+.tag div{background:var(--gold);color:var(--gold-ink);border-radius:16px 16px 16px 16px;padding:10px 22px 12px;box-shadow:0 8px 20px rgba(90,67,0,.18);position:relative}
+.tag div::before{content:"";position:absolute;left:50%;top:7px;width:9px;height:9px;border-radius:50%;background:var(--bg);transform:translateX(-50%)}
+.tag small{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:12px;opacity:.85}
+.tag b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:50px;line-height:1;letter-spacing:-.02em}
+@keyframes balanca{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+
+/* corredor + carrinho */
+.aisle{position:relative;height:128px;margin:6px auto 0;overflow:hidden;border-radius:18px;background:linear-gradient(var(--mint),var(--mint)) 0 0/100% 100%;}
+.shelf{position:absolute;left:0;right:0;top:38px;height:5px;background:var(--line)}
+.shelf.s2{top:78px}
+.box{position:absolute;width:22px;border-radius:4px 4px 0 0;bottom:100%}
+.shelf .box{bottom:5px}
+.floor{position:absolute;left:0;right:0;bottom:0;height:22px;background:var(--line);opacity:.7}
+.cart{position:absolute;bottom:14px;left:0;width:96px;animation:passeia 7s ease-in-out infinite}
+.cart .corpo{animation:trepida .5s linear infinite}
+@keyframes passeia{0%{transform:translateX(-110px) scaleX(1)}45%{transform:translateX(calc(min(440px,100vw - 32px) - 0px)) scaleX(1)}46%{transform:translateX(calc(min(440px,100vw - 32px) - 0px)) scaleX(-1)}95%{transform:translateX(-10px) scaleX(-1)}100%{transform:translateX(-110px) scaleX(-1)}}
+@keyframes trepida{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+.roda{transform-box:fill-box;transform-origin:center;animation:gira .6s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.duvida{position:absolute;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;color:var(--green);font-size:26px;animation:pula 1.4s ease-in-out infinite;opacity:.0}
+.duvida.a{left:22%;top:14px;animation-delay:.2s}.duvida.b{left:68%;top:26px;animation-delay:.9s}
+@keyframes pula{0%,100%{opacity:0;transform:translateY(8px) scale(.8)}40%,60%{opacity:.9;transform:translateY(-6px) scale(1.1)}}
+
+h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:30px;line-height:1.08;color:var(--green);margin:16px 0 6px}
+.sub{color:var(--muted);font-size:15.5px;line-height:1.45;margin-bottom:14px}
+
+/* lista com item riscado */
+.lista{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 16px;text-align:left;margin-bottom:16px;box-shadow:0 10px 26px rgba(18,81,58,.08)}
+.it{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:16px;position:relative}
+.it:last-child{border:0}
+.ck{width:22px;height:22px;border-radius:50%;background:var(--green2);display:grid;place-items:center;flex:none;transform:scale(0);animation:pop .35s cubic-bezier(.3,1.6,.5,1) forwards}
+.it:nth-child(1) .ck{animation-delay:.3s}.it:nth-child(2) .ck{animation-delay:.9s}.it:nth-child(3) .ck{animation-delay:1.5s}
+.it span.t{opacity:0;animation:aparece .4s forwards}
+.it:nth-child(1) span.t{animation-delay:.2s}.it:nth-child(2) span.t{animation-delay:.8s}.it:nth-child(3) span.t{animation-delay:1.4s}.it:nth-child(4) span.t{animation-delay:2s}
+.it.falta .x{width:22px;height:22px;border-radius:50%;border:2px solid var(--bad);color:var(--bad);display:grid;place-items:center;flex:none;font-weight:800;font-size:13px;opacity:0;animation:aparece .4s 2.3s forwards}
+.it.falta .t{position:relative}
+.it.falta .t::after{content:"";position:absolute;left:-2px;top:52%;height:2px;width:0;background:var(--bad);animation:risca .5s 2.6s ease-out forwards}
+.it.falta .t{color:var(--ink)}
+@keyframes pop{to{transform:scale(1)}}
+@keyframes aparece{to{opacity:1}}
+@keyframes risca{to{width:calc(100% + 4px)}}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:15px 26px;border-radius:16px;background:#12513a;color:#fff;font-weight:700;font-size:16px;text-decoration:none;box-shadow:0 8px 20px rgba(18,81,58,.28);transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.foot{margin-top:14px;font-size:12px;color:var(--muted)}
+.foot a{color:var(--green);font-weight:700;text-decoration:none}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}.cart{left:50%;margin-left:-48px;animation:none!important}.ck{transform:scale(1)}.it span.t,.it.falta .x{opacity:1}.it.falta .t::after{width:calc(100% + 4px)}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="brand" href="/"><span class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Lista Certa</a>
+
+  
+  <div class="tag" aria-hidden="true"><div><small>Fora de estoque</small><b>404</b></div></div>
+
+  <div class="aisle" aria-hidden="true">
+    <div class="shelf"><i class="box" style="left:6%;height:26px;background:#e8a23b"></i><i class="box" style="left:12%;height:20px;background:#6aa9d8"></i><i class="box" style="left:19%;height:28px;background:#c75b4a"></i><i class="box" style="left:44%;height:22px;background:#7fb069"></i><i class="box" style="left:51%;height:28px;background:#e8a23b"></i><i class="box" style="left:80%;height:24px;background:#6aa9d8"></i><i class="box" style="left:87%;height:18px;background:#c75b4a"></i></div>
+    <div class="shelf s2"><i class="box" style="left:9%;height:24px;background:#7fb069"></i><i class="box" style="left:36%;height:28px;background:#c75b4a"></i><i class="box" style="left:42%;height:20px;background:#e8a23b"></i><i class="box" style="left:66%;height:26px;background:#6aa9d8"></i><i class="box" style="left:74%;height:22px;background:#7fb069"></i><i class="box" style="left:91%;height:26px;background:#e8a23b"></i></div>
+    <span class="duvida a">?</span><span class="duvida b">?</span>
+    <div class="floor"></div>
+    <div class="cart">
+      <svg class="corpo" viewBox="0 0 96 76" width="96" height="76" fill="none">
+        <path d="M4 8h12l9 38h46l9-28H22" stroke="#12513a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M30 26h40M33 36h35" stroke="#12513a" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+        <rect x="34" y="8" width="14" height="16" rx="3" fill="#6aa9d8"/><rect x="50" y="12" width="12" height="12" rx="3" fill="#e8a23b"/>
+        <g class="roda"><circle cx="34" cy="62" r="7" fill="#12513a"/><path d="M34 56v12M28 62h12" stroke="#dff2e6" stroke-width="2"/></g>
+        <g class="roda"><circle cx="64" cy="62" r="7" fill="#12513a"/><path d="M64 56v12M58 62h12" stroke="#dff2e6" stroke-width="2"/></g>
+      </svg>
+    </div>
+  </div>
+
+  <h1>Essa página não está na lista</h1>
+  <p class="sub">Procuramos em todos os corredores e ela não estava em nenhum. Talvez o endereço esteja errado ou ela já saiu de linha.</p>
+
+  <div class="lista" aria-hidden="true">
+    <div class="it"><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="t">Leite</span></div>
+    <div class="it"><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="t">Café</span></div>
+    <div class="it"><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="t">Arroz</span></div>
+    <div class="it falta"><span class="x">✕</span><span class="t">Esta página</span></div>
+  </div>
+
+  <a class="btn" href="/">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    Voltar para a minha lista
+  </a>
+  <p class="foot">Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a></p>
+</main>
+</body>
+</html>
