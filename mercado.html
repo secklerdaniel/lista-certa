@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<script async defer src="https://accounts.google.com/gsi/client"></script>
 <style>
 :root{--bg:#f5f2ea;--card:#fffdf8;--ink:#1b2a22;--muted:#5f6f66;--line:#e4dfd2;--green:#12513a;--green2:#1c7a57;--mint:#dff2e6;--gold:#f2c23c;--gold-ink:#5a4300;--bad:#b4432f}
 @media (prefers-color-scheme:dark){:root{--bg:#101813;--card:#18231d;--ink:#e8efe9;--muted:#9aaba1;--line:#26352c;--green:#8fdcb4;--green2:#4fb585;--mint:#1c3829;--gold-ink:#3b2c00;--bad:#e8806c}}
@@ -69,13 +68,33 @@ pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size
   <section id="s-login" hidden>
     <h1>Portal do mercado</h1>
     <p class="sub">Cadastre seu mercado, envie os preços e acompanhe tudo em um só lugar.</p>
-    <div class="card">
-      <h2>Entre para começar</h2>
-      <ul class="lista"><li>Entre com o Google e cadastre seu mercado em um minuto</li><li>Receba as chaves da API na hora, sem aprovação</li><li>Envie preços pelo sistema do mercado ou por uma lista</li><li>Edite, pause ou apague seus dados quando quiser</li></ul>
-      <div class="gbtn" id="gbtn"></div>
-      <p class="msg" id="loginMsg"></p>
-      <p style="font-size:12.5px;color:var(--muted);margin-top:12px">Ao entrar, você aceita os <a href="/termos" style="color:var(--green);font-weight:700">Termos</a> e a <a href="/privacidade" style="color:var(--green);font-weight:700">Política de privacidade</a>. Já tem a chave da API? Use direto a <a href="/docs" style="color:var(--green);font-weight:700">documentação</a>.</p>
-    </div>
+    <div class="abas" id="abasLogin"><button class="aba on" data-a="tabEntrar">Entrar</button><button class="aba" data-a="tabCriar">Criar conta do mercado</button></div>
+
+    <form class="card" id="fEntrar">
+      <h2>Entrar</h2>
+      <label for="eEmail">E-mail</label><input id="eEmail" type="email" required autocomplete="username" maxlength="160">
+      <label for="eSenha">Senha</label><input id="eSenha" type="password" required autocomplete="current-password" maxlength="72">
+      <button class="btn" type="submit" id="eBtn">Entrar</button>
+      <p class="msg" id="eErro"></p>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:10px">Esqueceu a senha? Fale com a equipe pelo WhatsApp (54) 98143-2889 para receber uma senha provisória.</p>
+    </form>
+
+    <form class="card" id="fRegistrar" hidden>
+      <h2>Criar a conta do mercado</h2>
+      <ul class="lista" style="margin-top:0"><li>Receba as chaves da API na hora, sem aprovação</li><li>Envie preços pelo sistema do mercado ou por uma lista</li><li>Edite, pause ou apague seus dados quando quiser</li></ul>
+      <div class="row"><div><label for="rEmail">E-mail (será o seu login)</label><input id="rEmail" type="email" required autocomplete="username" maxlength="160"></div><div><label for="rSenha">Senha (8 caracteres ou mais)</label><input id="rSenha" type="password" required autocomplete="new-password" minlength="8" maxlength="72"></div></div>
+      <div id="rNovo">
+        <div class="row"><div><label for="rNome">Nome do mercado</label><input id="rNome" maxlength="120"></div><div><label for="rCidade">Cidade</label><input id="rCidade" maxlength="80" placeholder="Gramado"></div></div>
+        <label for="rCnpj">CNPJ (opcional)</label><input id="rCnpj" inputmode="numeric" placeholder="00.000.000/0001-00">
+      </div>
+      <div id="rExistente" hidden>
+        <label for="rChave">Chave de produção do mercado (começa com lc_live_)</label><input id="rChave" placeholder="lc_live_..." autocomplete="off" spellcheck="false">
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px;cursor:pointer"><input type="checkbox" id="rJa" style="width:auto"> Meu mercado já foi cadastrado antes (tenho a chave de produção)</label>
+      <button class="btn" type="submit" id="rBtn">Criar conta e cadastrar mercado</button>
+      <p class="msg" id="rErro"></p>
+    </form>
+    <p style="font-size:12.5px;color:var(--muted)">Ao criar a conta ou entrar, você aceita os <a href="/termos" style="color:var(--green);font-weight:700">Termos</a> e a <a href="/privacidade" style="color:var(--green);font-weight:700">Política de privacidade</a>. Só precisa da API? Use direto a <a href="/docs" style="color:var(--green);font-weight:700">documentação</a>.</p>
   </section>
 
   <!-- CADASTRAR (logado, sem mercado ou novo) -->
@@ -116,7 +135,7 @@ const dt = d => d ? new Date(d).toLocaleString("pt-BR", { dateStyle: "short", ti
 const cnpjFmt = c => c && c.length === 14 ? c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : (c || "");
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 2400); }
 
-let usuario = null, MERC = [], sel = null, amb = "producao", email = "", gClient = null, gPronto = false;
+let conta = null, MERC = [], sel = null, amb = "producao", email = "";
 
 async function api(url, method, body) {
   const r = await fetch(url, { method: method || "GET", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
@@ -126,35 +145,45 @@ async function api(url, method, body) {
 }
 const P = (acao, body) => api("/api/mercado/" + acao, "POST", body);
 
-/* ---------- login ---------- */
-async function botaoGoogle() {
-  const alvo = $("#gbtn"); if (!alvo) return;
+/* ---------- login do mercado (e-mail + senha; NÃO usa o Google) ---------- */
+function abaLogin(qual) {
+  $("#fEntrar").hidden = qual !== "entrar"; $("#fRegistrar").hidden = qual !== "criar";
+  document.querySelectorAll("#abasLogin .aba").forEach(b => b.classList.toggle("on", b.dataset.a === (qual === "entrar" ? "tabEntrar" : "tabCriar")));
+}
+$("#fEntrar").onsubmit = async e => {
+  e.preventDefault(); $("#eErro").textContent = ""; $("#eBtn").disabled = true;
+  try { const d = await P("entrar", { email: $("#eEmail").value, senha: $("#eSenha").value }); $("#eSenha").value = ""; conta = d.conta; await iniciar(); }
+  catch (err) { $("#eErro").textContent = err.message; }
+  $("#eBtn").disabled = false;
+};
+$("#rJa").onchange = () => { const ja = $("#rJa").checked; $("#rNovo").hidden = ja; $("#rExistente").hidden = !ja; $("#rBtn").textContent = ja ? "Criar conta e vincular meu mercado" : "Criar conta e cadastrar mercado"; };
+$("#fRegistrar").onsubmit = async e => {
+  e.preventDefault(); $("#rErro").textContent = ""; const ja = $("#rJa").checked;
+  if (!ja && (!$("#rNome").value.trim() || !$("#rCidade").value.trim())) { $("#rErro").textContent = "Informe o nome do mercado e a cidade."; return; }
+  if (ja && !$("#rChave").value.trim()) { $("#rErro").textContent = "Informe a chave de produção do mercado."; return; }
+  $("#rBtn").disabled = true;
   try {
-    if (gClient === null) gClient = (await api("/api/auth/config")).clientId || "";
-    if (!gClient) { alvo.innerHTML = '<small style="color:var(--muted)">O login com Google está sendo configurado.</small>'; return; }
-    for (let i = 0; i < 40 && !(window.google && google.accounts && google.accounts.id); i++) await new Promise(r => setTimeout(r, 150));
-    if (!(window.google && google.accounts && google.accounts.id)) { alvo.innerHTML = '<small style="color:var(--muted)">Não consegui carregar o login do Google.</small>'; return; }
-    if (!gPronto) { google.accounts.id.initialize({ client_id: gClient, callback: entrou, ux_mode: "popup" }); gPronto = true; }
-    google.accounts.id.renderButton(alvo, { theme: "filled_blue", size: "large", shape: "pill", text: "continue_with", locale: "pt-BR", width: Math.min(300, alvo.clientWidth || 300) });
-  } catch (e) { alvo.innerHTML = '<small style="color:var(--muted)">Login indisponível agora.</small>'; }
-}
-async function entrou(resp) {
-  try { const d = await api("/api/auth/google", "POST", { credential: resp.credential }); usuario = d.usuario; await iniciar(); }
-  catch (e) { $("#loginMsg").textContent = e.message; }
-}
-async function sair() { try { await api("/api/auth/logout", "POST"); } catch (e) {} location.href = "/"; }
+    const corpo = { email: $("#rEmail").value, senha: $("#rSenha").value };
+    if (ja) corpo.chave = $("#rChave").value.trim(); else Object.assign(corpo, { nome: $("#rNome").value, cidade: $("#rCidade").value, cnpj: $("#rCnpj").value || undefined });
+    const d = await P("registrar", corpo);
+    $("#rSenha").value = ""; sel = d.mercado.id; conta = d.conta; await iniciar();
+    if (d.chaves) mostrarChaves("Conta e mercado criados ✓", d.mercado.nome, d.chaves); else toast("Conta criada e mercado vinculado: " + d.mercado.nome);
+  } catch (err) { $("#rErro").textContent = err.message; }
+  $("#rBtn").disabled = false;
+};
+async function sair() { try { await api("/api/mercado/sair", "POST"); } catch (e) {} location.href = "/mercado"; }
 
 /* ---------- navegação ---------- */
 function tela(n) { ["login", "criar", "painel"].forEach(t => $("#s-" + t).hidden = t !== n); }
 async function iniciar() {
-  try { usuario = (await api("/api/auth/me")).usuario; } catch (e) {}
-  if (!usuario) { $("#dir").innerHTML = '<a href="/docs">API</a>'; tela("login"); botaoGoogle(); return; }
-  $("#dir").innerHTML = `<span>${esc(usuario.nome)}</span><a href="/app">App</a><a href="/docs">API</a><a href="#" id="sairL">Sair</a>`;
+  try { conta = (await api("/api/mercado/eu")).conta; } catch (e) { conta = null; }
+  if (!conta) { $("#dir").innerHTML = '<a href="/docs">API</a>'; tela("login"); return; }
+  $("#dir").innerHTML = `<span>${esc(conta.email)}</span><a href="/docs">API</a><a href="#" id="sairL">Sair</a>`;
   $("#sairL").onclick = e => { e.preventDefault(); sair(); };
   await carregar();
 }
 async function carregar(manter) {
-  const d = await api("/api/mercado/meus"); MERC = d.dados; email = d.usuarioEmail || "";
+  const d = await api("/api/mercado/meus"); MERC = d.dados; email = d.contaEmail || "";
   if (!MERC.length) { $("#criarTit").textContent = "Cadastre seu mercado"; $("#cCancelar").hidden = true; $("#cEmail").value = email; tela("criar"); return; }
   if (!sel || !MERC.some(m => m.id === sel)) sel = MERC[0].id;
   tela("painel"); desenhar();
@@ -219,10 +248,16 @@ function desenhar() {
       <div style="margin-top:14px"><input id="busca" type="search" placeholder="Buscar nos meus preços (nome ou código)"></div>
       <div id="precos" style="margin-top:6px">Carregando…</div></div>
 
+    <div class="card"><h2>Minha conta</h2>
+      <p style="font-size:14px;color:var(--muted)">Login: <b>${esc(conta ? conta.email : "")}</b></p>
+      <form data-form="senha"><div class="row"><div><label>Senha atual</label><input name="atual" type="password" required autocomplete="current-password" maxlength="72"></div><div><label>Nova senha (8 ou mais)</label><input name="nova" type="password" required minlength="8" autocomplete="new-password" maxlength="72"></div></div>
+      <button class="btn" type="submit">Trocar senha</button><p class="msg" data-err></p></form></div>
+
     <div class="card zona"><h2>Zona de perigo</h2>
       <div class="acoes" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn sec ${m.ativo ? "bad" : ""}" data-a="ativo" data-v="${m.ativo ? "0" : "1"}">${m.ativo ? "Pausar mercado" : "Retomar mercado"}</button>
-        <button class="btn sec bad" data-a="excluirM">Excluir mercado</button></div>
+        <button class="btn sec bad" data-a="excluirM">Excluir mercado</button>
+        <button class="btn sec bad" data-a="excluirConta">Excluir minha conta</button></div>
       <p style="font-size:13px;color:var(--muted);margin-top:8px">Pausar tira os seus preços da comparação e bloqueia novos envios. Excluir apaga o mercado, as chaves e todos os preços, e não dá para desfazer.</p></div>`;
   carregarPrecos();
 }
@@ -251,7 +286,8 @@ document.addEventListener("submit", async e => {
   const f = e.target.closest("form[data-form]"); if (!f) return; e.preventDefault();
   const v = Object.fromEntries(new FormData(f)), err = f.querySelector("[data-err]"); err.textContent = ""; err.classList.remove("ok");
   try {
-    if (f.dataset.form === "editar") { await P("editar", { id: sel, nome: v.nome, cidade: v.cidade, email: v.email, cnpj: v.cnpj }); toast("Dados salvos"); await carregar(); }
+    if (f.dataset.form === "senha") { await P("senha", { atual: v.atual, nova: v.nova }); f.reset(); toast("Senha alterada"); }
+    else if (f.dataset.form === "editar") { await P("editar", { id: sel, nome: v.nome, cidade: v.cidade, email: v.email, cnpj: v.cnpj }); toast("Dados salvos"); await carregar(); }
     else if (f.dataset.form === "preco") {
       const preco = parseFloat(String(v.preco).replace(/\./g, "").replace(",", "."));
       const d = await P("precos", { id: sel, ambiente: amb, itens: [{ gtin: v.gtin.trim(), descricao: v.descricao || undefined, unidade: v.unidade || undefined, preco }] });
@@ -277,6 +313,12 @@ document.addEventListener("click", async e => {
   try {
     if (b.dataset.copiar) { try { await navigator.clipboard.writeText(b.dataset.copiar); toast("Chave copiada"); } catch (x) { toast("Selecione e copie"); } }
     else if (a === "fecharNovas") $("#novas").innerHTML = "";
+    else if (a === "tabEntrar") abaLogin("entrar");
+    else if (a === "tabCriar") abaLogin("criar");
+    else if (a === "excluirConta") {
+      const s = prompt("EXCLUIR A CONTA?\nApaga o seu login, TODOS os mercados da conta, as chaves e todos os preços. Não dá para desfazer.\n\nDigite a sua senha para confirmar:");
+      if (!s) return; await P("excluir-conta", { senha: s }); toast("Conta excluída"); location.href = "/mercado";
+    }
     else if (a === "trocar") { sel = +b.dataset.id; desenhar(); }
     else if (a === "novo") { $("#criarTit").textContent = "Cadastrar outro mercado"; $("#cCancelar").hidden = false; $("#cEmail").value = email; tela("criar"); }
     else if (a === "amb") { amb = b.dataset.v; desenhar(); }

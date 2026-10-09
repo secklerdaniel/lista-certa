@@ -55,7 +55,8 @@ footer nav{display:flex;gap:16px;flex-wrap:wrap}
 <tr><td>Preços que você confirma (produto, preço, mercado, cidade)</td><td>Quando você salva uma coleta</td><td>Alimentar a comparação de preços. Ficam ligados à sua conta e marcados como pendentes de verificação.</td></tr>
 <tr><td>Pontos, nível e histórico de contribuições</td><td>Ao contribuir</td><td>Gamificação e ranking por cidade.</td></tr>
 <tr><td>Endereço IP (apenas em forma de código irreversível, "hash")</td><td>Ao usar a leitura por IA e os cadastros</td><td>Limitar abuso e custos. Não guardamos o IP em texto.</td></tr>
-<tr><td>Dados do mercado cadastrado: nome, CNPJ (opcional), cidade, e-mail de contato, preços enviados</td><td>Quando um mercado se cadastra na API</td><td>Operar a integração e exibir os preços do mercado. As chaves de API são guardadas apenas em forma de hash.</td></tr>
+<tr><td>Conta do mercado: e-mail e senha (a senha é guardada apenas em forma de hash, nunca em texto)</td><td>Quando um mercado cria a conta no portal</td><td>Permitir que o mercado entre, gerencie seus dados, chaves e preços.</td></tr>
+<tr><td>Dados do mercado cadastrado: nome, CNPJ (opcional), cidade, e-mail de contato, preços enviados</td><td>Quando um mercado se cadastra na API ou no portal</td><td>Operar a integração e exibir os preços do mercado. As chaves de API são guardadas apenas em forma de hash.</td></tr>
 <tr><td>Localização do aparelho</td><td>Somente se você tocar em "usar minha localização" ao enviar um vídeo e permitir no navegador</td><td>Sugerir em qual mercado você está. Sua posição é enviada ao nosso servidor só para consultar o mapa e <b>não é guardada</b>; salvamos apenas a distância aproximada até o mercado escolhido, para dar mais confiança à coleta.</td></tr>
 <tr><td>Lista de compras, cidade escolhida e preferências</td><td>Ao usar o app</td><td>Ficam <b>no seu aparelho</b> (armazenamento local do navegador), não em nossos servidores.</td></tr>
 </tbody></table>

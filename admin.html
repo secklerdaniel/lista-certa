@@ -131,12 +131,14 @@ function cartaoMercado(m) {
   return `<div class="mk ${m.ativo ? "" : "off"}" data-m="${m.id}">
     <div class="top"><div><b>${esc(m.nome)}</b><span class="tag ${m.ativo ? "" : "off"}">${m.ativo ? "ativo" : "desativado"}</span>${m.origem === "autocadastro" ? '<span class="tag off">autocadastro</span>' : ""}
       <div class="meta">${esc(m.cidade)}${m.cnpj ? " · CNPJ " + esc(cnpjFmt(m.cnpj)) : ""}${m.email ? " · " + esc(m.email) : ""} · ID ${m.id}</div>
-      <div class="meta">${m.produtos} produtos em produção · ${m.produtos_teste} em teste · último envio ${fmtData(m.ultima_atualizacao)}</div></div></div>
+      <div class="meta">${m.produtos} produtos em produção · ${m.produtos_teste} em teste · último envio ${fmtData(m.ultima_atualizacao)}</div>
+      <div class="meta">${m.conta_email ? "Conta de login: <b>" + esc(m.conta_email) + "</b>" : "Sem conta de login (cadastrado pela API ou pelo admin)"}</div></div></div>
     <div class="chaves">${m.chaves.map(c => `<div class="chave ${c.revogada ? "rev" : ""}"><span><code>${esc(c.prefixo)}…</code> · ${c.ambiente === "teste" ? "teste" : "produção"}${c.revogada ? " · revogada" : ""}</span>
       ${c.revogada ? "" : `<button class="btn sec bad" data-a="revogar" data-id="${c.id}" data-m="${m.id}">Revogar</button>`}</div>`).join("") || '<div class="meta">Sem chaves.</div>'}</div>
     <div class="acoes"><button class="btn sec" data-a="editarM" data-m="${m.id}">Editar</button><button class="btn sec" data-a="precos" data-m="${m.id}">Ver preços</button>
       <button class="btn sec" data-a="novaChave" data-m="${m.id}" data-nome="${esc(m.nome)}">Gerar novas chaves</button>
       <button class="btn sec ${m.ativo ? "bad" : ""}" data-a="ativo" data-m="${m.id}" data-v="${m.ativo ? "0" : "1"}">${m.ativo ? "Desativar" : "Reativar"}</button>
+      ${m.conta_id ? `<button class="btn sec" data-a="resetarSenha" data-m="${m.id}" data-nome="${esc(m.nome)}">Redefinir senha</button>` : ""}
       <button class="btn sec bad" data-a="excluirM" data-m="${m.id}" data-nome="${esc(m.nome)}">Excluir</button></div>
     <div class="painel" data-painel="${m.id}" hidden></div></div>`;
 }
@@ -229,6 +231,11 @@ document.addEventListener("click", async e => {
     else if (a === "novaChave") { if (!confirm("Gerar novas chaves para " + b.dataset.nome + "? As atuais continuam valendo até você revogar.")) return; const d = await M(mid, { novaChave: true }); mostrarChaves("Novas chaves", b.dataset.nome, d.chaves); await carregarMercados(); }
     else if (a === "revogar") { if (!confirm("Revogar esta chave? Quem a usa perde o acesso na hora.")) return; await M(mid, { revogarChave: +b.dataset.id }); toast("Chave revogada"); await carregarMercados(); }
     else if (a === "ativo") { const ativar = b.dataset.v === "1"; if (!ativar && !confirm("Desativar o mercado? Os preços dele somem das consultas públicas.")) return; await M(mid, { ativo: ativar }); toast(ativar ? "Mercado reativado" : "Mercado desativado"); await carregarMercados(); }
+    else if (a === "resetarSenha") {
+      if (!confirm(`Redefinir a senha da conta do mercado "${b.dataset.nome}"? A senha atual deixa de valer.`)) return;
+      const d = await M(mid, { resetarSenha: true });
+      prompt("Senha PROVISÓRIA (copie agora, não será mostrada de novo). Entregue ao mercado e peça para trocar no portal:", d.senhaProvisoria);
+    }
     else if (a === "excluirM") {
       const t = prompt(`EXCLUIR "${b.dataset.nome}"?\nIsso apaga o mercado, as chaves e TODOS os preços dele. Não dá para desfazer.\n\nDigite o nome do mercado para confirmar:`);
       if (t === null) return; if (norm(t.trim()) !== norm(b.dataset.nome)) { toast("Nome não confere. Nada foi excluído."); return; }

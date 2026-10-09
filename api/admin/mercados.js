@@ -31,7 +31,8 @@ module.exports = async (req, res) => {
         return enviar(res, 200, { ok: true, dados: r });
       }
       const r = await sql().query(
-        `select m.id, m.nome, m.cnpj, m.cidade, m.email, m.origem, m.ativo, m.criado_em,
+        `select m.id, m.nome, m.cnpj, m.cidade, m.email, m.origem, m.ativo, m.criado_em, m.conta_id,
+                (select c.email from mercado_contas c where c.id = m.conta_id) as conta_email,
                 (select count(*)::int from precos p where p.mercado_id = m.id and p.ambiente = 'producao') as produtos,
                 (select count(*)::int from precos p where p.mercado_id = m.id and p.ambiente = 'teste') as produtos_teste,
                 (select max(p.atualizado_em) from precos p where p.mercado_id = m.id and p.ambiente = 'producao') as ultima_atualizacao,
@@ -48,6 +49,14 @@ module.exports = async (req, res) => {
       const ex = await sql().query(`select id, nome from mercados where id = $1`, [id]);
       if (!ex.length) return erro(res, 404, "mercado", "Mercado não existe.");
       if (b.novaChave) return enviar(res, 201, { ok: true, mercadoId: id, chaves: await par(id), aviso: AVISO });
+      /* redefine a senha da CONTA dona do mercado (sem e-mail de recuperação ainda): gera uma senha provisória, mostrada UMA vez */
+      if (b.resetarSenha) {
+        const c = await sql().query(`select conta_id from mercados where id = $1`, [id]);
+        if (!c[0].conta_id) return erro(res, 400, "sem_conta", "Este mercado não tem conta de login (foi cadastrado pela API ou pelo admin).");
+        const prov = crypto.randomBytes(9).toString("base64url");
+        await sql().query(`update mercado_contas set senha_hash = $1 where id = $2`, [require("../_conta").hashSenha(prov), c[0].conta_id]);
+        return enviar(res, 200, { ok: true, senhaProvisoria: prov, aviso: "Entregue ao mercado e peça para trocar a senha no portal. Não será mostrada de novo." });
+      }
       if (b.revogarChave) {
         const r = await sql().query(`update chaves_api set revogada_em = now() where id = $1 and mercado_id = $2 and revogada_em is null returning id`, [parseInt(b.revogarChave, 10), id]);
         return r.length ? enviar(res, 200, { ok: true, revogada: r[0].id }) : erro(res, 404, "chave", "Chave não encontrada ou já revogada.");
