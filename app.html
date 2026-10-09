@@ -433,17 +433,29 @@ function analyse(){
       lines.push({c,qty:x.qty,p})});
     return {m,total,miss,lines}});
   rows.sort((a,b)=>a.miss.length-b.miss.length||a.total-b.total);
-  /* melhor dupla */
+  /* "comprar um pouquinho em cada mercado": melhor divisão em 2 e em 3 mercados; a de 3 só vale se economizar pelo menos R$ 1 a mais que a de 2 */
+  const b2=melhorDivisao(2),b3=melhorDivisao(3);
+  let best=b2;
+  if(b3&&(!b2||b3.miss<b2.miss||(b3.miss===b2.miss&&b3.total<b2.total-1)))best=b3;
+  return {rows,best,b2};
+}
+function melhorDivisao(k){
+  const n=MARKETS.length;if(n<k)return null;
   let best=null;
-  for(let i=0;i<MARKETS.length;i++)for(let j=i+1;j<MARKETS.length;j++){
-    const a=MARKETS[i],b=MARKETS[j];let total=0,miss=0;const pick={[a.id]:[],[b.id]:[]};
-    list.forEach(x=>{const pa=prices[a.id][x.id],pb=prices[b.id][x.id];
-      if(!pa&&!pb){miss++;return}
-      const w=!pb||(pa&&pa.p<=pb.p)?a:b,p=prices[w.id][x.id];
-      total+=p.p*x.qty;pick[w.id].push({c:CATALOG[x.id],sub:p.p*x.qty})});
-    if(!best||miss<best.miss||(miss===best.miss&&total<best.total))best={a,b,total,miss,pick};
-  }
-  return {rows,best};
+  const avaliar=ids=>{
+    const ms=ids.map(i=>MARKETS[i]),pick={};ms.forEach(m=>pick[m.id]=[]);let total=0,miss=0;
+    list.forEach(x=>{
+      let w=null;ms.forEach(m=>{const p=prices[m.id][x.id];if(p&&(!w||p.p<prices[w.id][x.id].p))w=m});
+      if(!w){miss++;return}
+      const p=prices[w.id][x.id];total+=p.p*x.qty;pick[w.id].push({c:CATALOG[x.id],sub:p.p*x.qty});
+    });
+    const usados=ms.filter(m=>pick[m.id].length).length;
+    if(usados<k)return; /* um mercado sem nenhum item não conta: seria uma divisão menor */
+    if(!best||miss<best.miss||(miss===best.miss&&total<best.total))best={ms,total,miss,pick};
+  };
+  const comb=(ini,acc)=>{if(acc.length===k){avaliar(acc.slice());return}for(let i=ini;i<n;i++){acc.push(i);comb(i+1,acc);acc.pop()}};
+  comb(0,[]);
+  return best;
 }
 const dotColor=a=>a<=2?"var(--green-2)":a<=5?"var(--warn)":"var(--old)";
 const ageTxt=a=>a===0?"hoje":a===1?"ontem":`há ${a} dias`;
@@ -451,10 +463,10 @@ const ageTxt=a=>a===0?"hoje":a===1?"ontem":`há ${a} dias`;
 function renderComp(){
   const el=$("#v-comp");
   if(!list.length){el.innerHTML=`<h2 class="lead">Nada para comparar ainda.</h2><p class="sub">Monte sua lista primeiro.</p><button class="btn" onclick="show('lista')">Voltar para a lista</button>`;return}
-  const {rows,best}=analyse();
+  const {rows,best,b2}=analyse();
   const top=rows[0],full=rows.filter(r=>!r.miss.length),worst=full.length?full[full.length-1]:rows[rows.length-1];
   const save=worst.total-top.total,pct=worst.total?Math.round(save/worst.total*100):0;
-  const gain=top.total-best.total;
+  const gain=best?top.total-best.total:0;
   const max=Math.max(...rows.map(r=>r.total));
   el.innerHTML=`
    <h2 class="lead">Sua cesta, mercado a mercado</h2>
@@ -463,10 +475,11 @@ function renderComp(){
      <div class="tot">${brl(top.total)}</div>
      <p>${top.m.dist} de você${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
      ${save>0.05?`<div class="save">Economia de <b>${brl(save)}</b> (${pct}%) vs. o mais caro</div>`:""}</div>
-   ${gain>0.5&&best.a&&!best.miss?`<div class="split"><h3>Dá para economizar mais</h3>
-     <p>Dividindo a compra em 2 mercados, você paga <span class="big">${brl(best.total)}</span> — ${brl(gain)} a menos.</p>
-     ${[best.a,best.b].map(m=>`<div class="rowm"><b>${m.name}</b><span>${best.pick[m.id].length} ${best.pick[m.id].length===1?"item":"itens"} · ${brl(best.pick[m.id].reduce((s,x)=>s+x.sub,0))}</span></div>`).join("")}
-     <ul>${[best.a,best.b].map(m=>`<li><b>${m.name}:</b> ${best.pick[m.id].map(x=>x.c.name).join(", ")||"—"}</li>`).join("")}</ul></div>`:""}
+   ${gain>0.5&&best&&!best.miss?`<div class="split"><h3>Dá para economizar mais</h3>
+     <p>Comprando um pouco em cada um de <b>${best.ms.length} mercados</b>, você paga <span class="big">${brl(best.total)}</span> — ${brl(gain)} a menos.</p>
+     ${best.ms.map(m=>`<div class="rowm"><b>${m.name}</b><span>${best.pick[m.id].length} ${best.pick[m.id].length===1?"item":"itens"} · ${brl(best.pick[m.id].reduce((s,x)=>s+x.sub,0))}</span></div>`).join("")}
+     <ul>${best.ms.map(m=>`<li><b>${m.name}:</b> ${best.pick[m.id].map(x=>x.c.name).join(", ")||"—"}</li>`).join("")}</ul>
+     ${best.ms.length===3&&b2&&!b2.miss?`<p style="margin-top:8px;font-size:12.5px;opacity:.85">Só em 2 mercados (${b2.ms.map(m=>m.name).join(" + ")}): ${brl(b2.total)}. Os 3 mercados rendem ${brl(b2.total-best.total)} a mais.</p>`:""}</div>`:""}
    <div class="sec"><h2>Todos os mercados</h2></div>
    ${rows.map((r,i)=>`<details class="mk"><summary>
       <div class="hd"><b>${i+1}. ${r.m.name}</b><span class="p">${brl(r.total)}</span></div>
