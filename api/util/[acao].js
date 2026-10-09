@@ -95,6 +95,18 @@ async function regiao(req, res) {
   enviar(res, 200, { ok: true, dados: r });
 }
 
+/* GET /api/v1/cupons?cidade=&dias=  → último preço de cada item, por mercado (CNPJ), vindo dos cupons fiscais lidos por todos */
+async function cupons(req, res) {
+  const cidade = req.query && req.query.cidade ? String(req.query.cidade) : null;
+  const dias = Math.min(Math.max(parseInt(req.query && req.query.dias, 10) || 90, 1), 365);
+  const r = await sql().query(
+    `select distinct on (p.cnpj, lower(p.descricao)) p.cnpj, coalesce(g.nome, p.mercado_nome) as mercado, p.descricao, p.unidade, p.preco_unit::float as preco, p.emissao
+       from precos_cupom p left join mercados_regiao g on g.cnpj = p.cnpj
+      where ${cidade ? "lower(p.cidade) = lower($1) and " : ""}p.emissao > now() - interval '${dias} days'
+      order by p.cnpj, lower(p.descricao), p.emissao desc limit 5000`, cidade ? [cidade] : []);
+  enviar(res, 200, { ok: true, dados: r });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") return erro(res, 405, "metodo", "Use GET.");
   const acao = (req.query && req.query.acao) || "";
@@ -103,6 +115,7 @@ module.exports = async (req, res) => {
     if (acao === "cnpj") return await cnpj(req, res);
     if (acao === "proximos") return await proximos(req, res);
     if (acao === "regiao") return await regiao(req, res);
+    if (acao === "cupons") return await cupons(req, res);
     return erro(res, 404, "rota", "Rota não encontrada.");
   } catch (e) { return erro(res, 500, "interno", "Erro interno."); }
 };

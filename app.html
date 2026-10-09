@@ -267,12 +267,9 @@ nav.tabs button.on::before{background:#15191A;height:4px}
   <svg class="carr" viewBox="0 0 96 76" fill="none"><path d="M4 8h12l9 38h46l9-28H22" stroke="#15191A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="62" r="7" fill="#15191A"/><circle cx="64" cy="62" r="7" fill="#15191A"/></svg>
 </div>
 <script>
-/* mostra a abertura 1x por sessão; some quando a animação termina e o app carregou (o CSS tem um plano B se o JS falhar) */
+/* mostra a abertura a cada entrada na página; some quando a animação termina e o app carregou (o CSS tem um plano B se o JS falhar) */
 (function(){
-  var s=document.getElementById("splash"),ja=false;
-  try{ja=sessionStorage.getItem("lc-splash")==="1"}catch(e){}
-  if(ja){s.parentNode.removeChild(s);return}
-  try{sessionStorage.setItem("lc-splash","1")}catch(e){}
+  var s=document.getElementById("splash");
   var t0=Date.now(),pronto=false,saiu=false;
   function sair(){if(saiu)return;saiu=true;s.classList.add("sai");setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},600)}
   function tentar(){var resta=1900-(Date.now()-t0);if(pronto&&resta<=0)sair();else setTimeout(tentar,Math.max(60,resta))}
@@ -438,7 +435,7 @@ function show(v){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   $("#cta").style.display=v==="lista"?"":"none";
   $("#main").scrollTop=0;
-  if(v==="comp"){renderComp();carregarApi()}
+  if(v==="comp"){renderComp();carregarApi();carregarCupons()}
   if(v==="contr")renderContr();
 }
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dataset.v));
@@ -840,6 +837,33 @@ async function carregarApi(){
     if(ck===city){cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}
   }catch(e){}finally{apiBusy=false}
 }
+/* preços de cupom lidos por TODOS (tabela precos_cupom): mesmo id "real-<cnpj>" do cupom local, então se fundem; o servidor vale por item */
+let cupBusy=false;
+async function carregarCupons(){
+  if(cupBusy)return;cupBusy=true;
+  const ck=city,ct=CITIES[ck];
+  try{
+    const d=await (await fetch("/api/v1/cupons?cidade="+encodeURIComponent(ct.name))).json();
+    if(!d||!d.ok)return;
+    const quem={};d.dados.forEach(x=>{const k=norm(x.descricao);(quem[k]=quem[k]||new Set()).add(x.cnpj)});
+    const grupos={};d.dados.forEach(x=>(grupos[x.cnpj]=grupos[x.cnpj]||{nome:x.mercado,itens:[]}).itens.push(x));
+    Object.entries(grupos).forEach(([cnpj,g])=>{
+      const id="real-"+cnpj;
+      let mk=ct.markets.find(m=>m.id===id);
+      if(!mk){mk={id,name:titulo(g.nome),dist:"",f:1,real:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+      let ult=0;
+      g.itens.forEach(x=>{
+        const it={nome:x.descricao,unit:x.preco,un:x.unidade||"UN"};
+        const y=casar(it)||(quem[norm(x.descricao)].size>=2?obterExtra(it):null); // item fora do catálogo só entra se 2+ mercados vendem
+        if(!y)return;
+        const t=new Date(x.emissao).getTime();ult=Math.max(ult,t);
+        prices[id][y.c.id]={p:y.p,age:Math.max(0,Math.floor((Date.now()-t)/864e5))};
+      });
+      if(ult){const dia=new Date(ult);mk.dist=`cupom real de ${String(dia.getDate()).padStart(2,"0")}/${String(dia.getMonth()+1).padStart(2,"0")}`}
+    });
+    if(ck===city){cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}
+  }catch(e){}finally{cupBusy=false}
+}
 try{JSON.parse(localStorage.getItem("lc-cupons")||"[]").forEach(z=>aplicarCupom(z.d,z.k,false))}catch(e){}
 /* VÍDEO DAS PRATELEIRAS: o vídeo NÃO sai do aparelho — só alguns quadros nítidos vão para a visão (OpenAI) ler as etiquetas.
    A pessoa revisa a lista e só ao confirmar os preços são gravados no banco (/api/v1/coletas, "pendente de verificação"). */
@@ -1038,7 +1062,7 @@ function setCity(k){
   try{localStorage.setItem("lc-city",k)}catch(e){}
   cityUI();renderList();renderContr();
   if($("#v-comp").classList.contains("on"))renderComp();
-  carregarApi();
+  carregarApi();carregarCupons();
   sheet(false);
   if(mudou)toast(`Mercados de ${CITIES[k].name}`);
 }
@@ -1047,7 +1071,7 @@ $("#cities").onclick=e=>{const b=e.target.closest("[data-city]");if(b)setCity(b.
 $("#sheet").onclick=e=>{if(e.target===$("#sheet"))sheet(false)};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet").classList.contains("on"))sheet(false)});
 
-cityUI();renderList();renderContr();carregarApi();meCarregar();
+cityUI();renderList();renderContr();carregarApi();carregarCupons();meCarregar();
 </script>
 <script src="/atualizacao.js" data-versao="/api/versao" defer></script>
 </body>

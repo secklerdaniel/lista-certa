@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/v1/cupons",
+      "destination": "/api/util/cupons"
+    },
+    {
       "source": "/api/v1/regiao",
       "destination": "/api/util/regiao"
     },

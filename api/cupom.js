@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
     } catch (e) { /* o catálogo é um bônus: nunca derruba a leitura do cupom */ }
 
     /* se a pessoa está logada, o servidor registra a contribuição (1 por cupom, no mundo todo) — pontos só de cupom que o servidor viu */
-    let contribuicao = null;
+    let contribuicao = null, contribId = null;
     try {
       const A = require("./_auth"), { sql } = require("./_lib");
       const usr = await A.usuario(req);
@@ -90,10 +90,30 @@ module.exports = async (req, res) => {
         const ins = await sql().query(
           `insert into contribuicoes (usuario_id, tipo, mercado_nome, cidade, itens, chave) values ($1, 'cupom', $2, $3, $4, $5)
            on conflict (chave) do nothing returning id`, [usr.id, dados.mercado.nome, cidade, dados.itens.length, p.slice(0, 44)]);
+        contribId = ins.length ? ins[0].id : null;
         const n = await A.pontos(usr.id);
         contribuicao = { novo: ins.length > 0, pontos: n, nivel: A.nivel(n) };
       }
     } catch (e) { contribuicao = null; }
+
+    /* guarda os itens e preços do cupom: vêm do portal da Fazenda (não dá para forjar) e alimentam a comparação de TODOS.
+       Se a pessoa está logada, ficam ligados à contribuição dela (excluir a coleta apaga estes preços). Nunca guarda CPF. */
+    try {
+      const { sql } = require("./_lib");
+      const seg = (dados.mercado.endereco || "").split(",").map(s => s.trim()).filter(Boolean);
+      const cid = seg.length >= 2 ? seg[seg.length - 2] : null, cnpj = (dados.mercado.cnpj || "").replace(/\D/g, "");
+      const cidade = cid ? cid.toLowerCase().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (De|Da|Do) /g, x => x.toLowerCase()) : null;
+      const v = dados.itens.map((x, i) => ({ ...x, i })).filter(x => x.nome && x.unit > 0 && x.unit < 10000);
+      if (cidade && cnpj.length === 14 && v.length) {
+        await sql().query(
+          `insert into precos_cupom (chave, ordem, cnpj, mercado_nome, cidade, descricao, codigo_loja, unidade, qtd, preco_unit, emissao, contribuicao_id)
+           select $1, t.o, $2, $3, $4, t.d, t.c, t.u, t.q, t.p, ($5::timestamp at time zone 'America/Sao_Paulo'), $6
+             from unnest($7::int[], $8::text[], $9::text[], $10::text[], $11::numeric[], $12::numeric[]) as t(o, d, c, u, q, p)
+           on conflict (chave, ordem) do nothing`,
+          [p.slice(0, 44), cnpj, dados.mercado.nome, cidade, dados.emissao, contribId,
+            v.map(x => x.i), v.map(x => x.nome.slice(0, 160)), v.map(x => x.codigo || null), v.map(x => (x.un || "").slice(0, 8) || null), v.map(x => x.qtd), v.map(x => x.unit)]);
+      }
+    } catch (e) { /* guardar é um bônus: nunca derruba a leitura do cupom */ }
     return res.status(200).end(JSON.stringify({ ok: true, ...dados, contribuicao }));
   } catch (e) {
     return res.status(504).end(JSON.stringify({ ok: false, erro: "timeout", msg: "O portal da Fazenda não respondeu a tempo." }));

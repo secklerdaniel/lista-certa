@@ -55,6 +55,7 @@ module.exports = async (req, res) => {
       const u = await A.usuario(req);
       if (!u) return erro(res, 401, "login", "Entre com o Google.");
       await sql().query(`update coletas set contribuicao_id = null where usuario_id = $1`, [u.id]); /* os preços ficam, sem o nome */
+      await sql().query(`update precos_cupom set contribuicao_id = null where contribuicao_id in (select id from contribuicoes where usuario_id = $1)`, [u.id]);
       await sql().query(`delete from usuarios where id = $1`, [u.id]);
       A.fecharSessao(res);
       return enviar(res, 200, { ok: true });
