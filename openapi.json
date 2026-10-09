@@ -74,11 +74,11 @@
         "tags": ["Consulta"], "summary": "Consultar preços",
         "description": "Sem chave: preços de produção. Com a chave de **teste**: apenas os preços de teste do seu mercado. Ordena do mais barato (considerando promoção vigente) ao mais caro.",
         "parameters": [
-          { "name": "gtin", "in": "query", "schema": { "type": "string" }, "description": "Código de barras. Informe `gtin` **ou** `q`." },
+          { "name": "gtin", "in": "query", "schema": { "type": "string" }, "description": "Código de barras. Informe ao menos um entre `gtin`, `q`, `cidade` ou `mercado`." },
           { "name": "q", "in": "query", "schema": { "type": "string", "minLength": 3 }, "description": "Palavras da descrição (ex.: `leite integral`)." },
           { "name": "cidade", "in": "query", "schema": { "type": "string" }, "example": "Gramado" },
           { "name": "mercado", "in": "query", "schema": { "type": "integer" }, "description": "ID do mercado." },
-          { "name": "limite", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 200 } }
+          { "name": "limite", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 1000 } }
         ],
         "responses": {
           "200": { "description": "Preços encontrados.", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "ambiente": { "type": "string", "example": "producao" }, "total": { "type": "integer" }, "dados": { "type": "array", "items": { "$ref": "#/components/schemas/PrecoConsultado" } } } } } } },

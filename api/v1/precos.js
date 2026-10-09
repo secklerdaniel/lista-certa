@@ -74,10 +74,10 @@ async function enviarPrecos(req, res, m) {
 async function consultar(req, res, m) {
   const q = req.query || {};
   const gtin = q.gtin ? String(q.gtin) : null, busca = q.q ? String(q.q).trim() : null;
-  if (!gtin && !busca) return erro(res, 400, "criterio", 'Informe "gtin" ou "q" (palavras da descrição).');
+  if (!gtin && !busca && !q.cidade && !q.mercado) return erro(res, 400, "criterio", 'Informe "gtin", "q" (palavras da descrição), "cidade" ou "mercado".');
   if (gtin && !gtinValido(gtin)) return erro(res, 400, "gtin_invalido", "GTIN inválido.");
   if (busca && busca.length < 3) return erro(res, 400, "q_curto", '"q" precisa de ao menos 3 caracteres.');
-  const limite = Math.min(Math.max(parseInt(q.limite, 10) || 50, 1), 200);
+  const limite = Math.min(Math.max(parseInt(q.limite, 10) || 50, 1), 1000);
   const ambiente = m && m.ambiente === "teste" ? "teste" : "producao";
   const ps = [ambiente]; const w = ["p.ambiente = $1"];
   if (m && ambiente === "teste") { ps.push(m.id); w.push(`p.mercado_id = $${ps.length}`); }

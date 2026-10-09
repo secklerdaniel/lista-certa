@@ -316,7 +316,7 @@ function show(v){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   $("#cta").style.display=v==="lista"?"":"none";
   $("#main").scrollTop=0;
-  if(v==="comp")renderComp();
+  if(v==="comp"){renderComp();carregarApi()}
   if(v==="contr")renderContr();
 }
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dataset.v));
@@ -545,6 +545,32 @@ async function buscarItens(c,raw){
     renderContr();
   }catch(e){el.innerHTML=`<b>Não consegui buscar os itens agora.</b> ${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}`}
 }
+/* mercados integrados pela API (/api/v1/precos): os preços que o próprio mercado envia entram na comparação */
+let apiBusy=false;
+async function carregarApi(){
+  if(apiBusy)return;apiBusy=true;
+  const ck=city,ct=CITIES[ck];
+  try{
+    const r=await fetch("/api/v1/precos?limite=1000&cidade="+encodeURIComponent(ct.name));
+    const d=await r.json();if(!d||!d.ok)return;
+    const grupos={};
+    d.dados.forEach(x=>{(grupos[x.mercado.id]=grupos[x.mercado.id]||{m:x.mercado,itens:[]}).itens.push(x)});
+    Object.values(grupos).forEach(g=>{
+      const id="api-"+g.m.id;
+      let mk=ct.markets.find(m=>m.id===id);
+      if(!mk){mk={id,name:g.m.nome,dist:"",f:1,real:true,api:true};ct.markets.push(mk)}
+      prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null);
+      g.itens.forEach(x=>{
+        const y=resolver({nome:x.descricao||x.gtin,unit:x.promocao?x.promocao.preco:x.preco,un:x.unidade||"UN"});
+        if(!y)return;
+        prices[id][y.c.id]={p:y.p,age:Math.max(0,Math.floor((Date.now()-new Date(x.atualizadoEm))/864e5))};
+      });
+      mk.dist="integrado pela API";
+    });
+    for(let i=ct.markets.length-1;i>=0;i--)if(ct.markets[i].api&&!grupos[ct.markets[i].id.slice(4)])ct.markets.splice(i,1);
+    if(ck===city){cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}
+  }catch(e){}finally{apiBusy=false}
+}
 try{JSON.parse(localStorage.getItem("lc-cupons")||"[]").forEach(z=>aplicarCupom(z.d,z.k,false))}catch(e){}
 $("#scan").onclick=abrirLeitor;
 $("#cancel").onclick=fechar;
@@ -583,6 +609,7 @@ function setCity(k){
   try{localStorage.setItem("lc-city",k)}catch(e){}
   cityUI();renderList();renderContr();
   if($("#v-comp").classList.contains("on"))renderComp();
+  carregarApi();
   sheet(false);
   if(mudou)toast(`Mercados de ${CITIES[k].name}`);
 }
@@ -591,7 +618,7 @@ $("#cities").onclick=e=>{const b=e.target.closest("[data-city]");if(b)setCity(b.
 $("#sheet").onclick=e=>{if(e.target===$("#sheet"))sheet(false)};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet").classList.contains("on"))sheet(false)});
 
-cityUI();renderList();renderContr();
+cityUI();renderList();renderContr();carregarApi();
 </script>
 <script src="atualizacao.js" defer></script>
 </body>
