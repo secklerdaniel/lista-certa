@@ -285,7 +285,7 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
       <div class="feed" id="feed"></div>
       <div class="sec"><h2 id="rankT">Quem mais contribuiu</h2></div>
       <div class="feed" id="rank"></div>
-      <p class="foot">Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a></p>
+      <p class="foot">Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a> · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></p>
     </section>
   </main>
 
@@ -491,7 +491,7 @@ function renderConta(){
       <div><b>${usuario.nome}</b><small>suas coletas aparecem com esse nome</small></div><button class="sair" id="sair">Sair</button></div>`;
     $("#sair").onclick=async()=>{try{await fetch("/api/auth/logout",{method:"POST"})}catch(e){}usuario=null;pts=0;try{sessionStorage.removeItem("lc-splash")}catch(e){}location.href="/"};
   }else{
-    el.innerHTML=`<p><b>Entre para contribuir.</b> Seus pontos e seu nome (ex.: Daniel S.) aparecem nas coletas que você enviar.</p><div class="gbtn" id="gbtn"></div>`;
+    el.innerHTML=`<p><b>Entre para contribuir.</b> Seus pontos e seu nome (ex.: Daniel S.) aparecem nas coletas que você enviar.</p><div class="gbtn" id="gbtn"></div><p style="margin:10px 0 0;font-size:12.5px">Ao entrar, você aceita os <a href="/termos" style="color:var(--green);font-weight:700">Termos</a> e a <a href="/privacidade" style="color:var(--green);font-weight:700">Política de privacidade</a>.</p>`;
     botaoGoogle();
   }
 }
