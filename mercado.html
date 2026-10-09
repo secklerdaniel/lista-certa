@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#12513a">
+<meta name="theme-color" content="#FFD93B">
 <meta name="robots" content="noindex">
 <title>Portal do mercado | Lista Certa</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="/logo/png/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f5f2ea;--card:#fffdf8;--ink:#1b2a22;--muted:#5f6f66;--line:#e4dfd2;--green:#12513a;--green2:#1c7a57;--mint:#dff2e6;--gold:#f2c23c;--gold-ink:#5a4300;--bad:#b4432f}
 @media (prefers-color-scheme:dark){:root{--bg:#101813;--card:#18231d;--ink:#e8efe9;--muted:#9aaba1;--line:#26352c;--green:#8fdcb4;--green2:#4fb585;--mint:#1c3829;--gold-ink:#3b2c00;--bad:#e8806c}}
@@ -63,10 +63,22 @@ pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size
 [hidden]{display:none!important}
 .dica{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;min-height:16px}
 .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:26px}.foot a{color:var(--green);font-weight:700;text-decoration:none}
+
+/* identidade amarela */
+:root{--bg:#FBFAF5;--card:#FFFFFF;--ink:#15191A;--muted:#5E676A;--line:#E3E0D3;--green:#15191A;--green2:#14573E;--green-2:#14573E;--mint:#FFF1B0;--gold:#FFD93B;--gold-ink:#15191A;--bad:#B4432F}
+body{font-family:"Archivo",system-ui,sans-serif}
+h1,h2,.cartaz{font-family:"Archivo",system-ui,sans-serif;font-stretch:68%;font-weight:900;letter-spacing:0}
+header{background:#FFD93B!important;color:#15191A!important;border-bottom:3px solid #15191A}header a,header .dir a,header .dir span,header small{color:#15191A!important;opacity:1!important}
+.btn{background:#FFD93B;color:#15191A;border:2.5px solid #15191A;border-radius:6px;box-shadow:3px 3px 0 #15191A;font-weight:800}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #15191A}.btn.sec{background:#fff;color:#15191A;border:2.5px solid #15191A;box-shadow:2px 2px 0 #15191A;font-weight:700}.btn.bad{color:#B4432F;border-color:#B4432F;box-shadow:2px 2px 0 #B4432F}.btn:disabled{background:#E3E0D3;border-color:#9AA0A2;color:#7A8184;box-shadow:none}
+.card,.kpi,.mk,.passo{border:2px solid #15191A!important;border-radius:8px!important}.kpi b{font-family:Archivo,sans-serif;font-stretch:68%;font-weight:900}
+.aba{border:2px solid #15191A!important;background:#fff!important;color:#15191A!important;border-radius:99px!important}.aba.on{background:#15191A!important;color:#FFD93B!important}
+input,textarea,select{border:2px solid #15191A!important;border-radius:6px!important;background:#fff!important}input:focus,textarea:focus,select:focus{box-shadow:3px 3px 0 #15191A!important;border-color:#15191A!important}
+:focus-visible{outline:3px solid #15191A;outline-offset:2px}
+.tag{background:#FFF1B0;color:#15191A}.seg button.on{background:#15191A;color:#FFD93B}.novas{background:#FFF1B0;border:2px solid #15191A;color:#15191A}.zona{border-color:#B4432F!important}.zona h2{color:#B4432F}
 </style>
 </head>
 <body>
-<header><div class="in"><a class="marca" href="/">← Lista Certa</a><div class="dir" id="dir"><a href="/docs">API</a></div></div></header>
+<header><div class="in"><a class="marca" href="/"><img src="/logo/logo-horizontal-amarelo.svg" alt="Lista Certa" height="30" style="display:block;height:30px;width:auto"></a><div class="dir" id="dir"><a href="/docs">API</a></div></div></header>
 <main>
   <!-- NÃO LOGADO -->
   <section id="s-login" hidden>
