@@ -31,7 +31,7 @@ async function cnpj(req, res) {
 
 /* ---------- mercados próximos ---------- */
 const RAIO_M = 1000, MAX = 8;
-const ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.openstreetmap.fr/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
 const rad = x => x * Math.PI / 180;
 function metros(a, b, c, d) {
   const R = 6371000, dLa = rad(c - a), dLo = rad(d - b);
@@ -42,7 +42,7 @@ async function overpass(lat, lng, fetchFn = fetch) {
   const q = `[out:json][timeout:12];(nwr["shop"~"^(supermarket|convenience|greengrocer|wholesale|butcher|bakery|general)$"]["name"](around:${RAIO_M},${lat},${lng}););out center tags 60;`;
   let ultimo;
   for (const url of ENDPOINTS) {
-    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
     try {
       const r = await fetchFn(url, { method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "ListaCerta/1.0 (https://lista-certa-omega.vercel.app)" }, body: "data=" + encodeURIComponent(q) });
       if (!r.ok) { ultimo = new Error("overpass_" + r.status); continue; }
@@ -68,7 +68,7 @@ async function proximos(req, res) {
   const lat = Number(req.query && req.query.lat), lng = Number(req.query && req.query.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return erro(res, 400, "coordenadas", "Informe lat e lng válidos.");
   try { enviar(res, 200, { ok: true, raioMetros: RAIO_M, dados: organizar(await overpass(lat, lng), lat, lng) }); }
-  catch (e) { erro(res, 502, "mapa", "Não consegui consultar o mapa agora. Digite o nome do mercado."); }
+  catch (e) { erro(res, 502, "mapa", "Não consegui consultar o mapa agora. Digite o nome do mercado.", { detalhe: String(e && e.message || e).slice(0, 80) }); }
 }
 
 module.exports = async (req, res) => {
