@@ -545,6 +545,20 @@ async function buscarItens(c,raw){
     renderContr();
   }catch(e){el.innerHTML=`<b>Não consegui buscar os itens agora.</b> ${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}`}
 }
+/* GTIN = identidade do produto. 1ª vez que um código aparece, ligamos ao item do catálogo (pelo nome) e guardamos;
+   depois, qualquer mercado que mande o mesmo código cai no mesmo item, não importa como escreva o nome.
+   O fator guarda a conversão de embalagem (ex.: pacote de 20 ovos → dúzia). */
+const GT={};try{Object.assign(GT,JSON.parse(localStorage.getItem("lc-gtin")||"{}"))}catch(e){}
+function resolverGtin(x){
+  const p=x.promocao?x.promocao.preco:x.preco;
+  const g=GT[x.gtin];
+  if(g&&CATALOG[g.id])return {c:CATALOG[g.id],p:Math.round(p*g.f*100)/100};
+  const y=resolver({nome:x.descricao||x.gtin,unit:p,un:x.unidade||"UN"});
+  if(!y)return null;
+  GT[x.gtin]={id:y.c.id,f:y.p/p};
+  try{localStorage.setItem("lc-gtin",JSON.stringify(GT))}catch(e){}
+  return y;
+}
 /* mercados integrados pela API (/api/v1/precos): os preços que o próprio mercado envia entram na comparação */
 let apiBusy=false;
 async function carregarApi(){
@@ -561,7 +575,7 @@ async function carregarApi(){
       if(!mk){mk={id,name:g.m.nome,dist:"",f:1,real:true,api:true};ct.markets.push(mk)}
       prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null);
       g.itens.forEach(x=>{
-        const y=resolver({nome:x.descricao||x.gtin,unit:x.promocao?x.promocao.preco:x.preco,un:x.unidade||"UN"});
+        const y=resolverGtin(x);
         if(!y)return;
         prices[id][y.c.id]={p:y.p,age:Math.max(0,Math.floor((Date.now()-new Date(x.atualizadoEm))/864e5))};
       });
