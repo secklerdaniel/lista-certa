@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | Lista Certa</title>
+<style>
+:root{--bg:#f5f2ea;--card:#fffdf8;--ink:#1b2a22;--muted:#6b7a71;--line:#e4dfd2;--green:#12513a;--green2:#1c7a57;--mint:#dff2e6;--gold:#f2c23c;--gold-ink:#5a4300;--bad:#b4432f}
+@media (prefers-color-scheme:dark){:root{--bg:#121a16;--card:#1a2520;--ink:#e8efe9;--muted:#93a399;--line:#2a3830;--green:#7fd1a8;--green2:#4fb585;--mint:#1f3a2d;--gold-ink:#3b2c00;--bad:#e8806c}}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);padding:0 0 60px}
+button,input{font:inherit;color:inherit}
+header{background:#12513a;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{font-size:19px}header small{opacity:.8;display:block;font-size:12.5px;margin-top:2px}
+main{max-width:920px;margin:0 auto;padding:20px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);outline:none}
+input:focus{border-color:var(--green2);box-shadow:0 0 0 3px rgba(28,122,87,.15)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:560px){.row{grid-template-columns:1fr}}
+.btn{padding:12px 18px;border-radius:12px;border:0;background:#12513a;color:#fff;font-weight:700;cursor:pointer;margin-top:14px}
+.btn.sec{background:transparent;color:var(--green);border:1.5px solid var(--green2);margin-top:0;padding:8px 12px;font-size:13px;font-weight:600}
+.btn.bad{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.55;cursor:default}
+.msg{font-size:13.5px;margin-top:10px;color:var(--bad)}
+.mk{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:var(--card)}
+.mk.off{opacity:.6}
+.mk .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.mk b{font-size:16px}.mk .meta{color:var(--muted);font-size:13px;margin-top:3px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--mint);color:var(--green);font-weight:700;margin-left:6px;vertical-align:middle}
+.tag.off{background:var(--line);color:var(--muted)}
+.chaves{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.chave{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:7px 10px;background:var(--bg);border-radius:10px}
+.chave code{font-size:12.5px}.chave.rev code{text-decoration:line-through;opacity:.5}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.novas{background:#fff8e1;border:1.5px solid var(--gold);color:#3b2c00;border-radius:14px;padding:14px;margin-bottom:14px}
+@media (prefers-color-scheme:dark){.novas{background:#2a2410;color:#f3e3a8}}
+.novas h3{font-size:15px;margin-bottom:4px}.novas p{font-size:13px;margin-bottom:10px}
+.kv{display:flex;gap:8px;align-items:center;margin-top:6px}
+.kv code{flex:1;word-break:break-all;background:rgba(0,0,0,.07);padding:8px 10px;border-radius:8px;font-size:12.5px}
+.kv .btn{margin:0;padding:8px 12px;font-size:13px}
+.vazio{text-align:center;color:var(--muted);padding:26px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a22;color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header><div><h1>Lista Certa · Admin</h1><small>Mercados e chaves da API de preços</small></div><button class="btn sec" id="sair" style="color:#fff;border-color:#fff;display:none">Sair</button></header>
+<main>
+  <section class="card" id="login">
+    <h2>Entrar</h2>
+    <label for="k">Chave de admin</label>
+    <input id="k" type="password" autocomplete="off" placeholder="x-admin-key">
+    <button class="btn" id="entrar">Entrar</button>
+    <p class="msg" id="loginMsg"></p>
+  </section>
+
+  <div id="painel" hidden>
+    <div id="novas"></div>
+
+    <section class="card">
+      <h2>Cadastrar mercado</h2>
+      <form id="form">
+        <div class="row"><div><label for="nome">Nome do mercado</label><input id="nome" required maxlength="120"></div>
+        <div><label for="cidade">Cidade</label><input id="cidade" required maxlength="80" placeholder="Gramado"></div></div>
+        <div class="row"><div><label for="cnpj">CNPJ (opcional)</label><input id="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00"></div>
+        <div><label for="ibge">Código IBGE (opcional)</label><input id="ibge" inputmode="numeric" placeholder="4309100"></div></div>
+        <button class="btn" type="submit" id="criar">Cadastrar e gerar chaves</button>
+        <p class="msg" id="formMsg"></p>
+      </form>
+    </section>
+
+    <section>
+      <h2 style="margin:20px 0 10px">Mercados</h2>
+      <div id="lista"></div>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const $ = s => document.querySelector(s);
+let KEY = "";
+const API = "/api/admin/mercados";
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtData = d => d ? new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 2200); }
+function guardar(k) { try { k ? sessionStorage.setItem("lc-admin", k) : sessionStorage.removeItem("lc-admin"); } catch (e) {} }
+
+async function chamar(method, body) {
+  const r = await fetch(API, { method, headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.msg || "Falha"); e.status = r.status; throw e; }
+  return d;
+}
+
+function mostrarChaves(titulo, nome, chaves) {
+  $("#novas").innerHTML = `<div class="novas"><h3>${esc(titulo)}${nome ? " · " + esc(nome) : ""}</h3>
+    <p><b>Guarde agora.</b> Estas chaves não aparecem de novo. Entregue a de <b>teste</b> primeiro; a de produção só depois da homologação.</p>
+    ${[["Teste (homologação)", chaves.teste], ["Produção", chaves.producao]].map(([l, v]) => `<div style="font-size:13px;margin-top:8px">${l}</div><div class="kv"><code>${esc(v)}</code><button class="btn" data-copiar="${esc(v)}">Copiar</button></div>`).join("")}
+    <button class="btn sec" style="margin-top:12px;color:inherit;border-color:currentColor" id="fecharNovas">Já guardei, fechar</button></div>`;
+  $("#novas").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function carregar() {
+  const d = await chamar("GET");
+  const L = d.dados;
+  $("#lista").innerHTML = L.length ? L.map(m => `<div class="mk ${m.ativo ? "" : "off"}">
+    <div class="top"><div><b>${esc(m.nome)}</b><span class="tag ${m.ativo ? "" : "off"}">${m.ativo ? "ativo" : "desativado"}</span>
+      <div class="meta">${esc(m.cidade)}${m.cnpj ? " · CNPJ " + esc(m.cnpj) : ""} · ID ${m.id}</div>
+      <div class="meta">${m.produtos} produtos em produção · ${m.produtos_teste} em teste · último envio ${fmtData(m.ultima_atualizacao)}</div></div></div>
+    <div class="chaves">${m.chaves.map(c => `<div class="chave ${c.revogada ? "rev" : ""}"><span><code>${esc(c.prefixo)}…</code> · ${c.ambiente === "teste" ? "teste" : "produção"}${c.revogada ? " · revogada" : ""}</span>
+      ${c.revogada ? "" : `<button class="btn sec bad" data-revogar="${c.id}" data-m="${m.id}">Revogar</button>`}</div>`).join("") || '<div class="meta">Sem chaves.</div>'}</div>
+    <div class="acoes"><button class="btn sec" data-nova="${m.id}" data-nome="${esc(m.nome)}">Gerar novas chaves</button>
+      <button class="btn sec ${m.ativo ? "bad" : ""}" data-ativo="${m.id}" data-valor="${m.ativo ? "0" : "1"}">${m.ativo ? "Desativar" : "Reativar"}</button></div></div>`).join("")
+    : '<div class="vazio">Nenhum mercado cadastrado ainda.</div>';
+}
+
+async function entrar(k) {
+  KEY = k;
+  try {
+    await carregar();
+    guardar(k); $("#login").hidden = true; $("#painel").hidden = false; $("#sair").style.display = "";
+  } catch (e) {
+    KEY = ""; guardar("");
+    $("#loginMsg").textContent = e.status === 401 ? "Chave de admin incorreta." : "Não consegui conectar. Tente de novo.";
+  }
+}
+
+$("#entrar").onclick = () => { $("#loginMsg").textContent = ""; if ($("#k").value.trim()) entrar($("#k").value.trim()); };
+$("#k").onkeydown = e => { if (e.key === "Enter") $("#entrar").click(); };
+$("#sair").onclick = () => { KEY = ""; guardar(""); location.reload(); };
+$("#form").onsubmit = async e => {
+  e.preventDefault(); $("#formMsg").textContent = ""; $("#criar").disabled = true;
+  try {
+    const d = await chamar("POST", { nome: $("#nome").value.trim(), cidade: $("#cidade").value.trim(), cnpj: $("#cnpj").value.trim() || undefined, ibge: $("#ibge").value.trim() || undefined });
+    mostrarChaves("Mercado cadastrado", d.mercado.nome, d.chaves);
+    $("#form").reset(); await carregar();
+  } catch (err) { $("#formMsg").textContent = err.message; }
+  $("#criar").disabled = false;
+};
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  try {
+    if (b.dataset.copiar) { try { await navigator.clipboard.writeText(b.dataset.copiar); toast("Chave copiada"); } catch (x) { toast("Selecione e copie"); } }
+    else if (b.id === "fecharNovas") $("#novas").innerHTML = "";
+    else if (b.dataset.nova) {
+      if (!confirm("Gerar novas chaves para " + b.dataset.nome + "? As atuais continuam valendo até você revogar.")) return;
+      const d = await chamar("POST", { mercadoId: +b.dataset.nova, novaChave: true });
+      mostrarChaves("Novas chaves", b.dataset.nome, d.chaves); await carregar();
+    } else if (b.dataset.revogar) {
+      if (!confirm("Revogar esta chave? Quem a usa perde o acesso na hora.")) return;
+      await chamar("POST", { mercadoId: +b.dataset.m, revogarChave: +b.dataset.revogar }); toast("Chave revogada"); await carregar();
+    } else if (b.dataset.ativo) {
+      const ativar = b.dataset.valor === "1";
+      if (!ativar && !confirm("Desativar o mercado? Os preços dele somem das consultas públicas.")) return;
+      await chamar("POST", { mercadoId: +b.dataset.ativo, ativo: ativar }); toast(ativar ? "Mercado reativado" : "Mercado desativado"); await carregar();
+    }
+  } catch (err) { toast(err.message || "Falha"); }
+});
+
+try { const s = sessionStorage.getItem("lc-admin"); if (s) entrar(s); } catch (e) {}
+</script>
+</body>
+</html>
