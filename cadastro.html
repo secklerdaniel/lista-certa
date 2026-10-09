@@ -49,7 +49,7 @@ ol{padding-left:20px;font-size:14.5px;color:var(--muted);margin-top:8px}
     <label for="nome">Nome do mercado</label><input id="nome" required maxlength="120" autocomplete="organization">
     <label for="cidade">Cidade</label><input id="cidade" required maxlength="80" placeholder="Gramado">
     <label for="email">E-mail para contato</label><input id="email" type="email" required maxlength="160" autocomplete="email">
-    <label for="cnpj">CNPJ (opcional)</label><input id="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00">
+    <label for="cnpj">CNPJ (opcional: preenche o nome e a cidade sozinho)</label><input id="cnpj" inputmode="numeric" placeholder="00.000.000/0001-00"><small id="cnpjDica" style="display:block;font-size:12.5px;color:var(--muted);margin-top:4px;min-height:16px"></small>
     <button class="btn" type="submit" id="enviar">Cadastrar e receber as chaves</button>
     <p class="erro" id="erro" role="alert"></p>
   </form>
@@ -57,6 +57,24 @@ ol{padding-left:20px;font-size:14.5px;color:var(--muted);margin-top:8px}
 </main>
 <script>
 const $=s=>document.querySelector(s);
+(function(){ /* CNPJ: busca os dados públicos na Receita e preenche nome e cidade vazios */
+  let ultimo="";const el=$("#cnpj"),dica=$("#cnpjDica");
+  async function buscar(){
+    const c=el.value.replace(/\D/g,"");
+    if(c.length!==14){if(c.length<14){dica.textContent="";ultimo=""}return}
+    if(c===ultimo)return;ultimo=c;dica.style.color="";dica.textContent="Consultando a Receita…";
+    try{
+      const r=await fetch("/api/v1/cnpj?cnpj="+c),d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok){dica.textContent=r.status===400?(d.msg||"CNPJ inválido."):"Não consegui consultar agora. Preencha manualmente.";dica.style.color=r.status===400?"var(--bad)":"";return}
+      if(!d.encontrado){dica.textContent="CNPJ não encontrado na Receita. Confira os números.";dica.style.color="var(--bad)";return}
+      if(!$("#nome").value.trim())$("#nome").value=d.nome;
+      if(!$("#cidade").value.trim())$("#cidade").value=d.cidade;
+      dica.textContent=`${d.razaoSocial||d.nome} · ${d.cidade}/${d.uf} · ${d.ativa?"situação ATIVA ✓":"situação: "+d.situacao+" (não será aceito)"}`;
+      dica.style.color=d.ativa?"var(--green2)":"var(--bad)";
+    }catch(e){dica.textContent="Não consegui consultar agora. Preencha manualmente."}
+  }
+  el.addEventListener("input",buscar);el.addEventListener("blur",buscar);
+})();
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 $("#form").onsubmit=async e=>{
   e.preventDefault();$("#erro").textContent="";$("#enviar").disabled=true;$("#enviar").textContent="Cadastrando…";

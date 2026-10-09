@@ -58,6 +58,7 @@ pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size
 .zona{border-color:var(--bad)}.zona h2{color:var(--bad)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a22;color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:10}.toast.on{opacity:1}
 [hidden]{display:none!important}
+.dica{display:block;font-size:12.5px;color:var(--muted);margin-top:4px;min-height:16px}
 .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:26px}.foot a{color:var(--green);font-weight:700;text-decoration:none}
 </style>
 </head>
@@ -84,8 +85,8 @@ pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size
       <ul class="lista" style="margin-top:0"><li>Receba as chaves da API na hora, sem aprovação</li><li>Envie preços pelo sistema do mercado ou por uma lista</li><li>Edite, pause ou apague seus dados quando quiser</li></ul>
       <div class="row"><div><label for="rEmail">E-mail (será o seu login)</label><input id="rEmail" type="email" required autocomplete="username" maxlength="160"></div><div><label for="rSenha">Senha (8 caracteres ou mais)</label><input id="rSenha" type="password" required autocomplete="new-password" minlength="8" maxlength="72"></div></div>
       <div id="rNovo">
+        <label for="rCnpj">CNPJ (opcional: preenche o nome e a cidade sozinho)</label><input id="rCnpj" inputmode="numeric" placeholder="00.000.000/0001-00"><small class="dica" id="rCnpjDica"></small>
         <div class="row"><div><label for="rNome">Nome do mercado</label><input id="rNome" maxlength="120"></div><div><label for="rCidade">Cidade</label><input id="rCidade" maxlength="80" placeholder="Gramado"></div></div>
-        <label for="rCnpj">CNPJ (opcional)</label><input id="rCnpj" inputmode="numeric" placeholder="00.000.000/0001-00">
       </div>
       <div id="rExistente" hidden>
         <label for="rChave">Chave de produção do mercado (começa com lc_live_)</label><input id="rChave" placeholder="lc_live_..." autocomplete="off" spellcheck="false">
@@ -103,7 +104,7 @@ pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size
     <p class="sub">Depois de cadastrar, você recebe as chaves da API e acessa o painel.</p>
     <form class="card" id="fCriar">
       <div class="row"><div><label for="cNome">Nome do mercado</label><input id="cNome" required maxlength="120"></div><div><label for="cCidade">Cidade</label><input id="cCidade" required maxlength="80" placeholder="Gramado"></div></div>
-      <div class="row"><div><label for="cEmail">E-mail de contato</label><input id="cEmail" type="email" required maxlength="160"></div><div><label for="cCnpj">CNPJ (opcional)</label><input id="cCnpj" inputmode="numeric" placeholder="00.000.000/0001-00"></div></div>
+      <div class="row"><div><label for="cEmail">E-mail de contato</label><input id="cEmail" type="email" required maxlength="160"></div><div><label for="cCnpj">CNPJ (opcional)</label><input id="cCnpj" inputmode="numeric" placeholder="00.000.000/0001-00"><small class="dica" id="cCnpjDica"></small></div></div>
       <button class="btn" type="submit" id="cBtn">Cadastrar meu mercado</button>
       <button class="btn sec" type="button" id="cCancelar" hidden style="margin-left:8px">Cancelar</button>
       <p class="msg" id="cErro"></p>
@@ -332,6 +333,29 @@ document.addEventListener("click", async e => {
     }
   } catch (err) { toast(err.message || "Falha"); }
 });
+
+/* CNPJ: busca os dados públicos na Receita (via nossa função) e preenche nome e cidade que ainda estiverem vazios */
+function ligarCnpj(cnpjEl, nomeEl, cidadeEl, dicaEl) {
+  let ultimo = "";
+  async function buscar() {
+    const c = cnpjEl.value.replace(/\D/g, "");
+    if (c.length !== 14) { if (c.length < 14) { dicaEl.textContent = ""; ultimo = ""; } return; }
+    if (c === ultimo) return; ultimo = c;
+    dicaEl.style.color = ""; dicaEl.textContent = "Consultando a Receita…";
+    try {
+      const r = await fetch("/api/v1/cnpj?cnpj=" + c), d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) { dicaEl.textContent = r.status === 400 ? (d.msg || "CNPJ inválido.") : "Não consegui consultar agora. Preencha manualmente."; dicaEl.style.color = r.status === 400 ? "var(--bad)" : ""; return; }
+      if (!d.encontrado) { dicaEl.textContent = "CNPJ não encontrado na Receita. Confira os números."; dicaEl.style.color = "var(--bad)"; return; }
+      if (!nomeEl.value.trim()) nomeEl.value = d.nome;
+      if (!cidadeEl.value.trim()) cidadeEl.value = d.cidade;
+      dicaEl.textContent = `${d.razaoSocial || d.nome} · ${d.cidade}/${d.uf} · ${d.ativa ? "situação ATIVA ✓" : "situação: " + d.situacao + " (não será aceito)"}`;
+      dicaEl.style.color = d.ativa ? "var(--green2)" : "var(--bad)";
+    } catch (e) { dicaEl.textContent = "Não consegui consultar agora. Preencha manualmente."; }
+  }
+  cnpjEl.addEventListener("input", buscar); cnpjEl.addEventListener("blur", buscar);
+}
+ligarCnpj($("#rCnpj"), $("#rNome"), $("#rCidade"), $("#rCnpjDica"));
+ligarCnpj($("#cCnpj"), $("#cNome"), $("#cCidade"), $("#cCnpjDica"));
 
 iniciar();
 </script>

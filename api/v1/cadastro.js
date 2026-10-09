@@ -3,6 +3,7 @@
    Limite por IP; CNPJ (se informado) precisa ser válido e não pode já estar cadastrado.
    A equipe pode desativar qualquer mercado depois em /admin. */
 const { sql, sha256, enviar, erro, corpo, crypto } = require("../_lib");
+const { verificarAtivo } = require("../_cnpj");
 
 const LIMITE_DIA = 5;
 
@@ -30,6 +31,7 @@ module.exports = async (req, res) => {
   if (cidade.length < 2 || cidade.length > 80) return erro(res, 400, "cidade", "Informe a cidade.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 160) return erro(res, 400, "email", "Informe um e-mail válido para contato.");
   if (cnpj && !cnpjValido(cnpj)) return erro(res, 400, "cnpj", "CNPJ inválido. Confira os 14 dígitos ou deixe em branco.");
+  if (cnpj) { const inativo = await verificarAtivo(cnpj); if (inativo) return erro(res, 400, "cnpj_inativo", inativo); }
   try {
     const ip = sha256(String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "?").split(",")[0].trim() + "|lc");
     const u = await sql().query(`select count(*)::int as n from uso_publico where ip_hash = $1 and tipo = 'cadastro' and em > now() - interval '1 day'`, [ip]);

@@ -19,6 +19,7 @@ const { sql, sha256, enviar, erro, corpo, crypto } = require("../_lib");
 const C = require("../_conta");
 const { enviarPrecos } = require("../v1/precos");
 const { cnpjValido } = require("../v1/cadastro");
+const { verificarAtivo } = require("../_cnpj");
 
 const MAX_MERCADOS = 3;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -52,6 +53,13 @@ async function acesso(req, res, id) {
   return { c, m: r[0] };
 }
 
+/* a Receita só barra quando CONFIRMA que o CNPJ não está ativo; consulta fora do ar não bloqueia */
+async function cnpjAtivo(v, res) {
+  if (!v.cnpj) return true;
+  const inativo = await verificarAtivo(v.cnpj);
+  if (inativo) { erro(res, 400, "cnpj_inativo", inativo); return false; }
+  return true;
+}
 function validarMercado(b, res, emailPadrao) {
   const nome = String(b.nome || "").replace(/\s+/g, " ").trim(), cidade = String(b.cidade || "").replace(/\s+/g, " ").trim();
   const email = String(b.email || emailPadrao || "").trim().toLowerCase(), cnpj = b.cnpj ? String(b.cnpj).replace(/\D/g, "") : null;
@@ -88,7 +96,7 @@ module.exports = async (req, res) => {
         if (!r.length) return erro(res, 404, "chave", "Chave não encontrada ou revogada.");
         if (r[0].conta_id) return erro(res, 409, "ja_vinculado", "Este mercado já pertence a uma conta. Entre nela ou fale com a equipe.");
         existente = r[0];
-      } else { v = validarMercado(b, res, email); if (!v) return; }
+      } else { v = validarMercado(b, res, email); if (!v) return; if (!(await cnpjAtivo(v, res))) return; }
       if (!(await dentroDoLimite(req, "cadastro", 5, "1 day"))) return erro(res, 429, "limite", "Muitos cadastros deste endereço hoje. Tente amanhã ou fale com a equipe.");
       if ((await sql().query(`select 1 from mercado_contas where email = $1`, [email])).length) return erro(res, 409, "email_ja_cadastrado", "Esse e-mail já tem conta. Use a aba Entrar.");
       const conta = (await sql().query(`insert into mercado_contas (email, senha_hash) values ($1, $2) returning id, email`, [email, C.hashSenha(b.senha)]))[0];
@@ -160,6 +168,7 @@ module.exports = async (req, res) => {
     if (acao === "criar" && req.method === "POST") {
       const a = await acesso(req, res); if (!a) return;
       const v = validarMercado(corpo(req) || {}, res, a.c.email); if (!v) return;
+      if (!(await cnpjAtivo(v, res))) return;
       const qtd = await sql().query(`select count(*)::int as n from mercados where conta_id = $1`, [a.c.id]);
       if (qtd[0].n >= MAX_MERCADOS) return erro(res, 400, "limite", `Cada conta pode ter até ${MAX_MERCADOS} mercados.`);
       const m = await inserirMercado(v, a.c.id, res); if (!m) return;
@@ -184,6 +193,7 @@ module.exports = async (req, res) => {
     if (acao === "editar" && req.method === "POST") {
       const b = corpo(req) || {}; const a = await acesso(req, res, b.id); if (!a) return;
       const v = validarMercado(b, res, a.c.email); if (!v) return;
+      if (v.cnpj !== a.m.cnpj && !(await cnpjAtivo(v, res))) return;
       try { await sql().query(`update mercados set nome = $1, cidade = $2, cnpj = $3, email = $4 where id = $5`, [v.nome, v.cidade, v.cnpj, v.email, a.m.id]); }
       catch (e) { if (/mercados_cnpj_uq|duplicate key/i.test(String(e.message))) return erro(res, 409, "cnpj", "Já existe outro mercado com esse CNPJ."); throw e; }
       return enviar(res, 200, { ok: true });
