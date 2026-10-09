@@ -66,7 +66,22 @@ module.exports = async (req, res) => {
       const aviso = txt(html).slice(0, 200);
       return res.status(502).end(JSON.stringify({ ok: false, erro: "portal", msg: "O portal não devolveu os itens.", detalhe: aviso }));
     }
-    return res.status(200).end(JSON.stringify({ ok: true, ...dados }));
+    /* se a pessoa está logada, o servidor registra a contribuição (1 por cupom, no mundo todo) — pontos só de cupom que o servidor viu */
+    let contribuicao = null;
+    try {
+      const A = require("./_auth"), { sql } = require("./_lib");
+      const usr = await A.usuario(req);
+      if (usr) {
+        const seg = (dados.mercado.endereco || "").split(",").map(s => s.trim()).filter(Boolean);
+        const cidade = seg.length >= 2 ? seg[seg.length - 2] : null;
+        const ins = await sql().query(
+          `insert into contribuicoes (usuario_id, tipo, mercado_nome, cidade, itens, chave) values ($1, 'cupom', $2, $3, $4, $5)
+           on conflict (chave) do nothing returning id`, [usr.id, dados.mercado.nome, cidade, dados.itens.length, p.slice(0, 44)]);
+        const n = await A.pontos(usr.id);
+        contribuicao = { novo: ins.length > 0, pontos: n, nivel: A.nivel(n) };
+      }
+    } catch (e) { contribuicao = null; }
+    return res.status(200).end(JSON.stringify({ ok: true, ...dados, contribuicao }));
   } catch (e) {
     return res.status(504).end(JSON.stringify({ ok: false, erro: "timeout", msg: "O portal da Fazenda não respondeu a tempo." }));
   } finally {

@@ -93,6 +93,9 @@ module.exports = async (req, res) => {
   if (req.method === "OPTIONS") { res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS"); res.setHeader("Access-Control-Allow-Headers", "Content-Type"); res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return erro(res, 405, "metodo", "Use POST.");
   if (!process.env.OPENAI_API_KEY) return erro(res, 503, "ia_indisponivel", "Leitura por IA indisponível no momento.");
+  let usr = null;
+  try { usr = await require("../_auth").usuario(req); } catch (e) { /* trata como sem login */ }
+  if (!usr) return erro(res, 401, "login", "Entre com o Google para enviar vídeos.");
   const b = corpo(req);
   const frames = b && Array.isArray(b.frames) ? b.frames : null;
   if (!frames || !frames.length) return erro(res, 400, "frames", 'Envie "frames": lista de imagens JPEG em base64 (data URL).');

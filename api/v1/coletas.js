@@ -2,12 +2,16 @@
    Guarda preços contribuídos pela comunidade (ex.: lidos de vídeo, já revisados pela pessoa) como "pendente de verificação".
    Público, com limite por IP. Não entra em /precos: é separado dos preços enviados pelos mercados. */
 const { sql, sha256, enviar, erro, corpo, gtinValido } = require("../_lib");
+const A = require("../_auth");
 
 const MAX_ITENS = 100, LIMITE_HORA = 6;
 
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") { res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS"); res.setHeader("Access-Control-Allow-Headers", "Content-Type"); res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return erro(res, 405, "metodo", "Use POST.");
+  let usr = null;
+  try { usr = await A.usuario(req); } catch (e) { /* sem login */ }
+  if (!usr) return erro(res, 401, "login", "Entre com o Google para salvar preços.");
   const b = corpo(req);
   const nome = b && b.mercado && typeof b.mercado.nome === "string" ? b.mercado.nome.trim().slice(0, 120) : "";
   const cidade = b && b.mercado && typeof b.mercado.cidade === "string" ? b.mercado.cidade.trim().slice(0, 80) : "";
@@ -26,13 +30,14 @@ module.exports = async (req, res) => {
   if (!ok.length) return erro(res, 400, "itens_invalidos", "Nenhum item válido.");
   try {
     const ip = sha256(String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "?").split(",")[0].trim() + "|lc");
-    const r = await sql().query(`select count(*)::int as n from uso_publico where ip_hash = $1 and tipo = 'coleta' and em > now() - interval '1 hour'`, [ip]);
+    const r = await sql().query(`select count(*)::int as n from contribuicoes where usuario_id = $1 and tipo = 'video' and criado_em > now() - interval '1 hour'`, [usr.id]);
     if (r[0].n >= LIMITE_HORA) return erro(res, 429, "limite", "Muitos envios em pouco tempo. Tente de novo mais tarde.");
-    await sql().query(`insert into uso_publico (ip_hash, tipo) values ($1, 'coleta')`, [ip]);
     await sql().query(
-      `insert into coletas (mercado_nome, cidade, descricao, gtin, preco, promocao_preco, origem, ip_hash)
-       select $1, $2, d, g, p, pp, 'video', $7 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
-      [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip]);
-    enviar(res, 201, { ok: true, recebidos: ok.length, status: "pendente de verificação" });
+      `insert into coletas (mercado_nome, cidade, descricao, gtin, preco, promocao_preco, origem, ip_hash, usuario_id)
+       select $1, $2, d, g, p, pp, 'video', $7, $8 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
+      [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip, usr.id]);
+    await sql().query(`insert into contribuicoes (usuario_id, tipo, mercado_nome, cidade, itens) values ($1, 'video', $2, $3, $4)`, [usr.id, nome, cidade, ok.length]);
+    const pts = await A.pontos(usr.id);
+    enviar(res, 201, { ok: true, recebidos: ok.length, status: "pendente de verificação", pontos: pts, nivel: A.nivel(pts) });
   } catch (e) { erro(res, 500, "interno", "Erro interno."); }
 };
