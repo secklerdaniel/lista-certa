@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12513a">
+<title>Lista Certa | Compare e economize</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f2ea; --card:#fffdf8; --ink:#1b2a22; --muted:#6b7a71; --line:#e4dfd2;
+  --green:#12513a; --green-2:#1c7a57; --mint:#dff2e6; --gold:#f2c23c; --gold-ink:#5a4300;
+  --warn:#d9822b; --old:#a9a79d; --bad:#b4432f; --shadow:0 10px 30px rgba(18,81,58,.12);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;background:#e7e3d6;color:var(--ink);-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input{font:inherit;color:inherit}
+h1,h2,h3,.display{font-family:"Bricolage Grotesque","DM Sans",sans-serif;letter-spacing:-.01em}
+
+.app{max-width:430px;height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,.12)}
+@media(min-width:500px){.app{height:min(880px,96dvh);margin-top:2dvh;border-radius:28px}}
+
+.demo{background:var(--ink);color:#e9efe9;font-size:11.5px;text-align:center;padding:6px 12px;letter-spacing:.02em}
+.demo b{color:var(--gold)}
+header.top{padding:16px 20px 10px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--green);display:grid;place-items:center}
+.brand h1{font-size:20px;font-weight:800;color:var(--green)}
+.city{font-size:13px;font-weight:500;color:var(--green);display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:7px 11px 7px 10px}
+.city:active{background:var(--mint)}
+.city:focus-visible,.cities button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sheet{position:absolute;inset:0;z-index:25;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(10,20,15,.55);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+.sheet.on{opacity:1;visibility:visible}
+.sheet .pn{background:var(--bg);border-radius:24px 24px 0 0;padding:18px 20px calc(22px + env(safe-area-inset-bottom));transform:translateY(30px);transition:transform .25s ease}
+.sheet.on .pn{transform:none}
+.sheet h3{font-size:20px;color:var(--green)}
+.sheet .sb{color:var(--muted);font-size:13.5px;margin:2px 0 12px}
+.cities{display:flex;flex-direction:column;gap:8px}
+.cities button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:13px 14px}
+.cities button b{flex:1;font-weight:500;font-size:16px}
+.cities button small{color:var(--muted);font-size:12.5px}
+.cities button.on{border-color:var(--green-2);background:var(--mint)}
+.cities button.on b{font-weight:700;color:var(--green)}
+.cities .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.cities button.on .ck{background:var(--green-2);border-color:var(--green-2);color:#fff}
+main{flex:1;overflow-y:auto;padding:4px 20px 200px;scroll-behavior:smooth}
+.view{display:none}.view.on{display:block;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.lead{font-family:"Bricolage Grotesque";font-weight:800;font-size:28px;line-height:1.05;color:var(--green);margin:6px 0 4px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+
+.search{position:relative}
+.search input{width:100%;padding:15px 16px 15px 44px;border-radius:16px;border:1.5px solid var(--line);background:var(--card);font-size:16px;outline:none;transition:border .15s,box-shadow .15s}
+.search input:focus{border-color:var(--green-2);box-shadow:0 0 0 4px rgba(28,122,87,.14)}
+.search svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.sugg{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.sugg button{display:flex;justify-content:space-between;width:100%;padding:12px 16px;text-align:left;font-size:15px}
+.sugg button:hover,.sugg button:focus-visible{background:var(--mint);outline:0}
+.sugg small{color:var(--muted)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.chip{padding:7px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);font-size:13px}
+.chip:active{background:var(--mint)}
+
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:20px 0 8px}
+.sec h2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sec button{font-size:13px;color:var(--bad)}
+.items{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.item .nm{flex:1;min-width:0}.item .nm b{display:block;font-weight:500;font-size:15.5px}.item .nm small{color:var(--muted);font-size:12.5px}
+.step{display:flex;align-items:center;gap:2px;background:var(--bg);border-radius:99px;padding:3px}
+.step button{width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;display:grid;place-items:center}
+.step button:active{background:var(--mint)}
+.step span{min-width:22px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.rm{color:var(--muted);padding:6px}
+.empty{text-align:center;padding:36px 12px;color:var(--muted);border:1.5px dashed var(--line);border-radius:18px}
+
+.cta{position:absolute;left:0;right:0;bottom:64px;padding:12px 20px;background:linear-gradient(transparent,var(--bg) 40%)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border-radius:16px;background:var(--green);color:#fff;font-weight:700;font-size:16px;box-shadow:0 8px 20px rgba(18,81,58,.28);transition:transform .1s}
+.btn:active{transform:scale(.985)}.btn[disabled]{background:#9db3a8;box-shadow:none}
+.btn.ghost{background:var(--card);color:var(--green);border:1.5px solid var(--green);box-shadow:none}
+
+nav.tabs{position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;color:var(--muted);position:relative}
+nav.tabs button.on{color:var(--green);font-weight:700}
+nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:3px;border-radius:0 0 3px 3px;background:var(--green)}
+
+/* resultado */
+.best{background:var(--green);color:#fff;border-radius:22px;padding:20px;position:relative;overflow:hidden}
+.best::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.07)}
+.best .tag{display:inline-block;background:var(--gold);color:var(--gold-ink);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:99px}
+.best h3{font-size:24px;margin:10px 0 2px}
+.best .tot{font-family:"Bricolage Grotesque";font-weight:800;font-size:42px;line-height:1;margin:6px 0}
+.best p{font-size:14px;opacity:.88}
+.save{display:inline-block;margin-top:10px;background:rgba(255,255,255,.14);padding:7px 12px;border-radius:12px;font-size:14px}
+.save b{color:var(--gold)}
+.split{margin-top:14px;background:var(--gold);color:var(--gold-ink);border-radius:20px;padding:16px}
+.split h3{font-size:17px;margin-bottom:4px}
+.split p{font-size:13.5px}
+.split .big{font-family:"Bricolage Grotesque";font-weight:800;font-size:22px}
+.split .rowm{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-top:1px solid rgba(90,67,0,.18)}
+.split .rowm:first-of-type{margin-top:10px}
+.split ul{margin:6px 0 0 16px;font-size:12.5px;opacity:.9}
+
+.mk{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-top:10px;overflow:hidden}
+.mk summary{list-style:none;padding:14px 16px;cursor:pointer}
+.mk summary::-webkit-details-marker{display:none}
+.mk .hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mk .hd b{font-size:16px}.mk .hd .p{font-weight:800;font-family:"Bricolage Grotesque";font-size:19px}
+.mk .meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12.5px;margin-top:3px}
+.bar{height:6px;border-radius:6px;background:var(--bg);margin-top:10px}
+.bar i{display:block;height:100%;border-radius:6px;background:var(--green-2)}
+.mk .miss{color:var(--warn);font-weight:500}
+.mk .rows{border-top:1px solid var(--line);padding:6px 16px 12px}
+.mk .r{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px;border-bottom:1px dashed var(--line)}
+.mk .r:last-child{border:0}
+.mk .r.low b{color:var(--green-2)}
+.mk .r.low .nm::after{content:" ●";color:var(--green-2);font-size:10px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.age{font-size:11.5px;color:var(--muted);margin-left:6px}
+.legend{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+
+/* contribuir */
+.lvl{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;gap:14px;align-items:center}
+.badge{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:radial-gradient(circle at 30% 25%,#e8b27a,#b8743a);box-shadow:inset 0 -4px 8px rgba(0,0,0,.18)}
+.badge.prata{background:radial-gradient(circle at 30% 25%,#f1f3f5,#9aa4ad)}.badge.ouro{background:radial-gradient(circle at 30% 25%,#ffe58a,#d9a516)}
+.lvl .tx{flex:1}.lvl h3{font-size:17px}.lvl small{color:var(--muted);font-size:12.5px}
+.prog{height:8px;background:var(--bg);border-radius:8px;margin-top:8px}.prog i{display:block;height:100%;border-radius:8px;background:var(--gold);transition:width .5s}
+.how{display:grid;gap:10px;margin-top:14px}
+.how div{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.how b{color:var(--ink);display:block;font-weight:700}
+.how i{font-style:normal;flex:none;width:28px;height:28px;border-radius:50%;background:var(--mint);color:var(--green);display:grid;place-items:center;font-weight:700;font-size:13px}
+.feed{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.feed div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;font-size:13.5px;animation:in .3s}
+.feed small{color:var(--muted)}
+.foot{margin:28px 0 8px;text-align:center;font-size:12px;color:var(--muted)}
+.foot a{color:var(--green);text-decoration:none;font-weight:700}
+
+/* scanner */
+.modal{position:absolute;inset:0;background:rgba(10,20,15,.92);z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#fff;padding:24px;text-align:center}
+.modal.on{display:flex}
+.vf{width:260px;height:260px;border-radius:22px;position:relative;background:repeating-linear-gradient(45deg,#1b2a22,#1b2a22 10px,#20322a 10px,#20322a 20px);overflow:hidden}
+.vf video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.conta{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.conta p{font-size:13.5px;color:var(--muted);margin-bottom:10px}
+.conta .eu{display:flex;align-items:center;gap:12px}
+.conta .eu img,.conta .eu .av{width:40px;height:40px;border-radius:50%;background:var(--mint);object-fit:cover;flex:none;display:grid;place-items:center;font-weight:800;color:var(--green)}
+.conta .eu b{display:block;font-size:15.5px}.conta .eu small{color:var(--muted);font-size:12.5px}
+.conta .sair{margin-left:auto;font-size:13px;color:var(--muted);text-decoration:underline;padding:6px}
+.conta .gbtn{display:flex;justify-content:center;min-height:44px}
+#rank div{display:flex;justify-content:space-between;align-items:center}
+.vbox{background:var(--card);color:var(--ink);border-radius:20px;padding:18px;width:100%;max-width:360px;max-height:88%;overflow:auto;text-align:left}
+.vbox h3{font-size:19px;color:var(--green);margin-bottom:4px}
+.vbox p{font-size:13.5px;color:var(--muted);margin:6px 0}
+.vbox input[type=text]{width:100%;padding:11px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-size:15px;outline:none}
+.vbox input[type=text]:focus{border-color:var(--green2)}
+.vbox .btn{margin-top:10px;box-shadow:none}
+.vbox .dicas{font-size:13px;background:var(--bg);border-radius:12px;padding:10px 12px;margin:10px 0;line-height:1.5}
+.vprog{height:8px;border-radius:8px;background:var(--bg);margin:12px 0}.vprog i{display:block;height:100%;width:0;border-radius:8px;background:var(--gold);transition:width .3s}
+.vrow{display:grid;grid-template-columns:22px 1fr 88px;gap:6px 8px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.vrow input[type=checkbox]{width:20px;height:20px;accent-color:#1c7a57;grid-row:2;grid-column:1}
+.vrow .nm{grid-column:1/4;grid-row:1}
+.vrow .pp{grid-column:3;grid-row:2;text-align:right;font-weight:700}
+.vrow input[type=text]{padding:8px 9px;font-size:14px}
+.vrow small{grid-column:2;grid-row:2;color:var(--muted);font-size:12px}
+.vrow small.baixa{color:var(--bad);font-weight:700}
+.manual{display:flex;gap:8px;width:100%;max-width:330px}
+.manual input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:14px;outline:none}
+.manual input::placeholder{color:rgba(255,255,255,.55)}
+.manual input:focus{border-color:var(--gold)}
+.manual button{padding:0 16px;border-radius:12px;background:var(--gold);color:var(--gold-ink);font-weight:700}
+.modal dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13.5px;margin:10px 0}
+.modal dt{color:var(--muted)}.modal dd{font-weight:500;word-break:break-all}
+.modal .nota{font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:12px;padding:10px 12px;margin:6px 0 12px}
+.vf::before,.vf::after{content:"";position:absolute;inset:14px;border:3px solid var(--gold);border-radius:14px;clip-path:polygon(0 0,30% 0,30% 3px,3px 3px,3px 30%,0 30%,0 0,100% 0,100% 30%,calc(100% - 3px) 30%,calc(100% - 3px) 3px,70% 3px,70% 0,100% 0,100% 100%,70% 100%,70% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 70%,100% 70%,100% 100%,0 100%,0 70%,3px 70%,3px calc(100% - 3px),30% calc(100% - 3px),30% 100%,0 100%)}
+.vf .ln{position:absolute;left:10px;right:10px;height:3px;background:var(--gold);box-shadow:0 0 14px var(--gold);animation:scan 1.4s ease-in-out infinite alternate}
+@keyframes scan{from{top:14%}to{top:84%}}
+.modal .ok{display:none;background:var(--card);color:var(--ink);border-radius:20px;padding:18px;text-align:left;width:100%;max-width:330px}
+.modal .ok h3{color:var(--green);margin-bottom:6px}.modal .ok li{font-size:14px;margin-left:18px;padding:2px 0}
+.toast{position:absolute;left:50%;bottom:130px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:30;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ABERTURA estilo app nativo: cobre a tela com uma cor forte, anima a marca e revela o app */
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:radial-gradient(120% 90% at 50% 38%,#17c27a 0%,#0c9d62 45%,#087a4b 100%);color:#fff;overflow:hidden;
+  animation:splashFallback .01s 3.2s forwards}
+#splash.sai{animation:splashSai .5s cubic-bezier(.6,0,.2,1) forwards;pointer-events:none}
+#splash .anel{position:absolute;width:140px;height:140px;border-radius:50%;border:2px solid rgba(255,255,255,.35);animation:onda 1.8s ease-out infinite}
+#splash .anel.b{animation-delay:.6s}
+#splash .logo2{position:relative;width:96px;height:96px;border-radius:28px;background:#fff;display:grid;place-items:center;box-shadow:0 18px 40px rgba(0,0,0,.22);
+  animation:logoPop .7s cubic-bezier(.2,1.5,.4,1) .1s both}
+#splash .logo2 path{stroke-dasharray:30;stroke-dashoffset:30;animation:desenha .5s ease-out .55s forwards}
+#splash .nome{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:34px;letter-spacing:-.02em;animation:sobe .6s ease-out .6s both}
+#splash .frase{font-size:14.5px;opacity:.9;margin-top:-10px;animation:sobe .6s ease-out .85s both;letter-spacing:.02em}
+#splash .carr{position:absolute;bottom:14%;left:0;width:56px;opacity:.9;animation:carrinho 1.7s ease-in-out .2s both}
+@keyframes logoPop{from{transform:scale(.2) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes desenha{to{stroke-dashoffset:0}}
+@keyframes sobe{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes onda{0%{transform:scale(.7);opacity:.7}100%{transform:scale(3.2);opacity:0}}
+@keyframes carrinho{from{transform:translateX(-80px)}to{transform:translateX(calc(100vw + 40px))}}
+@keyframes splashSai{to{transform:scale(1.12);opacity:0;visibility:hidden}}
+@keyframes splashFallback{to{opacity:0;visibility:hidden;pointer-events:none}}
+@media(prefers-reduced-motion:reduce){#splash{display:none}}
+</style>
+</head>
+<body>
+<div id="splash" aria-hidden="true">
+  <i class="anel"></i><i class="anel b"></i>
+  <div class="logo2"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#087a4b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  <div class="nome">Lista Certa</div>
+  <div class="frase">Compare. Economize.</div>
+  <svg class="carr" viewBox="0 0 96 76" fill="none"><path d="M4 8h12l9 38h46l9-28H22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="62" r="7" fill="#fff"/><circle cx="64" cy="62" r="7" fill="#fff"/></svg>
+</div>
+<script>
+/* mostra a abertura 1x por sessão; some quando a animação termina e o app carregou (o CSS tem um plano B se o JS falhar) */
+(function(){
+  var s=document.getElementById("splash"),ja=false;
+  try{ja=sessionStorage.getItem("lc-splash")==="1"}catch(e){}
+  if(ja){s.parentNode.removeChild(s);return}
+  try{sessionStorage.setItem("lc-splash","1")}catch(e){}
+  var t0=Date.now(),pronto=false,saiu=false;
+  function sair(){if(saiu)return;saiu=true;s.classList.add("sai");setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},600)}
+  function tentar(){var resta=1900-(Date.now()-t0);if(pronto&&resta<=0)sair();else setTimeout(tentar,Math.max(60,resta))}
+  window.addEventListener("load",function(){pronto=true;tentar()});
+  setTimeout(function(){pronto=true;tentar()},2600);
+})();
+</script>
+<div class="app">
+  <div class="demo"><b>Protótipo</b> · mercados e preços simulados, exceto os de cupons lidos</div>
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h1>Lista Certa</h1>
+    </div>
+    <button class="city" id="cityBtn" aria-haspopup="dialog" aria-label="Trocar de cidade"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 119.5 9 2.5 2.5 0 0112 11.5z"/></svg><span id="cityName">Gramado</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+  </header>
+
+  <main id="main">
+    <!-- LISTA -->
+    <section class="view on" id="v-lista">
+      <h2 class="lead">Monte a lista.<br>A gente acha o mais barato.</h2>
+      <p class="sub" id="subCity">Compare a cesta inteira entre os mercados da cidade.</p>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="text" placeholder="Adicionar: leite, café, arroz…" autocomplete="off" enterkeyhint="done" aria-label="Adicionar produto">
+        <div class="sugg" id="sugg" hidden></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="sec"><h2 id="count">Sua lista</h2><button id="clear" hidden>Limpar</button></div>
+      <div class="items" id="items"></div>
+    </section>
+
+    <!-- COMPARAR -->
+    <section class="view" id="v-comp"></section>
+
+    <!-- CONTRIBUIR -->
+    <section class="view" id="v-contr">
+      <h2 class="lead">Cada cupom<br>ajuda a cidade.</h2>
+      <p class="sub">Os preços vêm de quem compra, não dos mercados. Leia o QR code do seu cupom fiscal e atualize tudo de uma vez.</p>
+      <div class="conta" id="conta"></div>
+      <div class="lvl">
+        <div class="badge" id="badge">🥉</div>
+        <div class="tx"><h3 id="lvlName">Nível Bronze</h3><small id="lvlSub"></small><div class="prog"><i id="prog"></i></div></div>
+      </div>
+      <button class="btn" id="scan" style="margin-top:14px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M4 12h16"/></svg>
+        Ler QR code do cupom
+      </button>
+      <button class="btn ghost" id="vid" style="margin-top:10px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10.5l6-3.5v10l-6-3.5"/></svg>
+        Enviar vídeo das prateleiras
+      </button>
+      <input type="file" id="vfile" accept="video/*" hidden>
+      <div class="how">
+        <div><i>1</i><span><b>Compre normalmente</b>Todo cupom fiscal eletrônico (NFC-e) tem um QR code.</span></div>
+        <div><i>2</i><span><b>Escaneie em segundos</b>A câmera lê o QR e identifica o mercado, a data e a nota.</span></div>
+        <div><i>3</i><span><b>A cidade economiza</b>Você sobe de nível e ganha ofertas de parceiros.</span></div>
+      </div>
+      <div class="sec"><h2>Atualizações recentes</h2></div>
+      <div class="feed" id="feed"></div>
+      <div class="sec"><h2 id="rankT">Quem mais contribuiu</h2></div>
+      <div class="feed" id="rank"></div>
+      <p class="foot">Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a></p>
+    </section>
+  </main>
+
+  <div class="cta" id="cta"><button class="btn" id="go">Comparar preços</button></div>
+
+  <nav class="tabs" aria-label="Navegação">
+    <button data-v="lista" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>Lista</button>
+    <button data-v="comp"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Comparar</button>
+    <button data-v="contr"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>Contribuir</button>
+  </nav>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Leitor de cupom">
+    <div id="scanBox" style="display:contents">
+      <div class="vf"><video id="cam" playsinline muted></video><div class="ln"></div></div>
+      <div><b id="scanT" style="font-size:17px">Aponte para o QR code do cupom fiscal</b><p id="scanS" style="opacity:.7;font-size:13px;margin-top:4px">O QR fica no rodapé do cupom (NFC-e).</p></div>
+      <form class="manual" id="manual"><input id="chave" inputmode="text" autocomplete="off" placeholder="ou cole a chave de 44 dígitos" aria-label="Chave de acesso do cupom"><button type="submit">Ler</button></form>
+      <button class="btn ghost" id="cancel" style="max-width:200px;background:transparent;color:#fff;border-color:#fff">Cancelar</button>
+    </div>
+    <div class="ok" id="ok"></div>
+  </div>
+  <div class="modal" id="vmodal" role="dialog" aria-modal="true" aria-label="Vídeo das prateleiras"><div class="vbox" id="vbox"></div></div>
+  <div class="sheet" id="sheet" aria-hidden="true">
+    <div class="pn" role="dialog" aria-modal="true" aria-labelledby="sheetT">
+      <h3 id="sheetT">Onde você vai comprar?</h3>
+      <p class="sb">Os preços e mercados mudam de cidade para cidade.</p>
+      <div class="cities" id="cities"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<script async src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script async defer src="https://accounts.google.com/gsi/client"></script>
+<script>
+const CATALOG=[
+ ["Leite integral","1 L",5.49],["Café torrado","500 g",21.90],["Arroz branco","5 kg",29.90],["Feijão carioca","1 kg",8.49],
+ ["Açúcar refinado","1 kg",4.99],["Óleo de soja","900 ml",7.29],["Farinha de trigo","1 kg",5.19],["Macarrão espaguete","500 g",4.39],
+ ["Pão de forma","500 g",8.99],["Ovos","dúzia",13.90],["Manteiga","200 g",12.50],["Queijo mussarela","500 g",27.90],
+ ["Frango inteiro","kg",12.90],["Carne moída","kg",36.90],["Banana prata","kg",6.99],["Tomate","kg",8.49],
+ ["Batata","kg",5.99],["Cebola","kg",5.49],["Papel higiênico","12 rolos",24.90],["Detergente","500 ml",2.89],
+ ["Sabão em pó","1 kg",14.90],["Refrigerante cola","2 L",8.99],["Cerveja lata","350 ml",3.99],["Sal refinado","1 kg",2.99],
+ ["Molho de tomate","340 g",3.49],["Biscoito recheado","140 g",3.19],["Iogurte natural","170 g",2.99],["Margarina","500 g",7.99],
+ ["Água sanitária","1 L",4.59],["Creme dental","90 g",4.49],["Shampoo","350 ml",14.90],["Suco de uva integral","1 L",11.90]
+].map((c,i)=>({id:i,name:c[0],unit:c[1],base:c[2]}));
+/* produtos que entraram por cupom (lidos antes do resto, para os ids ficarem estáveis) */
+try{JSON.parse(localStorage.getItem("lc-extra")||"[]").forEach(e=>CATALOG.push({id:CATALOG.length,name:e.name,unit:e.unit,base:e.base,key:e.key,extra:true}))}catch(e){}
+
+/* mercados fictícios por cidade — cidades menores têm menos opções, como na vida real */
+const CITIES={
+ gramado:{name:"Gramado",markets:[
+  {id:"hort",name:"Mercado Hortênsias",dist:"0,8 km",f:1.00},
+  {id:"serra",name:"Super Serra",dist:"1,9 km",f:0.96},
+  {id:"bela",name:"Atacado Bela Vista",dist:"4,2 km",f:0.89},
+  {id:"centro",name:"Mercadão Centro",dist:"1,2 km",f:1.07},
+  {id:"flor",name:"Empório Floresta",dist:"2,6 km",f:1.03}]},
+ canela:{name:"Canela",markets:[
+  {id:"cat",name:"Mercado Catedral",dist:"0,6 km",f:1.02},
+  {id:"cara",name:"Super Caracol",dist:"1,8 km",f:0.97},
+  {id:"ferr",name:"Atacado Ferradura",dist:"3,5 km",f:0.90},
+  {id:"praca",name:"Empório da Praça",dist:"1,0 km",f:1.08}]},
+ igrejinha:{name:"Igrejinha",markets:[
+  {id:"para",name:"Mercado Paranhana",dist:"0,7 km",f:1.00},
+  {id:"vale",name:"Super Vale",dist:"1,5 km",f:0.94},
+  {id:"acen",name:"Atacado Central",dist:"2,9 km",f:0.90}]},
+ novapetropolis:{name:"Nova Petrópolis",markets:[
+  {id:"col",name:"Mercado Colina",dist:"0,5 km",f:1.01},
+  {id:"imig",name:"Super Imigrante",dist:"1,4 km",f:0.95},
+  {id:"parq",name:"Atacado Parque",dist:"3,1 km",f:0.91},
+  {id:"colo",name:"Empório da Colônia",dist:"1,1 km",f:1.06}]},
+ sfpaula:{name:"São Francisco de Paula",markets:[
+  {id:"camp",name:"Mercado Campos de Cima",dist:"0,6 km",f:1.03},
+  {id:"arau",name:"Super Araucária",dist:"1,7 km",f:0.98},
+  {id:"alta",name:"Atacado Serra Alta",dist:"3,8 km",f:0.92}]}
+};
+let city="gramado";
+try{const c=localStorage.getItem("lc-city");if(CITIES[c])city=c}catch(e){}
+let MARKETS=CITIES[city].markets;
+
+const $=s=>document.querySelector(s);
+const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const hash=s=>[...s].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);
+
+/* base de preços simulada */
+const prices={};
+Object.values(CITIES).forEach(ct=>ct.markets.forEach(m=>{prices[m.id]={};CATALOG.filter(c=>!c.extra).forEach(c=>{
+  const r=rng(hash(m.id+c.id));
+  if(r()<.1){prices[m.id][c.id]=null;return}
+  const p=Math.round(c.base*m.f*(.93+r()*.14)*10)/10-.01;
+  prices[m.id][c.id]={p:Math.max(p,.99),age:Math.floor(r()*9)};
+})}));
+
+/* estado */
+let list=[],pts=0;const feeds={}; /* pts = pontos do usuário logado (vêm do servidor) */
+try{const s=JSON.parse(localStorage.getItem("lc-list")||"null");if(Array.isArray(s))list=s.filter(x=>CATALOG[x.id])}catch(e){}
+if(!list.length)list=[0,1,2,3,9].map(id=>({id,qty:1}));
+const save=()=>{try{localStorage.setItem("lc-list",JSON.stringify(list))}catch(e){}};
+
+/* navegação */
+function show(v){
+  document.querySelectorAll(".view").forEach(e=>e.classList.toggle("on",e.id==="v-"+v));
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  $("#cta").style.display=v==="lista"?"":"none";
+  $("#main").scrollTop=0;
+  if(v==="comp"){renderComp();carregarApi()}
+  if(v==="contr")renderContr();
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dataset.v));
+$("#go").onclick=()=>show("comp");
+
+/* lista */
+function renderList(){
+  const n=list.length;
+  $("#count").textContent=n?`Sua lista · ${n} ${n===1?"item":"itens"}`:"Sua lista";
+  $("#clear").hidden=!n;
+  $("#go").disabled=!n;$("#go").textContent=n?`Comparar ${n} ${n===1?"item":"itens"} em ${MARKETS.length} mercados`:"Adicione itens para comparar";
+  $("#items").innerHTML=n?list.map(x=>{const c=CATALOG[x.id];return `<div class="item"><div class="nm"><b>${c.name}</b><small>${c.unit}</small></div>
+    <div class="step"><button data-a="-" data-id="${x.id}" aria-label="Menos">−</button><span>${x.qty}</span><button data-a="+" data-id="${x.id}" aria-label="Mais">+</button></div>
+    <button class="rm" data-a="x" data-id="${x.id}" aria-label="Remover ${c.name}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`}).join("")
+    :`<div class="empty">Sua lista está vazia.<br>Digite um produto acima ou toque numa sugestão.</div>`;
+  const inList=new Set(list.map(x=>x.id));
+  $("#chips").innerHTML=[0,1,9,12,13,18,21,16].filter(i=>!inList.has(i)).slice(0,6).map(i=>`<button class="chip" data-add="${i}">+ ${CATALOG[i].name}</button>`).join("");
+  save();
+}
+function add(id){const f=list.find(x=>x.id===id);if(f)f.qty++;else list.push({id,qty:1});renderList();$("#q").value="";$("#sugg").hidden=true}
+$("#items").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const id=+b.dataset.id,x=list.find(i=>i.id===id);
+  if(b.dataset.a==="+")x.qty=Math.min(x.qty+1,99);else if(b.dataset.a==="-")x.qty=Math.max(x.qty-1,1);else list=list.filter(i=>i.id!==id);renderList()};
+$("#chips").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
+$("#clear").onclick=()=>{list=[];renderList()};
+let matches=[];
+$("#q").oninput=e=>{const t=norm(e.target.value.trim());
+  matches=t?CATALOG.filter(c=>norm(c.name).includes(t)).slice(0,5):[];
+  $("#sugg").hidden=!matches.length;
+  $("#sugg").innerHTML=matches.map(c=>`<button data-add="${c.id}">${c.name}<small>${c.unit}</small></button>`).join("")};
+$("#q").onkeydown=e=>{if(e.key==="Enter"&&matches[0])add(matches[0].id)};
+$("#sugg").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
+document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("#sugg").hidden=true});
+
+/* comparação */
+function analyse(){
+  const rows=MARKETS.map(m=>{let total=0,miss=[],lines=[];
+    list.forEach(x=>{const c=CATALOG[x.id],p=prices[m.id][x.id];
+      if(!p)miss.push(c.name);else total+=p.p*x.qty;
+      lines.push({c,qty:x.qty,p})});
+    return {m,total,miss,lines}});
+  rows.sort((a,b)=>a.miss.length-b.miss.length||a.total-b.total);
+  /* melhor dupla */
+  let best=null;
+  for(let i=0;i<MARKETS.length;i++)for(let j=i+1;j<MARKETS.length;j++){
+    const a=MARKETS[i],b=MARKETS[j];let total=0,miss=0;const pick={[a.id]:[],[b.id]:[]};
+    list.forEach(x=>{const pa=prices[a.id][x.id],pb=prices[b.id][x.id];
+      if(!pa&&!pb){miss++;return}
+      const w=!pb||(pa&&pa.p<=pb.p)?a:b,p=prices[w.id][x.id];
+      total+=p.p*x.qty;pick[w.id].push({c:CATALOG[x.id],sub:p.p*x.qty})});
+    if(!best||miss<best.miss||(miss===best.miss&&total<best.total))best={a,b,total,miss,pick};
+  }
+  return {rows,best};
+}
+const dotColor=a=>a<=2?"var(--green-2)":a<=5?"var(--warn)":"var(--old)";
+const ageTxt=a=>a===0?"hoje":a===1?"ontem":`há ${a} dias`;
+
+function renderComp(){
+  const el=$("#v-comp");
+  if(!list.length){el.innerHTML=`<h2 class="lead">Nada para comparar ainda.</h2><p class="sub">Monte sua lista primeiro.</p><button class="btn" onclick="show('lista')">Voltar para a lista</button>`;return}
+  const {rows,best}=analyse();
+  const top=rows[0],full=rows.filter(r=>!r.miss.length),worst=full.length?full[full.length-1]:rows[rows.length-1];
+  const save=worst.total-top.total,pct=worst.total?Math.round(save/worst.total*100):0;
+  const gain=top.total-best.total;
+  const max=Math.max(...rows.map(r=>r.total));
+  el.innerHTML=`
+   <h2 class="lead">Sua cesta, mercado a mercado</h2>
+   <p class="sub">${CITIES[city].name} · ${MARKETS.length} mercados · ${list.length} ${list.length===1?"item":"itens"} na lista</p>
+   <div class="best"><span class="tag">Mais barato</span><h3>${top.m.name}</h3>
+     <div class="tot">${brl(top.total)}</div>
+     <p>${top.m.dist} de você${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
+     ${save>0.05?`<div class="save">Economia de <b>${brl(save)}</b> (${pct}%) vs. o mais caro</div>`:""}</div>
+   ${gain>0.5&&best.a&&!best.miss?`<div class="split"><h3>Dá para economizar mais</h3>
+     <p>Dividindo a compra em 2 mercados, você paga <span class="big">${brl(best.total)}</span> — ${brl(gain)} a menos.</p>
+     ${[best.a,best.b].map(m=>`<div class="rowm"><b>${m.name}</b><span>${best.pick[m.id].length} ${best.pick[m.id].length===1?"item":"itens"} · ${brl(best.pick[m.id].reduce((s,x)=>s+x.sub,0))}</span></div>`).join("")}
+     <ul>${[best.a,best.b].map(m=>`<li><b>${m.name}:</b> ${best.pick[m.id].map(x=>x.c.name).join(", ")||"—"}</li>`).join("")}</ul></div>`:""}
+   <div class="sec"><h2>Todos os mercados</h2></div>
+   ${rows.map((r,i)=>`<details class="mk"><summary>
+      <div class="hd"><b>${i+1}. ${r.m.name}</b><span class="p">${brl(r.total)}</span></div>
+      <div class="meta"><span>${r.m.dist}</span><span class="${r.miss.length?"miss":""}">${r.miss.length?`faltam ${r.miss.length}: sem preço`:"completo"}</span></div>
+      <div class="bar"><i style="width:${max?Math.round(r.total/max*100):0}%"></i></div></summary>
+      <div class="rows">${r.lines.map(l=>{
+        const cheapest=l.p&&MARKETS.every(m=>{const o=prices[m.id][l.c.id];return !o||o.p>=l.p.p});
+        return `<div class="r ${cheapest?"low":""}"><span class="nm">${l.qty>1?l.qty+"× ":""}${l.c.name}</span>${l.p
+          ?`<span><b>${brl(l.p.p)}</b><span class="age"><span class="dot" style="background:${dotColor(l.p.age)}"></span>${ageTxt(l.p.age)}</span></span>`
+          :`<span class="age">sem preço</span>`}</div>`}).join("")}</div></details>`).join("")}
+   <p class="legend"><span class="dot" style="background:var(--green-2)"></span>preço recente (até 2 dias) &nbsp;<span class="dot" style="background:var(--warn)"></span>3 a 5 dias &nbsp;<span class="dot" style="background:var(--old)"></span>mais antigo<br>● no item = menor preço entre os mercados. Os preços vêm dos cupons que os moradores escaneiam.</p>
+   <button class="btn ghost" style="margin-top:14px" onclick="show('contr')">Ajude a atualizar os preços</button>`;
+}
+
+/* conta: login com Google (a sessão é um cookie do servidor; pontos e nome vêm de lá) */
+let usuario=null,gClient=null,gPronto=false;
+const inicial=n=>(n||"?").trim()[0].toUpperCase();
+function renderConta(){
+  const el=$("#conta");
+  if(usuario){
+    el.innerHTML=`<div class="eu">${usuario.foto?`<img src="${usuario.foto}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${inicial(usuario.nome)}</span>`}
+      <div><b>${usuario.nome}</b><small>suas coletas aparecem com esse nome</small></div><button class="sair" id="sair">Sair</button></div>`;
+    $("#sair").onclick=async()=>{try{await fetch("/api/auth/logout",{method:"POST"})}catch(e){}usuario=null;pts=0;try{sessionStorage.removeItem("lc-splash")}catch(e){}location.href="/"};
+  }else{
+    el.innerHTML=`<p><b>Entre para contribuir.</b> Seus pontos e seu nome (ex.: Daniel S.) aparecem nas coletas que você enviar.</p><div class="gbtn" id="gbtn"></div>`;
+    botaoGoogle();
+  }
+}
+async function botaoGoogle(){
+  const alvo=$("#gbtn");if(!alvo)return;
+  try{
+    if(gClient===null){const r=await fetch("/api/auth/config");const d=await r.json();gClient=d.clientId||"";}
+    if(!gClient){alvo.innerHTML='<small style="color:var(--muted)">O login com Google está sendo configurado.</small>';return}
+    for(let i=0;i<40&&!(window.google&&google.accounts&&google.accounts.id);i++)await new Promise(r=>setTimeout(r,150));
+    if(!(window.google&&google.accounts&&google.accounts.id)){alvo.innerHTML='<small style="color:var(--muted)">Não consegui carregar o login do Google.</small>';return}
+    if(!gPronto){google.accounts.id.initialize({client_id:gClient,callback:entrouGoogle,ux_mode:"popup"});gPronto=true}
+    google.accounts.id.renderButton(alvo,{theme:"outline",size:"large",shape:"pill",text:"continue_with",locale:"pt-BR",width:Math.min(300,alvo.clientWidth||300)});
+  }catch(e){alvo.innerHTML='<small style="color:var(--muted)">Login indisponível agora.</small>'}
+}
+async function entrouGoogle(resp){
+  try{
+    const r=await fetch("/api/auth/google",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:resp.credential})});
+    const d=await r.json();if(!d.ok)throw new Error(d.msg||"falha");
+    usuario=d.usuario;pts=usuario.pontos;renderConta();renderContr();toast("Bem-vindo, "+usuario.nome);
+  }catch(e){toast(e.message==="Failed to fetch"?"Sem conexão com o servidor":(e.message||"Não consegui entrar"))}
+}
+async function meCarregar(){
+  try{const r=await fetch("/api/auth/me");const d=await r.json();if(d.ok){usuario=d.usuario;pts=usuario?usuario.pontos:0}}catch(e){}
+  renderConta();renderContr();
+}
+async function rankCarregar(){
+  $("#rankT").textContent="Quem mais contribuiu em "+CITIES[city].name;
+  try{
+    const r=await fetch("/api/auth/ranking?cidade="+encodeURIComponent(CITIES[city].name));const d=await r.json();
+    $("#rank").innerHTML=d.ok&&d.dados.length?d.dados.map((x,i)=>`<div><span>${["🥇","🥈","🥉"][i]||(i+1)+"º"} <b>${x.nome}</b></span><small>${x.pontos} ${x.pontos===1?"coleta":"coletas"}</small></div>`).join(""):`<div><small>Ninguém contribuiu aqui ainda. Seja o primeiro!</small></div>`;
+  }catch(e){}
+}
+
+/* contribuir */
+function renderContr(){
+  const lvl=pts>20?["ouro","🥇","Nível Ouro","Você é referência na cidade."]:pts>10?["prata","🥈","Nível Prata",`Faltam ${21-pts} coletas para o Ouro.`]:["","🥉","Nível Bronze",`Faltam ${11-pts} coletas para a Prata.`];
+  const b=$("#badge");b.className="badge "+lvl[0];b.textContent=lvl[1];
+  $("#lvlName").textContent=lvl[2];$("#lvlSub").textContent=`${pts} ${pts===1?"coleta":"coletas"} · ${lvl[3]}`;
+  $("#prog").style.width=Math.min(100,pts>20?100:pts>10?(pts-10)/11*100:pts/11*100)+"%";
+  const feed=feeds[city]||[];
+  $("#feed").innerHTML=feed.length?feed.map(f=>`<div>${f}</div>`).join(""):`<div><small>Nenhuma coleta ainda nesta sessão. Toque em “Ler QR code do cupom”.</small></div>`;
+  if($("#v-contr").classList.contains("on"))rankCarregar();
+}
+let mi=0,timer;
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2400)}
+/* leitura real do QR do cupom (NFC-e): a câmera decodifica o QR e a chave de 44 dígitos é validada */
+const UF={11:"RO",12:"AC",13:"AM",14:"RR",15:"PA",16:"AP",17:"TO",21:"MA",22:"PI",23:"CE",24:"RN",25:"PB",26:"PE",27:"AL",28:"SE",29:"BA",31:"MG",32:"ES",33:"RJ",35:"SP",41:"PR",42:"SC",43:"RS",50:"MS",51:"MT",52:"GO",53:"DF"};
+function dvOk(k){let s=0,w=2;for(let i=42;i>=0;i--){s+=+k[i]*w;w=w===9?2:w+1}const r=s%11;return(r<2?0:11-r)===+k[43]}
+/* estrito (digitação): exige o dígito verificador. Pela câmera o QR já vem certo, então só informa. */
+function lerCupom(txt,estrito=true){
+  const m=String(txt).replace(/[\s.]/g,"").match(/(\d{44})/);if(!m)return null;
+  const k=m[1],uf=UF[+k.slice(0,2)],mes=+k.slice(4,6),dv=dvOk(k);
+  if(!uf||mes<1||mes>12||(estrito&&!dv))return null;
+  const n=k.slice(6,20);
+  return {k,dv,uf,mes:k.slice(4,6),ano:"20"+k.slice(2,4),mod:k.slice(20,22),serie:+k.slice(22,25),num:+k.slice(25,34),
+    cnpj:`${n.slice(0,2)}.${n.slice(2,5)}.${n.slice(5,8)}/${n.slice(8,12)}-${n.slice(12)}`}
+}
+let stream=null,raf=0,ultimo=0,avisoAte=0;const lidas=new Set(),cvs=document.createElement("canvas"),ctx=cvs.getContext("2d",{willReadFrequently:true});
+function parar(){cancelAnimationFrame(raf);raf=0;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("#cam").srcObject=null}
+function msg(t,s){$("#scanT").textContent=t;$("#scanS").textContent=s}
+function fechar(){parar();$("#modal").classList.remove("on")}
+async function abrirLeitor(){
+  $("#modal").classList.add("on");$("#scanBox").style.display="contents";$("#ok").style.display="none";$("#chave").value="";
+  msg("Aponte para o QR code do cupom fiscal","O QR fica no rodapé do cupom (NFC-e).");
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.isSecureContext){msg("Câmera indisponível aqui","Cole a chave de 44 dígitos do cupom no campo abaixo.");return}
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    if(!$("#modal").classList.contains("on")){s.getTracks().forEach(t=>t.stop());return}
+    stream=s;const v=$("#cam");v.srcObject=s;await v.play();ciclo();
+  }catch(e){msg("Não consegui abrir a câmera","Libere o acesso no navegador ou cole a chave abaixo.")}
+}
+function ciclo(){
+  if(!stream)return;
+  raf=requestAnimationFrame(ciclo);
+  const v=$("#cam"),t=performance.now();
+  if(t-ultimo<150||v.readyState<2||!v.videoWidth)return;ultimo=t;
+  if(typeof jsQR!=="function"){msg("Leitor ainda carregando","Se demorar, cole a chave abaixo.");return}
+  const w=720,h=Math.round(w*v.videoHeight/v.videoWidth);
+  cvs.width=w;cvs.height=h;ctx.drawImage(v,0,0,w,h);
+  const q=jsQR(ctx.getImageData(0,0,w,h).data,w,h,{inversionAttempts:"dontInvert"});
+  if(q&&q.data)tratar(q.data,true);
+}
+function tratar(txt,cam){
+  const c=lerCupom(txt,!cam);
+  if(!c){
+    if(!cam)msg("Chave inválida","Confira os 44 dígitos e tente de novo.");
+    else if(performance.now()>avisoAte){msg("Esse QR não é de um cupom fiscal","Procure o QR do rodapé da NFC-e.");avisoAte=performance.now()+2500}
+    return}
+  parar();mostrarCupom(c,txt);
+}
+function mostrarCupom(c,raw){
+  const dup=lidas.has(c.k);lidas.add(c.k);
+  $("#scanBox").style.display="none";
+  const ok=$("#ok");ok.style.display="block";
+  ok.innerHTML=`<h3>Cupom lido ✓</h3>
+    <p style="font-size:14px;color:var(--muted)">${dup?"Esse cupom já foi lido nesta sessão.":"O QR foi lido e a chave de acesso foi identificada."}</p>
+    <dl><dt>Estado</dt><dd>${c.uf}</dd><dt>Mercado (CNPJ)</dt><dd>${c.cnpj}</dd><dt>Emitido em</dt><dd>${c.mes}/${c.ano}</dd>
+      <dt>Documento</dt><dd>${c.mod==="65"?"NFC-e":"Nota modelo "+c.mod} nº ${c.num}, série ${c.serie}</dd>
+      <dt>Chave</dt><dd>${c.k.replace(/(\d{4})(?=\d)/g,"$1 ")}</dd>
+      <dt>Verificação</dt><dd>${c.dv?"dígito verificador confere ✓":"dígito verificador não confere (leitura aceita)"}</dd></dl>
+    <details style="margin-bottom:10px"><summary style="font-size:13px;color:var(--green);cursor:pointer">Texto completo do QR</summary>
+      <textarea id="rawqr" readonly rows="4" style="width:100%;margin-top:6px;font:12px/1.4 monospace;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg);color:var(--ink)"></textarea>
+      <button class="btn ghost" id="copiar" style="margin-top:6px;padding:10px;font-size:14px">Copiar texto do QR</button></details>
+    <div class="nota" id="busca"></div>
+    <button class="btn ghost" id="sim" style="margin-bottom:8px">Ver como os preços entrariam (simulação)</button>
+    <button class="btn" id="done" style="box-shadow:none">Fechar</button>`;
+  buscarItens(c,raw);
+  $("#rawqr").value=raw||"";
+  $("#copiar").onclick=()=>{const t=$("#rawqr");t.select();let feito=false;try{feito=document.execCommand("copy")}catch(e){}
+    if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(()=>toast("Texto do QR copiado"),()=>toast(feito?"Texto do QR copiado":"Selecione e copie o texto"));else toast(feito?"Texto do QR copiado":"Selecione e copie o texto")};
+  $("#sim").onclick=finishScan;
+  $("#done").onclick=()=>{fechar();renderContr()};
+}
+/* itens do cupom: /api/cupom busca no portal da Fazenda; aqui casamos com o catálogo e criamos o mercado real */
+/* item que não casa vira produto novo do catálogo (guardado no aparelho, na mesma ordem, para os ids não mudarem) */
+const IGNORAR=/SACOLA|SACO PLAST|TAXA|DESCONTO|TROCO|EMBALAGEM/;
+function limparNome(n){
+  let s=n.toUpperCase().replace(/^(FLV|AC|HF|PAD|HORT|MERC|PROMO)\s+/,"").replace(/\s+/g," ").trim();
+  const m=/(\d+(?:[.,]\d+)?)\s*(KG|G|ML|L|UND|UN)\b/.exec(s);
+  let un="";if(m){un=`${m[1].replace(",",".")} ${m[2].toLowerCase()}`.replace("und","un");s=s.replace(m[0],"").replace(/\s+/g," ").trim()}
+  s=s.replace(/\bKG\b$/,"").trim();
+  return {nome:s.toLowerCase().replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()).replace(/ (De|Da|Do|Dos|Das|E|Com|Em) /g,x=>x.toLowerCase()),un}
+}
+function obterExtra(it){
+  if(it.unit==null||IGNORAR.test(norm(it.nome).toUpperCase()))return null;
+  const {nome,un}=limparNome(it.nome),key=norm(nome+"|"+un);
+  let c=CATALOG.find(x=>x.key===key);
+  if(!c){c={id:CATALOG.length,name:nome,unit:un||(/^KG$/i.test(it.un)?"kg":"un"),base:it.unit,key,extra:true};CATALOG.push(c);
+    try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:c.base,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
+  return {c,p:it.unit,novo:true};
+}
+const resolver=it=>casar(it)||obterExtra(it);
+const CASAR=[ // [regex no nome sem acento e em maiúsculas, id no catálogo, conversão do preço unitário]
+ [/CARNE MOIDA/,13],[/BATATA/,16],[/CEBOLA/,17],[/TOMATE/,15],[/BANANA/,14],[/FRANGO INTEIRO/,12],
+ [/\bOVOS?\b.*?(\d+)\s*UND/,9,(p,m)=>p*12/+m[1]],[/\bOVOS?\b.*\bDZ\b|\bOVOS?\b.*DUZIA/,9],
+ [/LEITE.*\b1\s?L\b/,0],[/CAFE.*500\s?G/,1],[/ARROZ.*\b5\s?KG/,2],[/FEIJAO.*\b1\s?KG/,3],[/ACUCAR.*\b1\s?KG/,4],
+ [/OLEO.*900/,5],[/FARINHA DE TRIGO.*\b1\s?KG/,6],[/(MACARRAO|ESPAGUETE).*500/,7],[/MANTEIGA.*200/,10],[/SAL REFINADO.*\b1\s?KG/,23]
+];
+function casar(it){const n=norm(it.nome).toUpperCase();if(it.unit==null)return null;
+  for(const [re,id,conv] of CASAR){const m=re.exec(n);if(m)return {c:CATALOG[id],p:Math.round((conv?conv(it.unit,m):it.unit)*100)/100}}return null}
+const titulo=s=>s.replace(/\b(LTDA|EIRELI|EPP|ME|S\/?A)\b\.?/gi,"").trim().toLowerCase().replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()).replace(/ (De|Da|Do|Dos|Das|E) /g,x=>x.toLowerCase());
+function cidadeDoEndereco(a){const t=norm(a||"");return Object.keys(CITIES).find(k=>t.includes(norm(CITIES[k].name)))}
+const vistos=new Set();
+function aplicarCupom(d,k,novo){
+  const id="real-"+d.mercado.cnpj.replace(/\D/g,"");
+  const ck=cidadeDoEndereco(d.mercado.endereco)||city,ct=CITIES[ck];
+  let mk=ct.markets.find(m=>m.id===id);
+  if(!mk){mk={id,name:titulo(d.mercado.nome),dist:"",f:1,real:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+  const dia=d.emissao?new Date(d.emissao):new Date(),idade=Math.max(0,Math.floor((Date.now()-dia)/864e5));
+  mk.dist=`cupom real de ${String(dia.getDate()).padStart(2,"0")}/${String(dia.getMonth()+1).padStart(2,"0")}`;
+  const ok=[],fora=[];
+  d.itens.forEach(it=>{const x=resolver(it);if(x){prices[id][x.c.id]={p:x.p,age:idade};ok.push({it,x})}else fora.push(it)});
+  if(!vistos.has(k)){vistos.add(k);
+    try{const s=JSON.parse(localStorage.getItem("lc-cupons")||"[]").filter(z=>z.k!==k);s.push({k,d});localStorage.setItem("lc-cupons",JSON.stringify(s.slice(-20)))}catch(e){}
+    if(novo){(feeds[ck]=feeds[ck]||[]).unshift(`<b>${mk.name}</b> · ${ok.length} preços reais de cupom<br><small>lido por ${usuario?usuario.nome:"você"} agora</small>`)}}
+  return {ck,ok,fora,mk};
+}
+async function buscarItens(c,raw){
+  const el=$("#busca");
+  if(!/\|[0-9a-f]{40}\s*$/i.test(raw||"")){el.innerHTML="<b>Itens:</b> a chave digitada não traz o código de segurança do QR. Leia o QR com a câmera para buscar os itens.";return}
+  if(c.uf!=="RS"){el.innerHTML="<b>Itens:</b> por enquanto só buscamos cupons do RS.";return}
+  el.textContent="Buscando os itens no portal da Fazenda…";
+  try{
+    const r=await fetch("/api/cupom",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({qr:raw})});
+    const d=await r.json();if(!d.ok)throw new Error(d.msg||"falha");
+    const novo=!vistos.has(c.k),res=aplicarCupom(d,c.k,novo);if(d.contribuicao){pts=d.contribuicao.pontos}
+    if(res.ck!==city)setCity(res.ck);else{cityUI();renderList()}
+    el.innerHTML=`<b>${res.mk.name}</b> · ${d.itens.length} itens no cupom, ${res.ok.length} entraram na comparação de ${CITIES[res.ck].name}.
+      <ul style="margin:8px 0 0 16px">${d.itens.map(it=>{const x=resolver(it);return `<li>${it.nome.toLowerCase()} — <b>${brl(it.unit)}</b>/${it.un.toLowerCase()}${x?` <span style="color:var(--green)">→ ${x.c.name}${x.c.extra?` (${x.c.unit}) · <b>novo no catálogo</b>`:` ${brl(x.p)}`}</span>`:` <span style="opacity:.6">(ignorado)</span>`}</li>`}).join("")}</ul>
+      ${d.contribuicao?(d.contribuicao.novo?"<p style='margin-top:8px;color:var(--green)'><b>+1 coleta</b> registrada no seu nome.</p>":"<p style='margin-top:8px'>Esse cupom já tinha sido lido, então não soma pontos de novo.</p>"):"<p style='margin-top:8px'>Entre com o Google para ganhar pontos pelos cupons que ler.</p>"}`;
+    renderContr();
+  }catch(e){el.innerHTML=`<b>Não consegui buscar os itens agora.</b> ${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}`}
+}
+/* GTIN = identidade do produto. 1ª vez que um código aparece, ligamos ao item do catálogo (pelo nome) e guardamos;
+   depois, qualquer mercado que mande o mesmo código cai no mesmo item, não importa como escreva o nome.
+   O fator guarda a conversão de embalagem (ex.: pacote de 20 ovos → dúzia). */
+const GT={};try{Object.assign(GT,JSON.parse(localStorage.getItem("lc-gtin2")||"{}"))}catch(e){}
+const salvarGT=()=>{try{localStorage.setItem("lc-gtin2",JSON.stringify(GT))}catch(e){}};
+/* produto que a IA do servidor normalizou e que não é um item genérico do catálogo: vira item novo, preso ao GTIN */
+function extraPorGtin(x,pr,p){
+  const key="gtin:"+x.gtin;
+  let c=CATALOG.find(i=>i.key===key);
+  if(!c){
+    let q=pr.quantidade,u=pr.unidade;
+    if(q>=1000&&u==="g"){q/=1000;u="kg"}else if(q>=1000&&u==="ml"){q/=1000;u="L"}
+    c={id:CATALOG.length,name:pr.nome+(pr.marca?" "+pr.marca:""),unit:q&&u?`${+q.toFixed(2)} ${u}`:(x.unidade||"un").toLowerCase(),base:p,key,extra:true};
+    CATALOG.push(c);
+    try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:c.base,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}
+  }
+  return c;
+}
+function resolverGtin(x){
+  const p=x.promocao?x.promocao.preco:x.preco;
+  const g=GT[x.gtin];
+  if(g&&CATALOG[g.id])return {c:CATALOG[g.id],p:Math.round(p*g.f*100)/100};
+  const pr=x.produto; // normalizado pela IA no servidor
+  if(pr){
+    const c=pr.catalogoId!=null&&CATALOG[pr.catalogoId]?CATALOG[pr.catalogoId]:extraPorGtin(x,pr,p);
+    GT[x.gtin]={id:c.id,f:1};salvarGT();
+    return {c,p};
+  }
+  return resolver({nome:x.descricao||x.gtin,unit:p,un:x.unidade||"UN"}); // IA ainda não resolveu: casa pelo nome, sem fixar
+}
+/* mercados integrados pela API (/api/v1/precos): os preços que o próprio mercado envia entram na comparação */
+let apiBusy=false;
+async function carregarApi(){
+  if(apiBusy)return;apiBusy=true;
+  const ck=city,ct=CITIES[ck];
+  try{
+    const r=await fetch("/api/v1/precos?limite=1000&cidade="+encodeURIComponent(ct.name));
+    const d=await r.json();if(!d||!d.ok)return;
+    const grupos={};
+    d.dados.forEach(x=>{(grupos[x.mercado.id]=grupos[x.mercado.id]||{m:x.mercado,itens:[]}).itens.push(x)});
+    Object.values(grupos).forEach(g=>{
+      const id="api-"+g.m.id;
+      let mk=ct.markets.find(m=>m.id===id);
+      if(!mk){mk={id,name:g.m.nome,dist:"",f:1,real:true,api:true};ct.markets.push(mk)}
+      prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null);
+      g.itens.forEach(x=>{
+        const y=resolverGtin(x);
+        if(!y)return;
+        prices[id][y.c.id]={p:y.p,age:Math.max(0,Math.floor((Date.now()-new Date(x.atualizadoEm))/864e5))};
+      });
+      mk.dist="integrado pela API";
+    });
+    for(let i=ct.markets.length-1;i>=0;i--)if(ct.markets[i].api&&!grupos[ct.markets[i].id.slice(4)])ct.markets.splice(i,1);
+    if(ck===city){cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}
+  }catch(e){}finally{apiBusy=false}
+}
+try{JSON.parse(localStorage.getItem("lc-cupons")||"[]").forEach(z=>aplicarCupom(z.d,z.k,false))}catch(e){}
+/* VÍDEO DAS PRATELEIRAS: o vídeo NÃO sai do aparelho — só alguns quadros nítidos vão para a visão (OpenAI) ler as etiquetas.
+   A pessoa revisa a lista e só ao confirmar os preços são gravados no banco (/api/v1/coletas, "pendente de verificação"). */
+const vbox=()=>$("#vbox");
+let vCancel=false;
+function vFechar(){vCancel=true;$("#vmodal").classList.remove("on")}
+function vInicio(){
+  vCancel=false;
+  const sug=CITIES[city].markets.filter(m=>!m.api).map(m=>`<option value="${m.name}">`).join("");
+  vbox().innerHTML=`<h3>Vídeo das prateleiras</h3>
+    <p>Filme as etiquetas de preço e a gente lê para você. O vídeo fica no seu aparelho; só alguns quadros são analisados.</p>
+    <div class="dicas"><b>Para ler bem:</b> chegue perto, filme devagar (cada etiqueta por ~1 segundo), uma prateleira por vez e com a etiqueta bem iluminada.</div>
+    <label for="vnome" style="font-size:13px;color:var(--muted)">Mercado filmado (${CITIES[city].name})</label>
+    <input type="text" id="vnome" list="vsug" placeholder="Nome do mercado" autocomplete="off"><datalist id="vsug">${sug}</datalist>
+    <button class="btn" id="vescolher">Escolher o vídeo</button>
+    <button class="btn ghost" id="vsair">Cancelar</button>`;
+  $("#vmodal").classList.add("on");
+  $("#vsair").onclick=vFechar;
+  $("#vescolher").onclick=()=>{if(!$("#vnome").value.trim()){$("#vnome").focus();toast("Diga qual é o mercado");return}$("#vfile").value="";$("#vfile").click()};
+}
+$("#vid").onclick=()=>{if(!usuario){toast("Entre com o Google para enviar vídeos");$("#conta").scrollIntoView({behavior:"smooth",block:"center"});return}vInicio()};
+$("#vfile").onchange=e=>{const f=e.target.files[0];if(f)vProcessar(f,$("#vnome").value.trim())};
+
+const vSeek=(v,t)=>new Promise(r=>{v.onseeked=()=>{v.onseeked=null;r()};v.currentTime=t});
+function nitidez(ctx,w,h){const d=ctx.getImageData(0,0,w,h).data,g=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  let s=0,s2=0,n=0;for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-w]-g[i+w];s+=l;s2+=l*l;n++}
+  return s2/n-(s/n)*(s/n)}
+async function extrairFrames(file,max=12,prog){
+  const url=URL.createObjectURL(file),v=document.createElement("video");
+  v.muted=true;v.playsInline=true;v.preload="auto";v.src=url;
+  try{
+    await new Promise((ok,no)=>{v.onloadedmetadata=ok;v.onerror=()=>no(new Error("Não consegui abrir esse vídeo."))});
+    if(!isFinite(v.duration)){await new Promise(r=>{v.ontimeupdate=()=>{v.ontimeupdate=null;r()};v.currentTime=1e7});await vSeek(v,0)}
+    const dur=Math.min(v.duration,120);if(!(dur>0.3))throw new Error("O vídeo é curto demais.");
+    const n=Math.min(30,Math.max(max,Math.floor(dur*2))),pq=document.createElement("canvas"),pc=pq.getContext("2d",{willReadFrequently:true});
+    pq.width=200;pq.height=Math.round(200*v.videoHeight/v.videoWidth)||150;
+    const cand=[];
+    for(let i=0;i<n;i++){if(vCancel)throw new Error("cancelado");
+      const t=Math.min(dur-0.05,0.1+(dur-0.2)*i/Math.max(1,n-1));await vSeek(v,t);
+      pc.drawImage(v,0,0,pq.width,pq.height);cand.push({t,s:nitidez(pc,pq.width,pq.height)});prog&&prog(.5*(i+1)/n)}
+    const esc=[];for(const c of cand.slice().sort((a,b)=>b.s-a.s)){if(esc.length>=max)break;if(esc.every(e=>Math.abs(e.t-c.t)>.4))esc.push(c)}
+    esc.sort((a,b)=>a.t-b.t);
+    const W=Math.min(1024,v.videoWidth),H=Math.round(W*v.videoHeight/v.videoWidth),cv=document.createElement("canvas"),cx=cv.getContext("2d");cv.width=W;cv.height=H;
+    const out=[];
+    for(let i=0;i<esc.length;i++){await vSeek(v,esc[i].t);cx.drawImage(v,0,0,W,H);out.push(cv.toDataURL("image/jpeg",.82));prog&&prog(.5+.5*(i+1)/esc.length)}
+    return out;
+  }finally{URL.revokeObjectURL(url)}
+}
+function vTela(titulo,corpo){vbox().innerHTML=`<h3>${titulo}</h3>${corpo}`}
+function vProg(txt,f){const e=$("#vprg");if(e){e.style.width=Math.round(f*100)+"%";$("#vtxt").textContent=txt}}
+async function vProcessar(file,nome){
+  vCancel=false;
+  vTela("Lendo o vídeo",`<p id="vtxt">Escolhendo os quadros mais nítidos…</p><div class="vprog"><i id="vprg"></i></div><button class="btn ghost" id="vsair">Cancelar</button>`);
+  $("#vsair").onclick=vFechar;
+  try{
+    const frames=await extrairFrames(file,12,f=>vProg("Escolhendo os quadros mais nítidos…",f*.4));
+    let itens=[];
+    for(let i=0;i<frames.length;i+=4){
+      if(vCancel)return;
+      vProg(`Lendo as etiquetas… (${Math.min(i+4,frames.length)}/${frames.length} quadros)`,.4+.6*i/frames.length);
+      const r=await fetch("/api/v1/video",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({frames:frames.slice(i,i+4)})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok)throw new Error(d.msg||"Não consegui ler as imagens agora.");
+      itens=itens.concat(d.itens);
+    }
+    const vistos=new Set();itens=itens.filter(x=>{const k=(x.gtin||norm(x.descricao))+"|"+x.preco;if(vistos.has(k))return false;vistos.add(k);return true});
+    if(vCancel)return;
+    vRevisar(nome,itens);
+  }catch(e){
+    if(vCancel||e.message==="cancelado")return;
+    vTela("Não deu certo",`<p>${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}</p><button class="btn" id="vtent">Tentar de novo</button><button class="btn ghost" id="vsair">Fechar</button>`);
+    $("#vtent").onclick=vInicio;$("#vsair").onclick=vFechar;
+  }
+}
+const num2=s=>{const n=parseFloat(String(s).replace(/\./g,"").replace(",","."));return n>0?Math.round(n*100)/100:NaN};
+function vRevisar(nome,itens){
+  if(!itens.length){vTela("Nenhuma etiqueta lida",`<p>Não consegui ler nenhuma etiqueta nesse vídeo. Tente de novo mais perto, mais devagar e com mais luz.</p><button class="btn" id="vtent">Escolher outro vídeo</button><button class="btn ghost" id="vsair">Fechar</button>`);$("#vtent").onclick=vInicio;$("#vsair").onclick=vFechar;return}
+  vTela(`${itens.length} ${itens.length===1?"etiqueta lida":"etiquetas lidas"}`,
+    `<p><b>${nome}</b> · confira antes de salvar. Desmarque o que estiver errado e corrija nome ou preço.</p>
+    <div id="vlista">${itens.map((x,i)=>`<div class="vrow"><input type="checkbox" data-i="${i}" ${x.confianca==="baixa"?"":"checked"} aria-label="Incluir">
+      <input type="text" class="nm" data-d="${i}" value="${x.descricao.replace(/"/g,"&quot;")}" aria-label="Produto"><input type="text" class="pp" inputmode="decimal" data-p="${i}" value="${(x.promocao||x.preco).toFixed(2).replace(".",",")}" aria-label="Preço">
+      <small class="${x.confianca==="baixa"?"baixa":""}">${x.promocao?`oferta (normal ${brl(x.preco)}) · `:""}${x.gtin?"código "+x.gtin+" · ":""}leitura ${x.confianca==="baixa"?"incerta — confira":x.confianca}</small></div>`).join("")}</div>
+    <button class="btn" id="vsalvar">Salvar preços</button><button class="btn ghost" id="vsair">Descartar</button>`);
+  $("#vsair").onclick=vFechar;
+  $("#vsalvar").onclick=async()=>{
+    const sel=[];
+    itens.forEach((x,i)=>{if(!$(`[data-i="${i}"]`).checked)return;
+      const p=num2($(`[data-p="${i}"]`).value),d=$(`[data-d="${i}"]`).value.trim();if(!d||isNaN(p))return;
+      const promo=x.promocao&&Math.abs(p-x.promocao)<.005;
+      sel.push({descricao:d,preco:promo?x.preco:p,promocao:promo?x.promocao:null,gtin:x.gtin||null})});
+    if(!sel.length){toast("Nenhum item marcado");return}
+    $("#vsalvar").disabled=true;$("#vsalvar").textContent="Salvando…";
+    try{
+      const r=await fetch("/api/v1/coletas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mercado:{nome,cidade:CITIES[city].name},itens:sel})});
+      const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.msg||"Não consegui salvar agora.");
+      if(d.pontos!=null)pts=d.pontos;
+      const reg={nome,cidade:city,itens:sel,em:Date.now()};
+      aplicarVideo(reg,true);
+      try{const s=JSON.parse(localStorage.getItem("lc-videos")||"[]");s.push(reg);localStorage.setItem("lc-videos",JSON.stringify(s.slice(-10)))}catch(e){}
+      vTela("Preços salvos ✓",`<p>${d.recebidos} ${d.recebidos===1?"preço enviado":"preços enviados"} de <b>${nome}</b>. Eles entram na comparação como <b>vídeo da comunidade · não verificado</b> e ficam guardados para a equipe conferir.</p><p style="color:var(--green)"><b>+1 coleta</b></p><button class="btn" id="vok">Fechar</button>`);
+      $("#vok").onclick=()=>{vFechar();renderContr();toast("Veja o mercado na aba Comparar")};
+    }catch(e){$("#vsalvar").disabled=false;$("#vsalvar").textContent="Salvar preços";toast(e.message==="Failed to fetch"?"Sem conexão com o servidor":e.message)}
+  };
+}
+/* os preços do vídeo entram na comparação como um mercado "da comunidade" (não verificado) */
+function aplicarVideo(v,novo){
+  const ck=CITIES[v.cidade]?v.cidade:city,ct=CITIES[ck];
+  const id="vid-"+norm(v.nome).replace(/[^a-z0-9]+/g,"-");
+  let mk=ct.markets.find(m=>m.id===id);
+  if(!mk){const igual=ct.markets.some(m=>norm(m.name)===norm(v.nome));mk={id,name:v.nome+(igual?" (vídeo)":""),dist:"vídeo da comunidade · não verificado",f:1,real:true,video:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+  const idade=Math.max(0,Math.floor((Date.now()-v.em)/864e5));
+  v.itens.forEach(it=>{
+    const p=it.promocao||it.preco,g=it.gtin&&GT[it.gtin];
+    const y=g&&CATALOG[g.id]?{c:CATALOG[g.id],p:Math.round(p*g.f*100)/100}:resolver({nome:it.descricao,unit:p,un:"UN"});
+    if(y)prices[id][y.c.id]={p:y.p,age:idade};
+  });
+  if(novo){(feeds[ck]=feeds[ck]||[]).unshift(`<b>${mk.name}</b> · ${v.itens.length} preços lidos de vídeo<br><small>enviado por ${usuario?usuario.nome:"você"} agora</small>`);if(ck!==city)setCity(ck);else{cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}}
+}
+try{JSON.parse(localStorage.getItem("lc-videos")||"[]").forEach(v=>aplicarVideo(v,false))}catch(e){}
+
+$("#scan").onclick=abrirLeitor;
+$("#cancel").onclick=fechar;
+$("#manual").onsubmit=e=>{e.preventDefault();tratar($("#chave").value,false)};
+function finishScan(){
+  const m=MARKETS[mi++%MARKETS.length],r=rng(Date.now());
+  const pool=CATALOG.map(c=>c.id).sort(()=>r()-.5).slice(0,5);
+  const changes=pool.map(id=>{const old=prices[m.id][id],c=CATALOG[id];
+    const p=Math.round(c.base*MARKETS.find(x=>x.id===m.id).f*(.9+r()*.1)*10)/10-.01;
+    prices[m.id][id]={p:Math.max(p,.99),age:0};return {c,old:old&&old.p,p:prices[m.id][id].p}});
+  const when=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  (feeds[city]=feeds[city]||[]).unshift(`<b>${m.name}</b> · ${changes.length} preços atualizados<br><small>hoje às ${when} · simulação</small>`);
+  $("#scanBox").style.display="none";
+  const ok=$("#ok");ok.style.display="block";
+  ok.innerHTML=`<h3>Simulação de preços</h3><p style="font-size:14px;color:var(--muted)">Exemplo com ${m.name}: ${changes.length} preços de teste, não são os itens do seu cupom.</p>
+    <ul style="margin-top:8px">${changes.map(x=>`<li>${x.c.name}: <b>${brl(x.p)}</b>${x.old?` <small style="color:var(--muted)">(antes ${brl(x.old)})</small>`:""}</li>`).join("")}</ul>
+    <p style="margin-top:10px;font-size:13px;color:var(--green)"><b>+1 coleta</b> (simulada) · veja o efeito na aba Comparar.</p>
+    <button class="btn" id="done" style="margin-top:12px;box-shadow:none">Fechar</button>`;
+  $("#done").onclick=()=>{fechar();renderContr();toast("Preços de teste aplicados na comparação")};
+}
+
+/* seletor de cidade */
+function cityUI(){
+  $("#cityName").textContent=CITIES[city].name;
+  $("#subCity").textContent=`Compare a cesta inteira entre os ${MARKETS.length} mercados de ${CITIES[city].name}.`;
+}
+function sheet(on){const s=$("#sheet");s.classList.toggle("on",on);s.setAttribute("aria-hidden",!on);
+  if(on){$("#cities").innerHTML=Object.entries(CITIES).map(([k,c])=>`<button data-city="${k}" class="${k===city?"on":""}" aria-pressed="${k===city}">
+    <span class="ck">${k===city?"✓":""}</span><b>${c.name}</b><small>${c.markets.length} mercados</small></button>`).join("");
+    $("#cities .on").focus()}else $("#cityBtn").focus()}
+function setCity(k){
+  if(!CITIES[k]){return}
+  const mudou=k!==city;
+  city=k;MARKETS=CITIES[k].markets;mi=0;
+  try{localStorage.setItem("lc-city",k)}catch(e){}
+  cityUI();renderList();renderContr();
+  if($("#v-comp").classList.contains("on"))renderComp();
+  carregarApi();
+  sheet(false);
+  if(mudou)toast(`Mercados de ${CITIES[k].name}`);
+}
+$("#cityBtn").onclick=()=>sheet(true);
+$("#cities").onclick=e=>{const b=e.target.closest("[data-city]");if(b)setCity(b.dataset.city)};
+$("#sheet").onclick=e=>{if(e.target===$("#sheet"))sheet(false)};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet").classList.contains("on"))sheet(false)});
+
+cityUI();renderList();renderContr();carregarApi();meCarregar();
+</script>
+<script src="atualizacao.js" defer></script>
+</body>
+</html>

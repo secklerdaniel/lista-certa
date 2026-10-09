@@ -3,93 +3,575 @@
   "info": {
     "title": "Lista Certa — API de Preços para Mercados",
     "version": "1.0.0",
-    "description": "Envie os preços do seu mercado direto do seu sistema (ERP, PDV ou e-commerce) e apareça na comparação de preços da cidade.\n\n## Como começar\n1. Peça o cadastro do seu mercado à equipe Lista Certa. Você recebe **duas chaves**: uma de **teste** (`lc_test_...`) e uma de **produção** (`lc_live_...`).\n2. Integre usando a chave de **teste**. Ela grava em um ambiente separado (homologação): nada do que você enviar aparece para os consumidores.\n3. Quando estiver tudo certo, troque para a chave de produção. A URL é a mesma.\n\n## Autenticação\nEnvie a chave no cabeçalho `Authorization: Bearer <chave>` (ou `X-API-Key`). Trate a chave como senha: ela só é mostrada uma vez e pode ser revogada.\n\n## Boas práticas\n- O produto é identificado pelo **GTIN/EAN** (código de barras), enviado **como texto**, com zeros à esquerda e dígito verificador correto. É o GTIN que permite comparar o mesmo produto entre mercados; a `descricao` é só informativa, então pode usar o nome que o seu sistema já tem.\n- Envie em lote (até 1.000 itens por requisição) e só o que mudou, ou a tabela completa uma vez por dia.\n- Se enviar `atualizadoEm`, usamos essa data; um item mais antigo que o já gravado é ignorado (reenviar o mesmo lote é seguro).\n- Preços em reais, com ponto decimal (`5.49`).\n- Item com erro **não derruba o lote**: os válidos são gravados e os demais voltam em `rejeitados` com o motivo.\n\n## O que ainda não existe\nWebhooks, SLA formal e consulta de histórico de preços pela API. O histórico já é gravado, mas ainda não é exposto."
+    "description": "Envie os preços do seu mercado direto do seu sistema (ERP, PDV ou e-commerce) e apareça na comparação de preços da cidade.\n\n## Como começar\n1. **Cadastre seu mercado** em [/cadastro](/cadastro) (aberto, sem aprovação) ou pelo `POST /cadastro` abaixo. Você recebe **duas chaves** na hora: uma de **teste** (`lc_test_...`) e uma de **produção** (`lc_live_...`).\n2. Integre usando a chave de **teste**. Ela grava em um ambiente separado (homologação): nada do que você enviar aparece para os consumidores.\n3. Quando estiver tudo certo, troque para a chave de produção. A URL é a mesma.\n\n## Autenticação\nEnvie a chave no cabeçalho `Authorization: Bearer <chave>` (ou `X-API-Key`). Trate a chave como senha: ela só é mostrada uma vez e pode ser revogada.\n\n## Boas práticas\n- O produto é identificado pelo **GTIN/EAN** (código de barras), enviado **como texto**, com zeros à esquerda e dígito verificador correto. É o GTIN que permite comparar o mesmo produto entre mercados; a `descricao` é só informativa, então pode usar o nome que o seu sistema já tem.\n- Envie em lote (até 1.000 itens por requisição) e só o que mudou, ou a tabela completa uma vez por dia.\n- Se enviar `atualizadoEm`, usamos essa data; um item mais antigo que o já gravado é ignorado (reenviar o mesmo lote é seguro).\n- Preços em reais, com ponto decimal (`5.49`).\n- Item com erro **não derruba o lote**: os válidos são gravados e os demais voltam em `rejeitados` com o motivo.\n\n## O que ainda não existe\nWebhooks, SLA formal e consulta de histórico de preços pela API. O histórico já é gravado, mas ainda não é exposto."
   },
-  "servers": [{ "url": "https://lista-certa-omega.vercel.app/api/v1", "description": "Produção e homologação (o ambiente é definido pela chave)" }],
+  "servers": [
+    {
+      "url": "https://lista-certa-omega.vercel.app/api/v1",
+      "description": "Produção e homologação (o ambiente é definido pela chave)"
+    }
+  ],
   "tags": [
-    { "name": "Mercado", "description": "Envio de preços (exige chave)" },
-    { "name": "Consulta", "description": "Leitura pública de preços" }
+    {
+      "name": "Mercado",
+      "description": "Envio de preços (exige chave)"
+    },
+    {
+      "name": "Consulta",
+      "description": "Leitura pública de preços"
+    }
   ],
   "components": {
     "securitySchemes": {
-      "ChaveDoMercado": { "type": "http", "scheme": "bearer", "description": "Chave `lc_test_...` (homologação) ou `lc_live_...` (produção)." }
+      "ChaveDoMercado": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Chave `lc_test_...` (homologação) ou `lc_live_...` (produção)."
+      }
     },
     "schemas": {
       "ItemPreco": {
-        "type": "object", "required": ["gtin", "preco"],
+        "type": "object",
+        "required": [
+          "gtin",
+          "preco"
+        ],
         "properties": {
-          "gtin": { "type": "string", "example": "7894900011517", "description": "GTIN-8/12/13/14 como **texto**, com dígito verificador válido." },
-          "descricao": { "type": "string", "maxLength": 120, "example": "LEITE INTEGRAL 1L" },
-          "unidade": { "type": "string", "maxLength": 6, "example": "UN", "description": "UN, KG, L..." },
-          "preco": { "type": "number", "format": "double", "example": 5.49, "description": "Preço de prateleira em reais, maior que zero." },
-          "promocao": { "type": "object", "nullable": true, "required": ["preco", "ate"], "description": "Opcional. Preço promocional menor que o preço, com data final.", "properties": { "preco": { "type": "number", "example": 4.99 }, "ate": { "type": "string", "format": "date", "example": "2026-10-20" } } },
-          "atualizadoEm": { "type": "string", "format": "date-time", "example": "2026-10-09T10:30:00-03:00", "description": "Quando o preço passou a valer. Se omitido, usamos o horário do recebimento. Não pode estar no futuro." }
+          "gtin": {
+            "type": "string",
+            "example": "7894900011517",
+            "description": "GTIN-8/12/13/14 como **texto**, com dígito verificador válido."
+          },
+          "descricao": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "LEITE INTEGRAL 1L"
+          },
+          "unidade": {
+            "type": "string",
+            "maxLength": 6,
+            "example": "UN",
+            "description": "UN, KG, L..."
+          },
+          "preco": {
+            "type": "number",
+            "format": "double",
+            "example": 5.49,
+            "description": "Preço de prateleira em reais, maior que zero."
+          },
+          "promocao": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "preco",
+              "ate"
+            ],
+            "description": "Opcional. Preço promocional menor que o preço, com data final.",
+            "properties": {
+              "preco": {
+                "type": "number",
+                "example": 4.99
+              },
+              "ate": {
+                "type": "string",
+                "format": "date",
+                "example": "2026-10-20"
+              }
+            }
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-09T10:30:00-03:00",
+            "description": "Quando o preço passou a valer. Se omitido, usamos o horário do recebimento. Não pode estar no futuro."
+          }
         }
       },
-      "EnvioPrecos": { "type": "object", "required": ["itens"], "properties": { "itens": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/components/schemas/ItemPreco" } } } },
+      "EnvioPrecos": {
+        "type": "object",
+        "required": [
+          "itens"
+        ],
+        "properties": {
+          "itens": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/ItemPreco"
+            }
+          }
+        }
+      },
       "ResultadoEnvio": {
         "type": "object",
         "properties": {
-          "ok": { "type": "boolean", "example": true },
-          "ambiente": { "type": "string", "example": "teste (homologação)" },
-          "mercado": { "type": "string", "example": "Mercado Exemplo" },
-          "recebidos": { "type": "integer", "example": 6 },
-          "aceitos": { "type": "integer", "example": 4, "description": "Itens válidos (GTIN repetido no mesmo lote conta uma vez)." },
-          "atualizados": { "type": "integer", "example": 4 },
-          "ignoradosPorDataAntiga": { "type": "integer", "example": 0 },
-          "mudancasDePreco": { "type": "integer", "example": 3, "description": "Quantos preços realmente mudaram (entram no histórico)." },
-          "rejeitados": { "type": "array", "items": { "type": "object", "properties": { "indice": { "type": "integer" }, "gtin": { "type": "string" }, "erro": { "type": "string", "example": "gtin_invalido" }, "msg": { "type": "string" } } } }
+          "ok": {
+            "type": "boolean",
+            "example": true
+          },
+          "ambiente": {
+            "type": "string",
+            "example": "teste (homologação)"
+          },
+          "mercado": {
+            "type": "string",
+            "example": "Mercado Exemplo"
+          },
+          "recebidos": {
+            "type": "integer",
+            "example": 6
+          },
+          "aceitos": {
+            "type": "integer",
+            "example": 4,
+            "description": "Itens válidos (GTIN repetido no mesmo lote conta uma vez)."
+          },
+          "atualizados": {
+            "type": "integer",
+            "example": 4
+          },
+          "ignoradosPorDataAntiga": {
+            "type": "integer",
+            "example": 0
+          },
+          "mudancasDePreco": {
+            "type": "integer",
+            "example": 3,
+            "description": "Quantos preços realmente mudaram (entram no histórico)."
+          },
+          "rejeitados": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "indice": {
+                  "type": "integer"
+                },
+                "gtin": {
+                  "type": "string"
+                },
+                "erro": {
+                  "type": "string",
+                  "example": "gtin_invalido"
+                },
+                "msg": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         }
       },
       "PrecoConsultado": {
         "type": "object",
         "properties": {
-          "gtin": { "type": "string" }, "descricao": { "type": "string" }, "unidade": { "type": "string" }, "preco": { "type": "number" },
-          "promocao": { "type": "object", "nullable": true, "properties": { "preco": { "type": "number" }, "ate": { "type": "string", "format": "date" } } },
-          "atualizadoEm": { "type": "string", "format": "date-time" },
-          "mercado": { "type": "object", "properties": { "id": { "type": "integer" }, "nome": { "type": "string" }, "cidade": { "type": "string" } } }
+          "gtin": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "unidade": {
+            "type": "string"
+          },
+          "preco": {
+            "type": "number"
+          },
+          "promocao": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "preco": {
+                "type": "number"
+              },
+              "ate": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "atualizadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mercado": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "cidade": {
+                "type": "string"
+              }
+            }
+          }
         }
       },
-      "Erro": { "type": "object", "properties": { "ok": { "type": "boolean", "example": false }, "erro": { "type": "string", "example": "nao_autorizado" }, "msg": { "type": "string" } } }
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": false
+          },
+          "erro": {
+            "type": "string",
+            "example": "nao_autorizado"
+          },
+          "msg": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "paths": {
     "/precos": {
       "post": {
-        "tags": ["Mercado"], "summary": "Enviar preços (lote)", "security": [{ "ChaveDoMercado": [] }],
+        "tags": [
+          "Mercado"
+        ],
+        "summary": "Enviar preços (lote)",
+        "security": [
+          {
+            "ChaveDoMercado": []
+          }
+        ],
         "description": "Cria ou atualiza o preço de cada GTIN do seu mercado. Use a chave de teste para homologar.",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnvioPrecos" },
-          "example": { "itens": [
-            { "gtin": "7894900011517", "descricao": "LEITE INTEGRAL 1L", "unidade": "UN", "preco": 5.49 },
-            { "gtin": "7891000000015", "descricao": "CAFE TORRADO 500G", "preco": 21.9, "promocao": { "preco": 19.9, "ate": "2026-10-20" } }
-          ] } } } },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvioPrecos"
+              },
+              "example": {
+                "itens": [
+                  {
+                    "gtin": "7894900011517",
+                    "descricao": "LEITE INTEGRAL 1L",
+                    "unidade": "UN",
+                    "preco": 5.49
+                  },
+                  {
+                    "gtin": "7891000000015",
+                    "descricao": "CAFE TORRADO 500G",
+                    "preco": 21.9,
+                    "promocao": {
+                      "preco": 19.9,
+                      "ate": "2026-10-20"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Lote processado (veja `rejeitados` para itens com erro).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResultadoEnvio" } } } },
-          "400": { "description": "Corpo inválido ou lote vazio.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } },
-          "401": { "description": "Chave ausente, inválida ou revogada.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } },
-          "413": { "description": "Mais de 1.000 itens.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } }
+          "200": {
+            "description": "Lote processado (veja `rejeitados` para itens com erro).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoEnvio"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido ou lote vazio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chave ausente, inválida ou revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Mais de 1.000 itens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
         }
       },
       "get": {
-        "tags": ["Consulta"], "summary": "Consultar preços",
+        "tags": [
+          "Consulta"
+        ],
+        "summary": "Consultar preços",
         "description": "Sem chave: preços de produção. Com a chave de **teste**: apenas os preços de teste do seu mercado. Ordena do mais barato (considerando promoção vigente) ao mais caro.",
         "parameters": [
-          { "name": "gtin", "in": "query", "schema": { "type": "string" }, "description": "Código de barras. Informe ao menos um entre `gtin`, `q`, `cidade` ou `mercado`." },
-          { "name": "q", "in": "query", "schema": { "type": "string", "minLength": 3 }, "description": "Palavras da descrição (ex.: `leite integral`)." },
-          { "name": "cidade", "in": "query", "schema": { "type": "string" }, "example": "Gramado" },
-          { "name": "mercado", "in": "query", "schema": { "type": "integer" }, "description": "ID do mercado." },
-          { "name": "limite", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 1000 } }
+          {
+            "name": "gtin",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Código de barras. Informe ao menos um entre `gtin`, `q`, `cidade` ou `mercado`."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 3
+            },
+            "description": "Palavras da descrição (ex.: `leite integral`)."
+          },
+          {
+            "name": "cidade",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Gramado"
+          },
+          {
+            "name": "mercado",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do mercado."
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 1000
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Preços encontrados.", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "ambiente": { "type": "string", "example": "producao" }, "total": { "type": "integer" }, "dados": { "type": "array", "items": { "$ref": "#/components/schemas/PrecoConsultado" } } } } } } },
-          "400": { "description": "Critério ausente ou GTIN inválido.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } } } }
+          "200": {
+            "description": "Preços encontrados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "ambiente": {
+                      "type": "string",
+                      "example": "producao"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "dados": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PrecoConsultado"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Critério ausente ou GTIN inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/mercados": {
       "get": {
-        "tags": ["Consulta"], "summary": "Listar mercados integrados",
-        "responses": { "200": { "description": "Mercados ativos.", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "dados": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "integer" }, "nome": { "type": "string" }, "cidade": { "type": "string" }, "produtos": { "type": "integer" }, "ultimaAtualizacao": { "type": "string", "format": "date-time", "nullable": true } } } } } } } } } }
+        "tags": [
+          "Consulta"
+        ],
+        "summary": "Listar mercados integrados",
+        "responses": {
+          "200": {
+            "description": "Mercados ativos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "dados": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "nome": {
+                            "type": "string"
+                          },
+                          "cidade": {
+                            "type": "string"
+                          },
+                          "produtos": {
+                            "type": "integer"
+                          },
+                          "ultimaAtualizacao": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cadastro": {
+      "post": {
+        "tags": [
+          "Mercado"
+        ],
+        "summary": "Cadastrar um mercado (aberto)",
+        "description": "Qualquer mercado pode se cadastrar e recebe as chaves de teste e de produção imediatamente. Limite de 5 cadastros por dia por endereço. Se informar CNPJ, ele precisa ser válido e ainda não cadastrado. As chaves só são mostradas nesta resposta.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nome",
+                  "cidade",
+                  "email"
+                ],
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "example": "Mercado Exemplo"
+                  },
+                  "cidade": {
+                    "type": "string",
+                    "example": "Gramado"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "contato@mercadoexemplo.com.br"
+                  },
+                  "cnpj": {
+                    "type": "string",
+                    "example": "11.222.333/0001-81",
+                    "description": "Opcional."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mercado cadastrado. Guarde as chaves.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "mercado": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "nome": {
+                          "type": "string"
+                        },
+                        "cidade": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "chaves": {
+                      "type": "object",
+                      "properties": {
+                        "teste": {
+                          "type": "string",
+                          "example": "lc_test_..."
+                        },
+                        "producao": {
+                          "type": "string",
+                          "example": "lc_live_..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CNPJ já cadastrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de cadastros do dia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

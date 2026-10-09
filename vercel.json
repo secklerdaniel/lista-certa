@@ -1,10 +1,28 @@
 {
   "rewrites": [
-    { "source": "/docs", "destination": "/api-docs.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    {
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/cadastro",
+      "destination": "/cadastro.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/api-docs.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    }
   ],
   "functions": {
-    "api/v1/precos.js": { "maxDuration": 30 },
-    "api/v1/video.js": { "maxDuration": 60 }
+    "api/v1/precos.js": {
+      "maxDuration": 30
+    },
+    "api/v1/video.js": {
+      "maxDuration": 60
+    }
   }
 }
