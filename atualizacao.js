@@ -9,6 +9,8 @@
    Opcoes (atributos no <script>):
      data-intervalo="60"   segundos entre verificacoes (padrao 60)
      data-dev              verifica tambem em localhost (padrao: nao)
+     data-versao="/api/versao"  endereco que devolve { v } e muda a CADA deploy; assim avisa ate
+                           deploy que so mexe na API (sem isso, so avisa quando a PAGINA muda)
    ===================================================================== */
 (function () {
   if (window.__atualizacao) return;
@@ -71,10 +73,17 @@
 
   var url = location.pathname + location.search;
   var inicial = null, ocupado = false;
+  var VERSAO = tag && tag.getAttribute("data-versao"), versaoInicial = null;
 
   function checar() {
     if (faixa || ocupado || document.hidden || !navigator.onLine) return;
     ocupado = true;
+    if (VERSAO) {
+      fetch(VERSAO, { cache: "no-store", credentials: "same-origin" })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (j) { if (j && j.v) { if (versaoInicial === null) versaoInicial = j.v; else if (j.v !== versaoInicial) mostrar(); } })
+        .catch(function () {});
+    }
     fetch(url, { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
       .then(function (html) {

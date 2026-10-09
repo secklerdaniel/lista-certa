@@ -75,6 +75,6 @@ $("#form").onsubmit=async e=>{
 };
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-c]");if(!b)return;try{await navigator.clipboard.writeText(b.dataset.c);b.textContent="Copiado ✓"}catch(x){b.textContent="Selecione e copie"}});
 </script>
-<script src="/atualizacao.js" defer></script>
+<script src="/atualizacao.js" data-versao="/api/versao" defer></script>
 </body>
 </html>
