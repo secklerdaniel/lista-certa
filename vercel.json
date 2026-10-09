@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/api/v1/proximos",
+      "destination": "/api/util/proximos"
+    },
+    {
+      "source": "/api/v1/cnpj",
+      "destination": "/api/util/cnpj"
+    },
+    {
+      "source": "/api/versao",
+      "destination": "/api/util/versao"
+    },
+    {
       "source": "/app",
       "destination": "/app.html"
     },
