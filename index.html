@@ -555,7 +555,9 @@ function extraPorGtin(x,pr,p){
   const key="gtin:"+x.gtin;
   let c=CATALOG.find(i=>i.key===key);
   if(!c){
-    c={id:CATALOG.length,name:pr.nome+(pr.marca?" "+pr.marca:""),unit:pr.quantidade&&pr.unidade?`${pr.quantidade} ${pr.unidade}`:(x.unidade||"un").toLowerCase(),base:p,key,extra:true};
+    let q=pr.quantidade,u=pr.unidade;
+    if(q>=1000&&u==="g"){q/=1000;u="kg"}else if(q>=1000&&u==="ml"){q/=1000;u="L"}
+    c={id:CATALOG.length,name:pr.nome+(pr.marca?" "+pr.marca:""),unit:q&&u?`${+q.toFixed(2)} ${u}`:(x.unidade||"un").toLowerCase(),base:p,key,extra:true};
     CATALOG.push(c);
     try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:c.base,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}
   }
