@@ -16,6 +16,7 @@ module.exports = async (req, res) => {
   const nome = b && b.mercado && typeof b.mercado.nome === "string" ? b.mercado.nome.trim().slice(0, 120) : "";
   const cidade = b && b.mercado && typeof b.mercado.cidade === "string" ? b.mercado.cidade.trim().slice(0, 80) : "";
   if (!nome || !cidade) return erro(res, 400, "mercado", "Informe mercado.nome e mercado.cidade.");
+  const m = b.mercado && Number.isInteger(b.mercado.metros) && b.mercado.metros >= 0 && b.mercado.metros <= 5000 ? b.mercado.metros : null; /* só a distância; a posição não é recebida */
   if (!b || !Array.isArray(b.itens) || !b.itens.length) return erro(res, 400, "itens", 'Envie "itens".');
   if (b.itens.length > MAX_ITENS) return erro(res, 413, "itens_demais", `No máximo ${MAX_ITENS} itens.`);
   const ok = [];
@@ -33,9 +34,9 @@ module.exports = async (req, res) => {
     const r = await sql().query(`select count(*)::int as n from contribuicoes where usuario_id = $1 and tipo = 'video' and criado_em > now() - interval '1 hour'`, [usr.id]);
     if (r[0].n >= LIMITE_HORA) return erro(res, 429, "limite", "Muitos envios em pouco tempo. Tente de novo mais tarde.");
     await sql().query(
-      `insert into coletas (mercado_nome, cidade, descricao, gtin, preco, promocao_preco, origem, ip_hash, usuario_id)
-       select $1, $2, d, g, p, pp, 'video', $7, $8 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
-      [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip, usr.id]);
+      `insert into coletas (mercado_nome, cidade, descricao, gtin, preco, promocao_preco, origem, ip_hash, usuario_id, local_metros)
+       select $1, $2, d, g, p, pp, 'video', $7, $8, $9 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
+      [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip, usr.id, m]);
     await sql().query(`insert into contribuicoes (usuario_id, tipo, mercado_nome, cidade, itens) values ($1, 'video', $2, $3, $4)`, [usr.id, nome, cidade, ok.length]);
     const pts = await A.pontos(usr.id);
     enviar(res, 201, { ok: true, recebidos: ok.length, status: "pendente de verificação", pontos: pts, nivel: A.nivel(pts) });

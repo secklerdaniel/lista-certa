@@ -725,20 +725,48 @@ try{JSON.parse(localStorage.getItem("lc-cupons")||"[]").forEach(z=>aplicarCupom(
 /* VÍDEO DAS PRATELEIRAS: o vídeo NÃO sai do aparelho — só alguns quadros nítidos vão para a visão (OpenAI) ler as etiquetas.
    A pessoa revisa a lista e só ao confirmar os preços são gravados no banco (/api/v1/coletas, "pendente de verificação"). */
 const vbox=()=>$("#vbox");
-let vCancel=false;
+let vCancel=false,vMetros=null; /* vMetros: distância (m) até o mercado escolhido pela localização; só isso é enviado, nunca a posição */
+function vLocalizar(){
+  const bt=$("#vloc"),box=$("#vchips"),msg=$("#vlocmsg");msg.textContent="";
+  if(!navigator.geolocation){msg.textContent="Este aparelho não permite localização. Digite o nome do mercado.";return}
+  bt.disabled=true;bt.textContent="Buscando onde você está…";
+  const fim=()=>{bt.disabled=false;bt.textContent="📍 Estou no mercado: usar minha localização"};
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const r=await fetch("/api/v1/proximos?lat="+pos.coords.latitude.toFixed(5)+"&lng="+pos.coords.longitude.toFixed(5));
+      const d=await r.json();if(!d.ok)throw new Error(d.msg||"falha");
+      const antigos=[...box.querySelectorAll("[data-vnome]:not([data-m])")].map(b=>b.outerHTML).join("");
+      const km=m=>m<1000?m+" m":(m/1000).toFixed(1).replace(".",",")+" km";
+      box.innerHTML=d.dados.map(x=>`<button class="chip" type="button" data-vnome="${encodeURIComponent(x.nome)}" data-m="${x.metros}">📍 ${x.nome} · ${km(x.metros)}</button>`).join("")+antigos;
+      msg.textContent=d.dados.length?"Toque no mercado onde você está (ou digite o nome acima).":"Não achei mercados no mapa aqui perto. Digite o nome acima.";
+      if(d.dados.length&&d.dados[0].metros<=120&&!$("#vnome").value.trim()){const b=box.querySelector("[data-m]");b&&b.click()}
+    }catch(e){msg.textContent="Não consegui consultar o mapa agora. Digite o nome do mercado."}
+    fim();
+  },err=>{
+    msg.textContent=err.code===1?"Você não liberou a localização. Digite o nome do mercado.":"Não consegui pegar sua localização. Digite o nome do mercado.";fim();
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+}
 function vFechar(){vCancel=true;$("#vmodal").classList.remove("on")}
 function vInicio(){
   vCancel=false;
   const sug=CITIES[city].markets.filter(m=>!m.api).map(m=>`<option value="${m.name}">`).join("");
+  vMetros=null;
+  const cadastrados=CITIES[city].markets.filter(m=>m.api).map(m=>`<button class="chip" type="button" data-vnome="${encodeURIComponent(m.name)}">${m.name}</button>`).join("");
   vbox().innerHTML=`<h3>Vídeo das prateleiras</h3>
     <p>Filme as etiquetas de preço e a gente lê para você. O vídeo fica no seu aparelho; só alguns quadros são analisados.</p>
     <div class="dicas"><b>Para ler bem:</b> chegue perto, filme devagar (cada etiqueta por ~1 segundo), uma prateleira por vez e com a etiqueta bem iluminada.</div>
     <label for="vnome" style="font-size:13px;color:var(--muted)">Mercado filmado (${CITIES[city].name})</label>
     <input type="text" id="vnome" list="vsug" placeholder="Nome do mercado" autocomplete="off"><datalist id="vsug">${sug}</datalist>
+    <button class="btn ghost" id="vloc" type="button">📍 Estou no mercado: usar minha localização</button>
+    <div id="vchips" class="chips" style="margin-top:8px">${cadastrados}</div>
+    <p id="vlocmsg" style="font-size:12.5px"></p>
     <button class="btn" id="vescolher">Escolher o vídeo</button>
     <button class="btn ghost" id="vsair">Cancelar</button>`;
   $("#vmodal").classList.add("on");
   $("#vsair").onclick=vFechar;
+  $("#vloc").onclick=vLocalizar;
+  $("#vnome").oninput=()=>{vMetros=null};
+  $("#vchips").onclick=e=>{const b=e.target.closest("[data-vnome]");if(!b)return;$("#vnome").value=decodeURIComponent(b.dataset.vnome);vMetros=b.dataset.m?+b.dataset.m:null;[...$("#vchips").children].forEach(c=>c.style.outline="");b.style.outline="2px solid var(--green2)"};
   $("#vescolher").onclick=()=>{if(!$("#vnome").value.trim()){$("#vnome").focus();toast("Diga qual é o mercado");return}$("#vfile").value="";$("#vfile").click()};
 }
 $("#vid").onclick=()=>{if(!usuario){toast("Entre com o Google para enviar vídeos");$("#conta").scrollIntoView({behavior:"smooth",block:"center"});return}vInicio()};
@@ -815,7 +843,7 @@ function vRevisar(nome,itens){
     if(!sel.length){toast("Nenhum item marcado");return}
     $("#vsalvar").disabled=true;$("#vsalvar").textContent="Salvando…";
     try{
-      const r=await fetch("/api/v1/coletas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mercado:{nome,cidade:CITIES[city].name},itens:sel})});
+      const r=await fetch("/api/v1/coletas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mercado:{nome,cidade:CITIES[city].name,metros:vMetros},itens:sel})});
       const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.msg||"Não consegui salvar agora.");
       if(d.pontos!=null)pts=d.pontos;
       const reg={nome,cidade:city,itens:sel,em:Date.now()};
