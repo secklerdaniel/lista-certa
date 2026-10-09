@@ -45,8 +45,8 @@ function nomeCurto(nome) {
 async function usuario(req) {
   const p = ler(cookie(req, "lc_sess"));
   if (!p) return null;
-  const r = await sql().query(`select id, nome, email, foto from usuarios where id = $1`, [p.uid]);
-  return r[0] || null;
+  const r = await sql().query(`select id, nome, email, foto, bloqueado from usuarios where id = $1`, [p.uid]);
+  return r[0] && !r[0].bloqueado ? r[0] : null;
 }
 async function pontos(uid) {
   const r = await sql().query(`select count(*)::int as n from contribuicoes where usuario_id = $1`, [uid]);

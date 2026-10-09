@@ -126,3 +126,5 @@ module.exports = async (req, res) => {
     return erro(res, 500, "interno", "Erro interno. Tente de novo em instantes.");
   }
 };
+
+module.exports.enviarPrecos = enviarPrecos; /* usado também pelo portal do mercado (/api/mercado) */

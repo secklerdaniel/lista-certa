@@ -22,7 +22,8 @@ module.exports = async (req, res) => {
       const r = await sql().query(
         `insert into usuarios (google_sub, nome, email, foto) values ($1, $2, $3, $4)
          on conflict (google_sub) do update set nome = excluded.nome, email = excluded.email, foto = excluded.foto, ultimo_acesso = now()
-         returning id, nome, email, foto`, [g.sub, g.nome.slice(0, 120), g.email, g.foto]);
+         returning id, nome, email, foto, bloqueado`, [g.sub, g.nome.slice(0, 120), g.email, g.foto]);
+      if (r[0].bloqueado) return erro(res, 403, "bloqueado", "Esta conta está bloqueada. Fale com a equipe.");
       A.abrirSessao(res, r[0].id);
       return enviar(res, 200, { ok: true, usuario: await publico(r[0]) });
     }
@@ -30,6 +31,33 @@ module.exports = async (req, res) => {
     if (acao === "me" && req.method === "GET") {
       const u = await A.usuario(req);
       return enviar(res, 200, { ok: true, usuario: u ? await publico(u) : null });
+    }
+
+    /* minhas contribuições (para o usuário ver e excluir as próprias coletas) */
+    if (acao === "minhas" && req.method === "GET") {
+      const u = await A.usuario(req);
+      if (!u) return erro(res, 401, "login", "Entre com o Google.");
+      const r = await sql().query(`select id, tipo, mercado_nome, cidade, itens, criado_em from contribuicoes where usuario_id = $1 order by id desc limit 100`, [u.id]);
+      return enviar(res, 200, { ok: true, dados: r });
+    }
+    /* exclui UMA contribuição (e, se for de vídeo, os preços enviados nela); os pontos caem junto */
+    if (acao === "excluir-contribuicao" && req.method === "POST") {
+      const u = await A.usuario(req);
+      if (!u) return erro(res, 401, "login", "Entre com o Google.");
+      const b = corpo(req) || {};
+      const r = await sql().query(`delete from contribuicoes where id = $1 and usuario_id = $2 returning id`, [parseInt(b.id, 10), u.id]);
+      if (!r.length) return erro(res, 404, "contribuicao", "Contribuição não encontrada.");
+      const pts = await A.pontos(u.id);
+      return enviar(res, 200, { ok: true, excluida: r[0].id, pontos: pts, nivel: A.nivel(pts) });
+    }
+    /* exclui a PRÓPRIA conta (LGPD): apaga cadastro e contribuições; preços já enviados deixam de ter nome */
+    if (acao === "excluir-conta" && req.method === "POST") {
+      const u = await A.usuario(req);
+      if (!u) return erro(res, 401, "login", "Entre com o Google.");
+      await sql().query(`update coletas set contribuicao_id = null where usuario_id = $1`, [u.id]); /* os preços ficam, sem o nome */
+      await sql().query(`delete from usuarios where id = $1`, [u.id]);
+      A.fecharSessao(res);
+      return enviar(res, 200, { ok: true });
     }
 
     if (acao === "logout" && req.method === "POST") { A.fecharSessao(res); return enviar(res, 200, { ok: true }); }

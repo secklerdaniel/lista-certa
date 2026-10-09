@@ -488,12 +488,50 @@ function renderConta(){
   const el=$("#conta");
   if(usuario){
     el.innerHTML=`<div class="eu">${usuario.foto?`<img src="${usuario.foto}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${inicial(usuario.nome)}</span>`}
-      <div><b>${usuario.nome}</b><small>suas coletas aparecem com esse nome</small></div><button class="sair" id="sair">Sair</button></div>`;
+      <div><b>${usuario.nome}</b><small>suas coletas aparecem com esse nome</small></div><button class="sair" id="sair">Sair</button></div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px"><button class="sair" id="minhas" style="margin:0">Minhas coletas</button><button class="sair" id="excluirConta" style="margin:0;color:var(--bad)">Excluir minha conta</button></div><div id="minhasLista"></div>`;
+    $("#minhas").onclick=minhasColetas;
+    $("#excluirConta").onclick=excluirConta;
     $("#sair").onclick=async()=>{try{await fetch("/api/auth/logout",{method:"POST"})}catch(e){}usuario=null;pts=0;try{sessionStorage.removeItem("lc-splash")}catch(e){}location.href="/"};
   }else{
     el.innerHTML=`<p><b>Entre para contribuir.</b> Seus pontos e seu nome (ex.: Daniel S.) aparecem nas coletas que você enviar.</p><div class="gbtn" id="gbtn"></div><p style="margin:10px 0 0;font-size:12.5px">Ao entrar, você aceita os <a href="/termos" style="color:var(--green);font-weight:700">Termos</a> e a <a href="/privacidade" style="color:var(--green);font-weight:700">Política de privacidade</a>.</p>`;
     botaoGoogle();
   }
+}
+/* o usuário vê e exclui as PRÓPRIAS coletas; excluir a conta apaga o cadastro e os pontos (os preços já enviados ficam, sem o nome) */
+async function minhasColetas(){
+  const el=$("#minhasLista");
+  if(el.innerHTML){el.innerHTML="";return}
+  el.innerHTML='<small style="color:var(--muted)">Carregando…</small>';
+  try{
+    const d=await (await fetch("/api/auth/minhas")).json();if(!d.ok)throw new Error(d.msg);
+    const fmt=t=>new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+    el.innerHTML=d.dados.length?d.dados.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--line);font-size:13.5px"><span><b>${x.tipo==="cupom"?"Cupom":"Vídeo"}</b> · ${x.mercado_nome||"—"}<br><small style="color:var(--muted)">${x.itens} itens · ${fmt(x.criado_em)}</small></span><button class="sair" data-cid="${x.id}" style="color:var(--bad);margin:0">Excluir</button></div>`).join(""):'<small style="color:var(--muted)">Você ainda não enviou nenhuma coleta.</small>';
+    el.onclick=async e=>{
+      const b=e.target.closest("[data-cid]");if(!b)return;
+      if(!confirm("Excluir esta coleta? Os preços enviados nela e os pontos dela serão apagados."))return;
+      try{
+        const r=await fetch("/api/auth/excluir-contribuicao",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:+b.dataset.cid})});
+        const j=await r.json();if(!j.ok)throw new Error(j.msg||"falha");
+        pts=j.pontos;
+        try{const s=JSON.parse(localStorage.getItem("lc-videos")||"[]").filter(v=>String(v.cid)!==String(b.dataset.cid));localStorage.setItem("lc-videos",JSON.stringify(s))}catch(x){}
+        recarregarVideos();renderContr();toast("Coleta excluída");el.innerHTML="";minhasColetas();
+      }catch(x){toast(x.message||"Não consegui excluir")}
+    };
+  }catch(e){el.innerHTML='<small style="color:var(--muted)">Não consegui carregar suas coletas.</small>'}
+}
+function recarregarVideos(){
+  Object.values(CITIES).forEach(ct=>{for(let i=ct.markets.length-1;i>=0;i--)if(ct.markets[i].video){delete prices[ct.markets[i].id];ct.markets.splice(i,1)}});
+  try{JSON.parse(localStorage.getItem("lc-videos")||"[]").forEach(v=>aplicarVideo(v,false))}catch(e){}
+  cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp();
+}
+async function excluirConta(){
+  if(!confirm("Excluir sua conta?\nApaga seu cadastro, seus pontos e suas contribuições. Os preços que você enviou continuam na base, sem o seu nome. Não dá para desfazer."))return;
+  try{
+    const j=await (await fetch("/api/auth/excluir-conta",{method:"POST"})).json();if(!j.ok)throw new Error(j.msg||"falha");
+    try{localStorage.removeItem("lc-videos");sessionStorage.removeItem("lc-splash")}catch(e){}
+    location.href="/";
+  }catch(e){toast(e.message||"Não consegui excluir a conta")}
 }
 async function botaoGoogle(){
   const alvo=$("#gbtn");if(!alvo)return;
@@ -846,7 +884,7 @@ function vRevisar(nome,itens){
       const r=await fetch("/api/v1/coletas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mercado:{nome,cidade:CITIES[city].name,metros:vMetros},itens:sel})});
       const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.msg||"Não consegui salvar agora.");
       if(d.pontos!=null)pts=d.pontos;
-      const reg={nome,cidade:city,itens:sel,em:Date.now()};
+      const reg={nome,cidade:city,itens:sel,em:Date.now(),cid:d.contribuicaoId};
       aplicarVideo(reg,true);
       try{const s=JSON.parse(localStorage.getItem("lc-videos")||"[]");s.push(reg);localStorage.setItem("lc-videos",JSON.stringify(s.slice(-10)))}catch(e){}
       vTela("Preços salvos ✓",`<p>${d.recebidos} ${d.recebidos===1?"preço enviado":"preços enviados"} de <b>${nome}</b>. Eles entram na comparação como <b>vídeo da comunidade · não verificado</b> e ficam guardados para a equipe conferir.</p><p style="color:var(--green)"><b>+1 coleta</b></p><button class="btn" id="vok">Fechar</button>`);

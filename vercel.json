@@ -23,6 +23,10 @@
     {
       "source": "/privacidade",
       "destination": "/privacidade.html"
+    },
+    {
+      "source": "/mercado",
+      "destination": "/mercado.html"
     }
   ],
   "functions": {

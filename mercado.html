@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#12513a">
+<meta name="robots" content="noindex">
+<title>Portal do mercado | Lista Certa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script async defer src="https://accounts.google.com/gsi/client"></script>
+<style>
+:root{--bg:#f5f2ea;--card:#fffdf8;--ink:#1b2a22;--muted:#5f6f66;--line:#e4dfd2;--green:#12513a;--green2:#1c7a57;--mint:#dff2e6;--gold:#f2c23c;--gold-ink:#5a4300;--bad:#b4432f}
+@media (prefers-color-scheme:dark){:root{--bg:#101813;--card:#18231d;--ink:#e8efe9;--muted:#9aaba1;--line:#26352c;--green:#8fdcb4;--green2:#4fb585;--mint:#1c3829;--gold-ink:#3b2c00;--bad:#e8806c}}
+*{box-sizing:border-box;margin:0}
+body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;padding-bottom:50px}
+button,input,textarea,select{font:inherit;color:inherit}
+header{background:#12513a;color:#fff;padding:14px 20px}
+header .in{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header a.marca{color:#fff;text-decoration:none;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:19px;white-space:nowrap}
+header .dir{display:flex;align-items:center;gap:12px;font-size:13.5px}
+header .dir a{color:#fff;opacity:.9}
+main{max-width:900px;margin:0 auto;padding:22px 16px}
+h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(28px,5vw,38px);line-height:1.06;color:var(--green);margin-bottom:8px}
+h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:19px;color:var(--green);margin-bottom:10px}
+.sub{color:var(--muted);margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,textarea,select{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);outline:none}
+textarea{min-height:130px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+input:focus,textarea:focus,select:focus{border-color:var(--green2);box-shadow:0 0 0 3px rgba(28,122,87,.15)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:560px){.row{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border-radius:12px;border:0;background:#12513a;color:#fff;font-weight:700;cursor:pointer;margin-top:14px;text-decoration:none}
+.btn.sec{background:transparent;color:var(--green);border:1.5px solid var(--green2);margin-top:0;padding:7px 12px;font-size:13px;font-weight:600}
+.btn.bad{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.55;cursor:default}
+.msg{font-size:13.5px;margin-top:10px;color:var(--bad)}.ok{color:var(--green2)}
+.gbtn{min-height:46px;display:flex;margin-top:16px}
+.lista{margin:12px 0 0 20px;color:var(--muted);font-size:15px}.lista li{margin:4px 0}
+.abas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.aba{padding:9px 16px;border-radius:99px;border:1.5px solid var(--line);background:var(--card);font-weight:700;cursor:pointer;color:var(--ink)}
+.aba.on{background:#12513a;color:#fff;border-color:#12513a}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.kpi small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}.kpi b{display:block;font-family:"Bricolage Grotesque";font-size:24px;margin-top:2px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--mint);color:var(--green);font-weight:700;vertical-align:middle}.tag.off{background:var(--line);color:var(--muted)}
+.chave{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:8px 10px;background:var(--bg);border-radius:10px;margin-bottom:6px}
+.chave.rev code{text-decoration:line-through;opacity:.5}
+.novas{background:#fff8e1;border:1.5px solid var(--gold);color:#3b2c00;border-radius:16px;padding:14px;margin-bottom:14px}
+@media (prefers-color-scheme:dark){.novas{background:#2a2410;color:#f3e3a8}}
+.novas h3{font-size:15px;margin-bottom:4px}.novas p{font-size:13px;margin-bottom:8px}
+.kv{display:flex;gap:8px;align-items:center;margin:6px 0 10px}.kv code{flex:1;word-break:break-all;background:rgba(0,0,0,.07);padding:8px 10px;border-radius:8px;font-size:12.5px}.kv .btn{margin:0;padding:8px 12px;font-size:13px}
+pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size:12.5px;margin-top:8px}
+.top2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}.seg button{padding:7px 14px;border:0;background:transparent;font-weight:700;cursor:pointer}.seg button.on{background:#12513a;color:#fff}
+.lin{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}.lin:last-child{border:0}.lin small{color:var(--muted);display:block}
+.zona{border-color:var(--bad)}.zona h2{color:var(--bad)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a22;color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:10}.toast.on{opacity:1}
+[hidden]{display:none!important}
+.foot{text-align:center;font-size:12px;color:var(--muted);margin-top:26px}.foot a{color:var(--green);font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<header><div class="in"><a class="marca" href="/">← Lista Certa</a><div class="dir" id="dir"><a href="/docs">API</a></div></div></header>
+<main>
+  <!-- NÃO LOGADO -->
+  <section id="s-login" hidden>
+    <h1>Portal do mercado</h1>
+    <p class="sub">Cadastre seu mercado, envie os preços e acompanhe tudo em um só lugar.</p>
+    <div class="card">
+      <h2>Entre para começar</h2>
+      <ul class="lista"><li>Entre com o Google e cadastre seu mercado em um minuto</li><li>Receba as chaves da API na hora, sem aprovação</li><li>Envie preços pelo sistema do mercado ou por uma lista</li><li>Edite, pause ou apague seus dados quando quiser</li></ul>
+      <div class="gbtn" id="gbtn"></div>
+      <p class="msg" id="loginMsg"></p>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:12px">Ao entrar, você aceita os <a href="/termos" style="color:var(--green);font-weight:700">Termos</a> e a <a href="/privacidade" style="color:var(--green);font-weight:700">Política de privacidade</a>. Já tem a chave da API? Use direto a <a href="/docs" style="color:var(--green);font-weight:700">documentação</a>.</p>
+    </div>
+  </section>
+
+  <!-- CADASTRAR (logado, sem mercado ou novo) -->
+  <section id="s-criar" hidden>
+    <h1 id="criarTit">Cadastre seu mercado</h1>
+    <p class="sub">Depois de cadastrar, você recebe as chaves da API e acessa o painel.</p>
+    <form class="card" id="fCriar">
+      <div class="row"><div><label for="cNome">Nome do mercado</label><input id="cNome" required maxlength="120"></div><div><label for="cCidade">Cidade</label><input id="cCidade" required maxlength="80" placeholder="Gramado"></div></div>
+      <div class="row"><div><label for="cEmail">E-mail de contato</label><input id="cEmail" type="email" required maxlength="160"></div><div><label for="cCnpj">CNPJ (opcional)</label><input id="cCnpj" inputmode="numeric" placeholder="00.000.000/0001-00"></div></div>
+      <button class="btn" type="submit" id="cBtn">Cadastrar meu mercado</button>
+      <button class="btn sec" type="button" id="cCancelar" hidden style="margin-left:8px">Cancelar</button>
+      <p class="msg" id="cErro"></p>
+    </form>
+  </section>
+
+  <!-- PAINEL -->
+  <section id="s-painel" hidden>
+    <div id="novas"></div>
+    <div class="abas" id="abas"></div>
+    <div id="painel"></div>
+  </section>
+  <p class="foot">Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a> · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></p>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script src="/atualizacao.js" data-versao="/api/versao" defer></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const brl = n => Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dt = d => d ? new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+const cnpjFmt = c => c && c.length === 14 ? c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : (c || "");
+function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 2400); }
+
+let usuario = null, MERC = [], sel = null, amb = "producao", email = "", gClient = null, gPronto = false;
+
+async function api(url, method, body) {
+  const r = await fetch(url, { method: method || "GET", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.msg || "Falha"); e.status = r.status; e.dados = d; throw e; }
+  return d;
+}
+const P = (acao, body) => api("/api/mercado/" + acao, "POST", body);
+
+/* ---------- login ---------- */
+async function botaoGoogle() {
+  const alvo = $("#gbtn"); if (!alvo) return;
+  try {
+    if (gClient === null) gClient = (await api("/api/auth/config")).clientId || "";
+    if (!gClient) { alvo.innerHTML = '<small style="color:var(--muted)">O login com Google está sendo configurado.</small>'; return; }
+    for (let i = 0; i < 40 && !(window.google && google.accounts && google.accounts.id); i++) await new Promise(r => setTimeout(r, 150));
+    if (!(window.google && google.accounts && google.accounts.id)) { alvo.innerHTML = '<small style="color:var(--muted)">Não consegui carregar o login do Google.</small>'; return; }
+    if (!gPronto) { google.accounts.id.initialize({ client_id: gClient, callback: entrou, ux_mode: "popup" }); gPronto = true; }
+    google.accounts.id.renderButton(alvo, { theme: "filled_blue", size: "large", shape: "pill", text: "continue_with", locale: "pt-BR", width: Math.min(300, alvo.clientWidth || 300) });
+  } catch (e) { alvo.innerHTML = '<small style="color:var(--muted)">Login indisponível agora.</small>'; }
+}
+async function entrou(resp) {
+  try { const d = await api("/api/auth/google", "POST", { credential: resp.credential }); usuario = d.usuario; await iniciar(); }
+  catch (e) { $("#loginMsg").textContent = e.message; }
+}
+async function sair() { try { await api("/api/auth/logout", "POST"); } catch (e) {} location.href = "/"; }
+
+/* ---------- navegação ---------- */
+function tela(n) { ["login", "criar", "painel"].forEach(t => $("#s-" + t).hidden = t !== n); }
+async function iniciar() {
+  try { usuario = (await api("/api/auth/me")).usuario; } catch (e) {}
+  if (!usuario) { $("#dir").innerHTML = '<a href="/docs">API</a>'; tela("login"); botaoGoogle(); return; }
+  $("#dir").innerHTML = `<span>${esc(usuario.nome)}</span><a href="/app">App</a><a href="/docs">API</a><a href="#" id="sairL">Sair</a>`;
+  $("#sairL").onclick = e => { e.preventDefault(); sair(); };
+  await carregar();
+}
+async function carregar(manter) {
+  const d = await api("/api/mercado/meus"); MERC = d.dados; email = d.usuarioEmail || "";
+  if (!MERC.length) { $("#criarTit").textContent = "Cadastre seu mercado"; $("#cCancelar").hidden = true; $("#cEmail").value = email; tela("criar"); return; }
+  if (!sel || !MERC.some(m => m.id === sel)) sel = MERC[0].id;
+  tela("painel"); desenhar();
+}
+
+/* ---------- criar ---------- */
+$("#fCriar").onsubmit = async e => {
+  e.preventDefault(); $("#cErro").textContent = ""; $("#cBtn").disabled = true;
+  try {
+    const d = await P("criar", { nome: $("#cNome").value, cidade: $("#cCidade").value, email: $("#cEmail").value, cnpj: $("#cCnpj").value || undefined });
+    sel = d.mercado.id; $("#fCriar").reset(); await carregar(); mostrarChaves("Mercado cadastrado ✓", d.mercado.nome, d.chaves);
+  } catch (err) { $("#cErro").textContent = err.message; }
+  $("#cBtn").disabled = false;
+};
+$("#cCancelar").onclick = () => tela("painel");
+
+/* ---------- painel ---------- */
+function mostrarChaves(titulo, nome, chaves) {
+  $("#novas").innerHTML = `<div class="novas"><h3>${esc(titulo)} · ${esc(nome)}</h3><p><b>Guarde agora.</b> Estas chaves não aparecem de novo (mas você pode gerar outras aqui). Use a de <b>teste</b> primeiro.</p>
+    ${[["Teste (homologação)", chaves.teste], ["Produção", chaves.producao]].map(([l, v]) => `<div style="font-size:13px">${l}</div><div class="kv"><code>${esc(v)}</code><button class="btn" data-copiar="${esc(v)}">Copiar</button></div>`).join("")}
+    <button class="btn sec" style="margin-top:6px;color:inherit;border-color:currentColor" data-a="fecharNovas">Já guardei, fechar</button></div>`;
+  $("#novas").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function desenhar() {
+  const m = MERC.find(x => x.id === sel);
+  $("#abas").innerHTML = MERC.map(x => `<button class="aba ${x.id === sel ? "on" : ""}" data-a="trocar" data-id="${x.id}">${esc(x.nome)}</button>`).join("") + (MERC.length < 3 ? '<button class="aba" data-a="novo">+ Novo mercado</button>' : "");
+  $("#painel").innerHTML = `
+    <div class="top2"><h1 style="margin:0">${esc(m.nome)} <span class="tag ${m.ativo ? "" : "off"}">${m.ativo ? "ativo" : "pausado"}</span></h1></div>
+    <p class="sub">${esc(m.cidade)}${m.cnpj ? " · CNPJ " + esc(cnpjFmt(m.cnpj)) : ""}</p>
+    <div class="kpis"><div class="kpi"><small>Produtos em produção</small><b>${m.produtos}</b></div><div class="kpi"><small>Em teste</small><b>${m.produtos_teste}</b></div><div class="kpi"><small>Último envio</small><b style="font-size:15px;margin-top:8px">${dt(m.ultima_atualizacao)}</b></div><div class="kpi"><small>Chaves ativas</small><b>${m.chaves.filter(c => !c.revogada).length}</b></div></div>
+
+    <div class="card"><h2>Dados do mercado</h2>
+      <form data-form="editar"><div class="row"><div><label>Nome</label><input name="nome" required maxlength="120" value="${esc(m.nome)}"></div><div><label>Cidade</label><input name="cidade" required maxlength="80" value="${esc(m.cidade)}"></div></div>
+      <div class="row"><div><label>E-mail de contato</label><input name="email" type="email" value="${esc(m.email || "")}"></div><div><label>CNPJ</label><input name="cnpj" inputmode="numeric" value="${esc(cnpjFmt(m.cnpj))}"></div></div>
+      <button class="btn" type="submit">Salvar dados</button><p class="msg" data-err></p></form></div>
+
+    <div class="card"><h2>Chaves da API</h2>
+      ${m.chaves.map(c => `<div class="chave ${c.revogada ? "rev" : ""}"><span><code>${esc(c.prefixo)}…</code> · ${c.ambiente === "teste" ? "teste" : "produção"}${c.revogada ? " · revogada" : ""}</span>${c.revogada ? "" : `<button class="btn sec bad" data-a="revogar" data-id="${c.id}">Revogar</button>`}</div>`).join("") || "<small>Sem chaves.</small>"}
+      <button class="btn sec" data-a="novaChave" style="margin-top:8px">Gerar novas chaves</button>
+      <p style="font-size:13px;color:var(--muted);margin-top:10px">Envie os preços do seu sistema com <code>POST /api/v1/precos</code> e o cabeçalho <code>Authorization: Bearer &lt;chave&gt;</code>. <a href="/docs" style="color:var(--green);font-weight:700">Ver documentação</a>.</p>
+      <pre>curl -X POST https://lista-certa-omega.vercel.app/api/v1/precos \\
+  -H "Authorization: Bearer SUA_CHAVE_DE_TESTE" -H "Content-Type: application/json" \\
+  -d '{"itens":[{"gtin":"7894900011517","descricao":"LEITE INTEGRAL 1L","preco":5.49}]}'</pre></div>
+
+    <div class="card"><div class="top2"><h2 style="margin:0">Preços</h2><div class="seg"><button data-a="amb" data-v="producao" class="${amb === "producao" ? "on" : ""}">Produção</button><button data-a="amb" data-v="teste" class="${amb === "teste" ? "on" : ""}">Teste</button></div></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:8px">${amb === "teste" ? "Ambiente de teste: o público não vê estes preços." : "Produção: estes preços aparecem na comparação."}</p>
+      <details><summary style="cursor:pointer;font-weight:700;color:var(--green)">Adicionar um preço</summary>
+        <form data-form="preco"><div class="row"><div><label>Código de barras (GTIN)</label><input name="gtin" required inputmode="numeric" placeholder="7894900011517"></div><div><label>Descrição</label><input name="descricao" maxlength="120"></div></div>
+        <div class="row"><div><label>Preço (R$)</label><input name="preco" required inputmode="decimal" placeholder="5,49"></div><div><label>Unidade</label><input name="unidade" maxlength="6" placeholder="UN"></div></div>
+        <button class="btn" type="submit">Salvar preço</button><p class="msg" data-err></p></form></details>
+      <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;color:var(--green)">Importar uma lista</summary>
+        <form data-form="lote"><label>Uma linha por produto: <code>gtin;descrição;preço;unidade</code> (a unidade é opcional)</label><textarea name="lista" placeholder="7894900011517;LEITE INTEGRAL 1L;5,49;UN&#10;7891000000014;CAFE TORRADO 500G;21,90"></textarea>
+        <button class="btn" type="submit">Enviar lista</button><p class="msg" data-err></p><div data-res></div></form></details>
+      <div style="margin-top:14px"><input id="busca" type="search" placeholder="Buscar nos meus preços (nome ou código)"></div>
+      <div id="precos" style="margin-top:6px">Carregando…</div></div>
+
+    <div class="card zona"><h2>Zona de perigo</h2>
+      <div class="acoes" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sec ${m.ativo ? "bad" : ""}" data-a="ativo" data-v="${m.ativo ? "0" : "1"}">${m.ativo ? "Pausar mercado" : "Retomar mercado"}</button>
+        <button class="btn sec bad" data-a="excluirM">Excluir mercado</button></div>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px">Pausar tira os seus preços da comparação e bloqueia novos envios. Excluir apaga o mercado, as chaves e todos os preços, e não dá para desfazer.</p></div>`;
+  carregarPrecos();
+}
+async function carregarPrecos() {
+  const alvo = $("#precos"); if (!alvo) return;
+  try {
+    const q = ($("#busca") && $("#busca").value.trim()) || "";
+    const d = (await api(`/api/mercado/precos?id=${sel}&ambiente=${amb}${q ? "&q=" + encodeURIComponent(q) : ""}`)).dados;
+    alvo.innerHTML = d.length ? d.map(x => `<div class="lin"><span><b>${esc(x.descricao || x.gtin)}</b><small>${esc(x.gtin)}${x.unidade ? " · " + esc(x.unidade) : ""}${x.promocao_preco ? " · promo " + brl(x.promocao_preco) + " até " + String(x.promocao_ate).slice(0, 10) : ""} · ${dt(x.atualizado_em)}</small></span>
+      <span><b>${brl(x.preco)}</b> <button class="btn sec bad" data-a="apagarPreco" data-gtin="${esc(x.gtin)}">Apagar</button></span></div>`).join("") : '<small style="color:var(--muted)">Nenhum preço aqui ainda.</small>';
+  } catch (e) { alvo.textContent = "Não consegui carregar os preços."; }
+}
+
+/* ---------- ações ---------- */
+function parseLista(txt) {
+  const itens = [];
+  for (const l of txt.split(/\r?\n/)) {
+    const p = l.includes(";") || l.includes("\t") ? l.split(/[;\t]/).map(x => x.trim()) : l.split(",").map(x => x.trim());
+    if (!p[0] || !/^\d{8,14}$/.test(p[0])) continue; /* pula cabeçalho e linhas vazias */
+    const preco = parseFloat(String(p[2] || "").replace(/\./g, "").replace(",", "."));
+    itens.push({ gtin: p[0], descricao: p[1] || undefined, preco, unidade: p[3] || undefined });
+  }
+  return itens;
+}
+document.addEventListener("submit", async e => {
+  const f = e.target.closest("form[data-form]"); if (!f) return; e.preventDefault();
+  const v = Object.fromEntries(new FormData(f)), err = f.querySelector("[data-err]"); err.textContent = ""; err.classList.remove("ok");
+  try {
+    if (f.dataset.form === "editar") { await P("editar", { id: sel, nome: v.nome, cidade: v.cidade, email: v.email, cnpj: v.cnpj }); toast("Dados salvos"); await carregar(); }
+    else if (f.dataset.form === "preco") {
+      const preco = parseFloat(String(v.preco).replace(/\./g, "").replace(",", "."));
+      const d = await P("precos", { id: sel, ambiente: amb, itens: [{ gtin: v.gtin.trim(), descricao: v.descricao || undefined, unidade: v.unidade || undefined, preco }] });
+      if (d.rejeitados && d.rejeitados.length) { err.textContent = d.rejeitados[0].msg; return; }
+      toast("Preço salvo"); f.reset(); await carregar();
+    }
+    else if (f.dataset.form === "lote") {
+      const itens = parseLista(v.lista); const res = f.querySelector("[data-res]");
+      if (!itens.length) { err.textContent = "Não encontrei nenhuma linha válida. Use: gtin;descrição;preço"; return; }
+      let ok = 0, rej = [];
+      for (let i = 0; i < itens.length; i += 500) {
+        const d = await P("precos", { id: sel, ambiente: amb, itens: itens.slice(i, i + 500) });
+        ok += d.aceitos; rej = rej.concat((d.rejeitados || []).map(x => ({ ...x, indice: x.indice + i })));
+      }
+      res.innerHTML = `<p class="msg ok">${ok} de ${itens.length} preços salvos.</p>` + (rej.length ? `<p class="msg">${rej.length} com problema:</p><ul class="lista">${rej.slice(0, 15).map(x => `<li>linha ${x.indice + 1} (${esc(x.gtin || "?")}): ${esc(x.msg)}</li>`).join("")}</ul>` : "");
+      toast(ok + " preços salvos"); await carregar();
+    }
+  } catch (x) { err.textContent = x.message; }
+});
+document.addEventListener("input", e => { if (e.target.id === "busca") { clearTimeout(window._bt); window._bt = setTimeout(carregarPrecos, 300); } });
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return; const a = b.dataset.a;
+  try {
+    if (b.dataset.copiar) { try { await navigator.clipboard.writeText(b.dataset.copiar); toast("Chave copiada"); } catch (x) { toast("Selecione e copie"); } }
+    else if (a === "fecharNovas") $("#novas").innerHTML = "";
+    else if (a === "trocar") { sel = +b.dataset.id; desenhar(); }
+    else if (a === "novo") { $("#criarTit").textContent = "Cadastrar outro mercado"; $("#cCancelar").hidden = false; $("#cEmail").value = email; tela("criar"); }
+    else if (a === "amb") { amb = b.dataset.v; desenhar(); }
+    else if (a === "novaChave") { if (!confirm("Gerar novas chaves? As atuais continuam valendo até você revogar.")) return; const d = await P("chave", { id: sel, nova: true }); await carregar(); mostrarChaves("Novas chaves", MERC.find(x => x.id === sel).nome, d.chaves); }
+    else if (a === "revogar") { if (!confirm("Revogar esta chave? Quem a usa perde o acesso na hora.")) return; await P("chave", { id: sel, revogar: +b.dataset.id }); toast("Chave revogada"); await carregar(); }
+    else if (a === "apagarPreco") { if (!confirm("Apagar este preço?")) return; await P("excluir-preco", { id: sel, gtin: b.dataset.gtin, ambiente: amb }); toast("Preço apagado"); await carregar(); }
+    else if (a === "ativo") { const at = b.dataset.v === "1"; if (!at && !confirm("Pausar o mercado? Seus preços saem da comparação.")) return; await P("ativo", { id: sel, ativo: at }); toast(at ? "Mercado retomado" : "Mercado pausado"); await carregar(); }
+    else if (a === "excluirM") {
+      const m = MERC.find(x => x.id === sel), t = prompt(`EXCLUIR "${m.nome}"?\nApaga o mercado, as chaves e TODOS os preços. Não dá para desfazer.\n\nDigite o nome do mercado para confirmar:`);
+      if (t === null) return; await P("excluir", { id: sel, confirmar: t }); toast("Mercado excluído"); sel = null; await carregar();
+    }
+  } catch (err) { toast(err.message || "Falha"); }
+});
+
+iniciar();
+</script>
+</body>
+</html>

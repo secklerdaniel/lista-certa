@@ -33,12 +33,12 @@ module.exports = async (req, res) => {
     const ip = sha256(String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "?").split(",")[0].trim() + "|lc");
     const r = await sql().query(`select count(*)::int as n from contribuicoes where usuario_id = $1 and tipo = 'video' and criado_em > now() - interval '1 hour'`, [usr.id]);
     if (r[0].n >= LIMITE_HORA) return erro(res, 429, "limite", "Muitos envios em pouco tempo. Tente de novo mais tarde.");
+    const cid = (await sql().query(`insert into contribuicoes (usuario_id, tipo, mercado_nome, cidade, itens) values ($1, 'video', $2, $3, $4) returning id`, [usr.id, nome, cidade, ok.length]))[0].id;
     await sql().query(
-      `insert into coletas (mercado_nome, cidade, descricao, gtin, preco, promocao_preco, origem, ip_hash, usuario_id, local_metros)
-       select $1, $2, d, g, p, pp, 'video', $7, $8, $9 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
-      [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip, usr.id, m]);
-    await sql().query(`insert into contribuicoes (usuario_id, tipo, mercado_nome, cidade, itens) values ($1, 'video', $2, $3, $4)`, [usr.id, nome, cidade, ok.length]);
+      `insert into coletas (mercado_nome, cidade, descricao, gtin, preco, promocao_preco, origem, ip_hash, usuario_id, local_metros, contribuicao_id)
+       select $1, $2, d, g, p, pp, 'video', $7, $8, $9, $10 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
+      [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip, usr.id, m, cid]);
     const pts = await A.pontos(usr.id);
-    enviar(res, 201, { ok: true, recebidos: ok.length, status: "pendente de verificação", pontos: pts, nivel: A.nivel(pts) });
+    enviar(res, 201, { ok: true, contribuicaoId: cid, recebidos: ok.length, status: "pendente de verificação", pontos: pts, nivel: A.nivel(pts) });
   } catch (e) { erro(res, 500, "interno", "Erro interno."); }
 };
