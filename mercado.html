@@ -89,6 +89,13 @@ pre{background:var(--bg);border-radius:12px;padding:12px;overflow:auto;font-size
       <button class="btn sec" type="button" id="cCancelar" hidden style="margin-left:8px">Cancelar</button>
       <p class="msg" id="cErro"></p>
     </form>
+    <form class="card" id="fVincular">
+      <h2>Já tenho um mercado cadastrado</h2>
+      <p class="sub" style="margin-bottom:6px;font-size:14px">Se o seu mercado já foi cadastrado antes (pela API ou pela equipe), vincule-o a esta conta com a <b>chave de produção</b> dele. Ela prova que o mercado é seu.</p>
+      <label for="vChave">Chave de produção</label><input id="vChave" placeholder="lc_live_..." autocomplete="off" spellcheck="false">
+      <button class="btn" type="submit" id="vBtn">Vincular mercado</button>
+      <p class="msg" id="vErro"></p>
+    </form>
   </section>
 
   <!-- PAINEL -->
@@ -163,6 +170,14 @@ $("#fCriar").onsubmit = async e => {
   $("#cBtn").disabled = false;
 };
 $("#cCancelar").onclick = () => tela("painel");
+$("#fVincular").onsubmit = async e => {
+  e.preventDefault(); $("#vErro").textContent = ""; $("#vBtn").disabled = true;
+  try {
+    const d = await P("vincular", { chave: $("#vChave").value.trim() });
+    sel = d.mercado.id; $("#vChave").value = ""; await carregar(); toast("Mercado vinculado: " + d.mercado.nome);
+  } catch (err) { $("#vErro").textContent = err.message; }
+  $("#vBtn").disabled = false;
+};
 
 /* ---------- painel ---------- */
 function mostrarChaves(titulo, nome, chaves) {
@@ -173,7 +188,7 @@ function mostrarChaves(titulo, nome, chaves) {
 }
 function desenhar() {
   const m = MERC.find(x => x.id === sel);
-  $("#abas").innerHTML = MERC.map(x => `<button class="aba ${x.id === sel ? "on" : ""}" data-a="trocar" data-id="${x.id}">${esc(x.nome)}</button>`).join("") + (MERC.length < 3 ? '<button class="aba" data-a="novo">+ Novo mercado</button>' : "");
+  $("#abas").innerHTML = MERC.map(x => `<button class="aba ${x.id === sel ? "on" : ""}" data-a="trocar" data-id="${x.id}">${esc(x.nome)}</button>`).join("") + (MERC.length < 3 ? '<button class="aba" data-a="novo">+ Novo ou vincular mercado</button>' : "");
   $("#painel").innerHTML = `
     <div class="top2"><h1 style="margin:0">${esc(m.nome)} <span class="tag ${m.ativo ? "" : "off"}">${m.ativo ? "ativo" : "pausado"}</span></h1></div>
     <p class="sub">${esc(m.cidade)}${m.cnpj ? " · CNPJ " + esc(cnpjFmt(m.cnpj)) : ""}</p>

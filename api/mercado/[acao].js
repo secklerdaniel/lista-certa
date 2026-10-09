@@ -87,6 +87,20 @@ module.exports = async (req, res) => {
       return enviar(res, 200, { ok: true });
     }
 
+    /* vincula um mercado JÁ cadastrado (pela API ou pelo admin) à sua conta: quem tem a chave de PRODUÇÃO prova que o mercado é seu */
+    if (acao === "vincular" && req.method === "POST") {
+      const a = await acesso(req, res); if (!a) return;
+      const k = String((corpo(req) || {}).chave || "").trim();
+      if (!/^lc_live_[0-9a-f]{32}$/.test(k)) return erro(res, 400, "chave", "Informe a chave de produção do mercado (começa com lc_live_).");
+      const r = await sql().query(`select m.id, m.nome from chaves_api c join mercados m on m.id = c.mercado_id where c.hash = $1 and c.revogada_em is null`, [sha256(k)]);
+      if (!r.length) return erro(res, 404, "chave", "Chave não encontrada ou revogada.");
+      const qtd = await sql().query(`select count(*)::int as n from mercado_membros where usuario_id = $1`, [a.usr.id]);
+      const ja = await sql().query(`select 1 from mercado_membros where usuario_id = $1 and mercado_id = $2`, [a.usr.id, r[0].id]);
+      if (!ja.length && qtd[0].n >= MAX_MERCADOS) return erro(res, 400, "limite", `Cada conta pode ter até ${MAX_MERCADOS} mercados.`);
+      await sql().query(`insert into mercado_membros (mercado_id, usuario_id, papel) values ($1, $2, 'dono') on conflict do nothing`, [r[0].id, a.usr.id]);
+      return enviar(res, 200, { ok: true, mercado: r[0] });
+    }
+
     if (acao === "chave" && req.method === "POST") {
       const b = corpo(req) || {}; const a = await acesso(req, res, b.id); if (!a) return;
       if (b.nova) return enviar(res, 201, { ok: true, chaves: await par(a.m.id), aviso: "Guarde agora: as chaves não são mostradas de novo." });

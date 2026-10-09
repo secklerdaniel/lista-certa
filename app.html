@@ -489,7 +489,8 @@ function renderConta(){
   if(usuario){
     el.innerHTML=`<div class="eu">${usuario.foto?`<img src="${usuario.foto}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${inicial(usuario.nome)}</span>`}
       <div><b>${usuario.nome}</b><small>suas coletas aparecem com esse nome</small></div><button class="sair" id="sair">Sair</button></div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px"><button class="sair" id="minhas" style="margin:0">Minhas coletas</button><button class="sair" id="excluirConta" style="margin:0;color:var(--bad)">Excluir minha conta</button></div><div id="minhasLista"></div>`;
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px"><button class="sair" id="editarPerfil" style="margin:0">Editar perfil</button><button class="sair" id="minhas" style="margin:0">Minhas coletas</button><button class="sair" id="excluirConta" style="margin:0;color:var(--bad)">Excluir minha conta</button></div><div id="perfilForm"></div><div id="minhasLista"></div>`;
+    $("#editarPerfil").onclick=editarPerfil;
     $("#minhas").onclick=minhasColetas;
     $("#excluirConta").onclick=excluirConta;
     $("#sair").onclick=async()=>{try{await fetch("/api/auth/logout",{method:"POST"})}catch(e){}usuario=null;pts=0;try{sessionStorage.removeItem("lc-splash")}catch(e){}location.href="/"};
@@ -497,6 +498,26 @@ function renderConta(){
     el.innerHTML=`<p><b>Entre para contribuir.</b> Seus pontos e seu nome (ex.: Daniel S.) aparecem nas coletas que você enviar.</p><div class="gbtn" id="gbtn"></div><p style="margin:10px 0 0;font-size:12.5px">Ao entrar, você aceita os <a href="/termos" style="color:var(--green);font-weight:700">Termos</a> e a <a href="/privacidade" style="color:var(--green);font-weight:700">Política de privacidade</a>.</p>`;
     botaoGoogle();
   }
+}
+/* editar o nome exibido (a foto e o e-mail vêm da conta Google) */
+function editarPerfil(){
+  const el=$("#perfilForm");
+  if(el.innerHTML){el.innerHTML="";return}
+  el.innerHTML=`<form id="fPerfil" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+    <label for="pNome" style="font-size:12.5px;color:var(--muted)">Nome que aparece nas suas coletas e no ranking</label>
+    <input id="pNome" maxlength="120" required value="${usuario.nome.replace(/"/g,"&quot;")}" style="padding:11px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+    <small style="color:var(--muted)">Aparece para os outros como primeiro nome + inicial do sobrenome. A foto e o e-mail vêm da sua conta Google.</small>
+    <div style="display:flex;gap:10px"><button class="btn" type="submit" style="margin:0;padding:11px 16px;box-shadow:none">Salvar</button><button class="btn ghost" type="button" id="pCancel" style="margin:0;padding:11px 16px">Cancelar</button></div></form>`;
+  $("#pCancel").onclick=()=>{el.innerHTML=""};
+  $("#fPerfil").onsubmit=async e=>{
+    e.preventDefault();
+    try{
+      const r=await fetch("/api/auth/editar-perfil",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nome:$("#pNome").value})});
+      const d=await r.json();if(!d.ok)throw new Error(d.msg||"falha");
+      usuario=d.usuario;pts=usuario.pontos;renderConta();renderContr();toast("Perfil atualizado");rankCarregar();
+    }catch(x){toast(x.message==="Failed to fetch"?"Sem conexão com o servidor":x.message)}
+  };
+  $("#pNome").focus();$("#pNome").select();
 }
 /* o usuário vê e exclui as PRÓPRIAS coletas; excluir a conta apaga o cadastro e os pontos (os preços já enviados ficam, sem o nome) */
 async function minhasColetas(){

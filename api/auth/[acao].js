@@ -60,6 +60,16 @@ module.exports = async (req, res) => {
       return enviar(res, 200, { ok: true });
     }
 
+    /* o usuário edita o PRÓPRIO nome exibido (foto e e-mail vêm do Google) */
+    if (acao === "editar-perfil" && req.method === "POST") {
+      const u = await A.usuario(req);
+      if (!u) return erro(res, 401, "login", "Entre com o Google.");
+      const nome = String((corpo(req) || {}).nome || "").replace(/\s+/g, " ").trim();
+      if (nome.length < 2 || nome.length > 120) return erro(res, 400, "nome", "O nome deve ter de 2 a 120 caracteres.");
+      await sql().query(`update usuarios set nome = $1 where id = $2`, [nome, u.id]);
+      return enviar(res, 200, { ok: true, usuario: await publico({ ...u, nome }) });
+    }
+
     if (acao === "logout" && req.method === "POST") { A.fecharSessao(res); return enviar(res, 200, { ok: true }); }
 
     if (acao === "ranking" && req.method === "GET") {
