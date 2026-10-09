@@ -66,6 +66,19 @@ module.exports = async (req, res) => {
       const aviso = txt(html).slice(0, 200);
       return res.status(502).end(JSON.stringify({ ok: false, erro: "portal", msg: "O portal não devolveu os itens.", detalhe: aviso }));
     }
+    /* o mercado do cupom entra no catálogo da região (pelo CNPJ), para aparecer nas sugestões do envio de vídeo */
+    try {
+      const { sql } = require("./_lib");
+      const seg0 = (dados.mercado.endereco || "").split(",").map(s => s.trim()).filter(Boolean);
+      const cid0 = seg0.length >= 2 ? seg0[seg0.length - 2] : null, cnpj0 = (dados.mercado.cnpj || "").replace(/\D/g, "");
+      if (cid0 && cnpj0.length === 14 && dados.mercado.nome) {
+        const bonito = s => s.toLowerCase().replace(/\b(ltda|eireli|epp|me|s\/?a)\b\.?/g, "").replace(/\s+/g, " ").trim().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase());
+        const cidade0 = cid0.toLowerCase().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (De|Da|Do) /g, x => x.toLowerCase());
+        const ja = await sql().query(`select id from mercados_regiao where cnpj = $1`, [cnpj0]);
+        if (!ja.length) await sql().query(`insert into mercados_regiao (nome, cidade, endereco, cnpj, fonte) values ($1, $2, $3, $4, 'cupom') on conflict do nothing`, [bonito(dados.mercado.nome), cidade0, seg0.slice(0, 2).join(", ").slice(0, 160), cnpj0]);
+      }
+    } catch (e) { /* o catálogo é um bônus: nunca derruba a leitura do cupom */ }
+
     /* se a pessoa está logada, o servidor registra a contribuição (1 por cupom, no mundo todo) — pontos só de cupom que o servidor viu */
     let contribuicao = null;
     try {

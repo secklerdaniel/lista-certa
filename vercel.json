@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/v1/regiao",
+      "destination": "/api/util/regiao"
+    },
+    {
       "source": "/api/v1/proximos",
       "destination": "/api/util/proximos"
     },

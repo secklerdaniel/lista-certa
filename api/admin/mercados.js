@@ -24,6 +24,11 @@ module.exports = async (req, res) => {
   if (!admin(req)) return erro(res, 401, "nao_autorizado", "Não autorizado.");
   try {
     if (req.method === "GET") {
+      /* catálogo da REGIÃO (mercados que ainda não têm conta; alimenta as sugestões do envio de vídeo) */
+      if (req.query && req.query.regiao) {
+        const r = await sql().query(`select id, nome, cidade, endereco, cnpj, fonte, ativo, (lat is not null) as tem_coordenadas, criado_em from mercados_regiao order by lower(cidade), lower(nome)`);
+        return enviar(res, 200, { ok: true, dados: r });
+      }
       if (req.query && req.query.precos) {
         const r = await sql().query(
           `select gtin, descricao, unidade, preco::float as preco, promocao_preco::float as promocao_preco, promocao_ate, ambiente, atualizado_em
@@ -43,6 +48,29 @@ module.exports = async (req, res) => {
     }
     if (req.method !== "POST") return erro(res, 405, "metodo", "Use GET ou POST.");
     const b = corpo(req) || {};
+
+    /* CRUD do catálogo da região: { regiao: { acao: "criar"|"editar"|"excluir"|"ativo", id?, nome, cidade, endereco, cnpj, ativo } } */
+    if (b.regiao && typeof b.regiao === "object") {
+      const g = b.regiao, ac = g.acao;
+      const nome = String(g.nome || "").replace(/\s+/g, " ").trim().slice(0, 120), cidade = String(g.cidade || "").replace(/\s+/g, " ").trim().slice(0, 80);
+      const endereco = g.endereco ? String(g.endereco).replace(/\s+/g, " ").trim().slice(0, 160) : null, cnpj = g.cnpj ? String(g.cnpj).replace(/\D/g, "") : null;
+      const dup = e => /mercados_regiao_nome_idx|mercados_regiao_cnpj_key|duplicate key/i.test(String(e.message));
+      if (ac === "criar" || ac === "editar") {
+        if (nome.length < 2) return erro(res, 400, "nome", "Informe o nome do mercado.");
+        if (cidade.length < 2) return erro(res, 400, "cidade", "Informe a cidade.");
+        if (cnpj && cnpj.length !== 14) return erro(res, 400, "cnpj", "CNPJ deve ter 14 dígitos (ou ficar em branco).");
+      }
+      try {
+        if (ac === "criar") {
+          const r = await sql().query(`insert into mercados_regiao (nome, cidade, endereco, cnpj, fonte) values ($1, $2, $3, $4, 'manual') returning id`, [nome, cidade, endereco, cnpj]);
+          return enviar(res, 201, { ok: true, id: r[0].id });
+        }
+        if (ac === "editar") { await sql().query(`update mercados_regiao set nome = $1, cidade = $2, endereco = $3, cnpj = $4 where id = $5`, [nome, cidade, endereco, cnpj, parseInt(g.id, 10)]); return enviar(res, 200, { ok: true }); }
+        if (ac === "ativo") { await sql().query(`update mercados_regiao set ativo = $1 where id = $2`, [!!g.ativo, parseInt(g.id, 10)]); return enviar(res, 200, { ok: true }); }
+        if (ac === "excluir") { await sql().query(`delete from mercados_regiao where id = $1`, [parseInt(g.id, 10)]); return enviar(res, 200, { ok: true }); }
+      } catch (e) { if (dup(e)) return erro(res, 409, "duplicado", "Já existe um mercado com esse nome nessa cidade (ou esse CNPJ)."); throw e; }
+      return erro(res, 400, "acao", "Ação inválida.");
+    }
 
     if (b.mercadoId) {
       const id = parseInt(b.mercadoId, 10);

@@ -60,7 +60,7 @@ input:focus{border-color:var(--green2);box-shadow:0 0 0 3px rgba(28,122,87,.15)}
 <body>
 <header>
   <div><h1>Lista Certa · Admin</h1><small>Mercados, usuários e chaves da API</small></div>
-  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button></div>
+  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="regiao">Região</button></div>
   <button class="btn sec" id="sair" style="color:#fff;border-color:#fff;display:none">Sair</button>
 </header>
 <main>
@@ -88,6 +88,22 @@ input:focus{border-color:var(--green2);box-shadow:0 0 0 3px rgba(28,122,87,.15)}
     </section>
     <div class="topo"><h2 id="mTit">Mercados</h2><input type="search" id="mBusca" placeholder="Buscar mercado ou cidade"></div>
     <div id="lista"></div>
+  </div>
+
+  <!-- REGIÃO: catálogo de mercados da região (sugestões no envio de vídeo) -->
+  <div id="p-regiao" hidden>
+    <section class="card">
+      <h2>Adicionar mercado da região</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Estes mercados aparecem como sugestão quando alguém envia um vídeo de prateleira. Eles <b>não precisam ter conta</b>. Os mercados dos cupons lidos entram sozinhos (pelo CNPJ).</p>
+      <form id="fRegiao">
+        <div class="row"><div><label for="gNome">Nome do mercado</label><input type="text" id="gNome" required maxlength="120"></div><div><label for="gCidade">Cidade</label><input type="text" id="gCidade" required maxlength="80" placeholder="Gramado" list="cidadesLista"></div></div>
+        <datalist id="cidadesLista"><option value="Gramado"><option value="Canela"><option value="Igrejinha"><option value="Nova Petrópolis"><option value="São Francisco de Paula"></datalist>
+        <div class="row"><div><label for="gEnd">Endereço (rua e número, opcional)</label><input type="text" id="gEnd" maxlength="160"></div><div><label for="gCnpj">CNPJ (opcional)</label><input type="text" id="gCnpj" inputmode="numeric"></div></div>
+        <button class="btn" type="submit" id="gBtn">Adicionar</button><p class="msg" id="gMsg"></p>
+      </form>
+    </section>
+    <div class="topo"><h2 id="gTit">Mercados da região</h2><input type="search" id="gBusca" placeholder="Buscar por nome, cidade ou rua"></div>
+    <div id="glista"></div>
   </div>
 
   <!-- USUÁRIOS -->
@@ -168,11 +184,37 @@ function desenharUsuarios() {
 }
 async function carregarUsuarios() { USU = (await chamar("/api/admin/usuarios")).dados; desenharUsuarios(); }
 
+/* ---------- região ---------- */
+let REG = [];
+const RG = (acao, g) => chamar("/api/admin/mercados", "POST", { regiao: Object.assign({ acao }, g) });
+function desenharRegiao() {
+  const t = norm($("#gBusca").value), L = REG.filter(r => !t || norm(r.nome + " " + r.cidade + " " + (r.endereco || "")).includes(t));
+  $("#gTit").textContent = `Mercados da região (${L.length}${t ? " de " + REG.length : ""})`;
+  $("#glista").innerHTML = L.length ? L.map(r => `<div class="mk ${r.ativo ? "" : "off"}" data-g="${r.id}">
+    <div class="top"><div><b>${esc(r.nome)}</b><span class="tag ${r.ativo ? "" : "off"}">${r.ativo ? "ativo" : "oculto"}</span><span class="tag off">${r.fonte === "cupom" ? "veio de cupom" : "manual"}</span>
+      <div class="meta">${esc(r.cidade)}${r.endereco ? " · " + esc(r.endereco) : ""}${r.cnpj ? " · CNPJ " + esc(cnpjFmt(r.cnpj)) : ""}${r.tem_coordenadas ? " · com posição" : ""}</div></div></div>
+    <div class="acoes"><button class="btn sec" data-a="editarG" data-g="${r.id}">Editar</button>
+      <button class="btn sec" data-a="ativoG" data-g="${r.id}" data-v="${r.ativo ? "0" : "1"}">${r.ativo ? "Ocultar" : "Mostrar"}</button>
+      <button class="btn sec bad" data-a="excluirG" data-g="${r.id}" data-nome="${esc(r.nome)}">Excluir</button></div>
+    <div class="painel" data-gpainel="${r.id}" hidden></div></div>`).join("") : '<div class="vazio">Nenhum mercado cadastrado ainda.</div>';
+}
+async function carregarRegiao() { REG = (await chamar("/api/admin/mercados?regiao=1")).dados; desenharRegiao(); }
+$("#gBusca").oninput = desenharRegiao;
+$("#fRegiao").onsubmit = async e => {
+  e.preventDefault(); $("#gMsg").textContent = ""; $("#gBtn").disabled = true;
+  try {
+    await RG("criar", { nome: $("#gNome").value, cidade: $("#gCidade").value, endereco: $("#gEnd").value || undefined, cnpj: $("#gCnpj").value || undefined });
+    const cid = $("#gCidade").value; $("#fRegiao").reset(); $("#gCidade").value = cid; $("#gNome").focus(); toast("Mercado adicionado"); await carregarRegiao();
+  } catch (err) { $("#gMsg").textContent = err.message; }
+  $("#gBtn").disabled = false;
+};
+
 /* ---------- abas e login ---------- */
 function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
-  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios";
+  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao";
   if (n === "usuarios") carregarUsuarios().catch(e => toast(e.message));
+  if (n === "regiao") carregarRegiao().catch(e => toast(e.message));
 }
 async function entrar(k) {
   KEY = k;
@@ -210,6 +252,7 @@ document.addEventListener("submit", async e => {
   const v = Object.fromEntries(new FormData(f)); const err = f.querySelector("[data-err]"); err.textContent = "";
   try {
     if (f.dataset.form === "editarM") { await M(+f.dataset.m, { editar: { nome: v.nome, cidade: v.cidade, cnpj: v.cnpj, email: v.email } }); toast("Mercado atualizado"); await carregarMercados(); }
+    else if (f.dataset.form === "editarG") { await RG("editar", { id: +f.dataset.g, nome: v.nome, cidade: v.cidade, endereco: v.endereco || undefined, cnpj: v.cnpj || undefined }); toast("Mercado atualizado"); await carregarRegiao(); }
     else if (f.dataset.form === "editarU") { await U(+f.dataset.u, { editar: { nome: v.nome } }); toast("Nome atualizado"); await carregarUsuarios(); }
   } catch (x) { err.textContent = x.message; }
 });
@@ -242,6 +285,15 @@ document.addEventListener("click", async e => {
       await M(mid, { excluir: true }); toast("Mercado excluído"); await carregarMercados();
     }
     else if (a === "editarU") { const p = document.querySelector(`[data-upainel="${uid}"]`); const u = USU.find(x => x.id === uid); p.hidden = false; p.innerHTML = `<form data-form="editarU" data-u="${uid}"><label>Nome exibido</label><input type="text" name="nome" required maxlength="120" value="${esc(u.nome)}"><div class="acoes"><button class="btn" type="submit" style="margin-top:12px">Salvar</button><button class="btn sec" type="button" data-a="fecharU" data-u="${uid}" style="margin-top:12px">Cancelar</button></div><p class="msg" data-err></p></form>`; }
+    else if (a === "editarG") {
+      const gid = +b.dataset.g, r = REG.find(x => x.id === gid), p = document.querySelector(`[data-gpainel="${gid}"]`); p.hidden = false;
+      p.innerHTML = `<form data-form="editarG" data-g="${gid}"><div class="row"><div><label>Nome</label><input type="text" name="nome" required maxlength="120" value="${esc(r.nome)}"></div><div><label>Cidade</label><input type="text" name="cidade" required maxlength="80" value="${esc(r.cidade)}"></div></div>
+        <div class="row"><div><label>Endereço</label><input type="text" name="endereco" maxlength="160" value="${esc(r.endereco || "")}"></div><div><label>CNPJ</label><input type="text" name="cnpj" inputmode="numeric" value="${esc(cnpjFmt(r.cnpj))}"></div></div>
+        <div class="acoes"><button class="btn" type="submit" style="margin-top:12px">Salvar</button><button class="btn sec" type="button" data-a="fecharG" data-g="${gid}" style="margin-top:12px">Cancelar</button></div><p class="msg" data-err></p></form>`;
+    }
+    else if (a === "fecharG") { const p = document.querySelector(`[data-gpainel="${+b.dataset.g}"]`); p.hidden = true; p.innerHTML = ""; }
+    else if (a === "ativoG") { await RG("ativo", { id: +b.dataset.g, ativo: b.dataset.v === "1" }); toast(b.dataset.v === "1" ? "Mercado visível" : "Mercado oculto"); await carregarRegiao(); }
+    else if (a === "excluirG") { if (!confirm(`Excluir "${b.dataset.nome}" da lista da região?`)) return; await RG("excluir", { id: +b.dataset.g }); toast("Excluído"); await carregarRegiao(); }
     else if (a === "fecharU") { const p = document.querySelector(`[data-upainel="${uid}"]`); p.hidden = true; p.innerHTML = ""; }
     else if (a === "contribs") {
       const p = document.querySelector(`[data-upainel="${uid}"]`); p.hidden = false; p.innerHTML = "Carregando…";

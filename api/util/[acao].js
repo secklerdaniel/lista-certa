@@ -64,11 +64,35 @@ function organizar(elementos, lat, lng) {
   }
   return saida.sort((a, b) => a.metros - b.metros).slice(0, MAX);
 }
+/* mercados do nosso catálogo da região (cadastrados à mão pelo admin e descobertos pelos cupons), com distância se houver coordenadas */
+async function doCatalogo(lat, lng) {
+  return await sql().query(
+    `select nome, endereco, cidade, round(6371000 * acos(least(1, cos(radians($1)) * cos(radians(lat)) * cos(radians(lng) - radians($2)) + sin(radians($1)) * sin(radians(lat)))))::int as metros
+       from mercados_regiao where ativo and lat is not null and lng is not null
+        and 6371000 * acos(least(1, cos(radians($1)) * cos(radians(lat)) * cos(radians(lng) - radians($2)) + sin(radians($1)) * sin(radians(lat)))) <= $3
+      order by metros limit ${MAX}`, [lat, lng, 1500]);
+}
+const chaveNome = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 async function proximos(req, res) {
   const lat = Number(req.query && req.query.lat), lng = Number(req.query && req.query.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return erro(res, 400, "coordenadas", "Informe lat e lng válidos.");
-  try { enviar(res, 200, { ok: true, raioMetros: RAIO_M, dados: organizar(await overpass(lat, lng), lat, lng) }); }
-  catch (e) { erro(res, 502, "mapa", "Não consegui consultar o mapa agora. Digite o nome do mercado.", { detalhe: String(e && e.message || e).slice(0, 80) }); }
+  let lista = [];
+  try { lista = (await doCatalogo(lat, lng)).map(r => ({ nome: r.nome, metros: r.metros, endereco: r.endereco, fonte: "catalogo" })); } catch (e) { /* segue só com o mapa */ }
+  /* o catálogo vem primeiro; o mapa público (OpenStreetMap) completa quando há pouco por perto */
+  if (lista.length < 3) {
+    try {
+      const vistos = new Set(lista.map(x => chaveNome(x.nome)));
+      for (const x of organizar(await overpass(lat, lng), lat, lng)) if (!vistos.has(chaveNome(x.nome))) { vistos.add(chaveNome(x.nome)); lista.push({ ...x, fonte: "mapa" }); }
+    } catch (e) { if (!lista.length) return erro(res, 502, "mapa", "Não consegui consultar o mapa agora. Digite o nome do mercado.", { detalhe: String(e && e.message || e).slice(0, 80) }); }
+  }
+  enviar(res, 200, { ok: true, raioMetros: RAIO_M, dados: lista.sort((a, b) => a.metros - b.metros).slice(0, MAX) });
+}
+
+/* GET /api/v1/regiao?cidade=  → mercados do catálogo da região (para sugerir nome no envio de vídeo) */
+async function regiao(req, res) {
+  const cidade = req.query && req.query.cidade ? String(req.query.cidade) : null;
+  const r = await sql().query(`select nome, cidade, endereco from mercados_regiao where ativo ${cidade ? "and lower(cidade) = lower($1)" : ""} order by nome limit 300`, cidade ? [cidade] : []);
+  enviar(res, 200, { ok: true, dados: r });
 }
 
 module.exports = async (req, res) => {
@@ -78,6 +102,7 @@ module.exports = async (req, res) => {
     if (acao === "versao") return versao(req, res);
     if (acao === "cnpj") return await cnpj(req, res);
     if (acao === "proximos") return await proximos(req, res);
+    if (acao === "regiao") return await regiao(req, res);
     return erro(res, 404, "rota", "Rota não encontrada.");
   } catch (e) { return erro(res, 500, "interno", "Erro interno."); }
 };

@@ -784,6 +784,13 @@ try{JSON.parse(localStorage.getItem("lc-cupons")||"[]").forEach(z=>aplicarCupom(
 /* VÍDEO DAS PRATELEIRAS: o vídeo NÃO sai do aparelho — só alguns quadros nítidos vão para a visão (OpenAI) ler as etiquetas.
    A pessoa revisa a lista e só ao confirmar os preços são gravados no banco (/api/v1/coletas, "pendente de verificação"). */
 const vbox=()=>$("#vbox");
+let vRegiao=[];
+function vBuscar(){
+  const box=$("#vbusca");if(!box)return;
+  const t=norm(($("#vnome")&&$("#vnome").value)||"").trim();
+  const L=(t.length>=2?vRegiao.filter(x=>norm(x.nome).includes(t)):vRegiao).slice(0,t.length>=2?8:6);
+  box.innerHTML=L.map(x=>`<button class="chip" type="button" data-vnome="${encodeURIComponent(x.nome)}" title="${(x.endereco||"").replace(/"/g,"&quot;")}">${x.nome}</button>`).join("")+(t.length<2&&vRegiao.length>6?`<small style="color:var(--muted);align-self:center">e mais ${vRegiao.length-6}: digite para buscar</small>`:"");
+}
 let vCancel=false,vMetros=null; /* vMetros: distância (m) até o mercado escolhido pela localização; só isso é enviado, nunca a posição */
 function vLocalizar(){
   const bt=$("#vloc"),box=$("#vchips"),msg=$("#vlocmsg");msg.textContent="";
@@ -815,17 +822,23 @@ function vInicio(){
     <p>Filme as etiquetas de preço e a gente lê para você. O vídeo fica no seu aparelho; só alguns quadros são analisados.</p>
     <div class="dicas"><b>Para ler bem:</b> chegue perto, filme devagar (cada etiqueta por ~1 segundo), uma prateleira por vez e com a etiqueta bem iluminada.</div>
     <label for="vnome" style="font-size:13px;color:var(--muted)">Mercado filmado (${CITIES[city].name})</label>
-    <input type="text" id="vnome" list="vsug" placeholder="Nome do mercado" autocomplete="off"><datalist id="vsug">${sug}</datalist>
+    <input type="text" id="vnome" placeholder="Digite o nome do mercado" autocomplete="off">
+    <div id="vbusca" class="chips" style="margin-top:6px"></div>
     <button class="btn ghost" id="vloc" type="button">📍 Estou no mercado: usar minha localização</button>
     <div id="vchips" class="chips" style="margin-top:8px">${cadastrados}</div>
     <p id="vlocmsg" style="font-size:12.5px"></p>
+    <p style="font-size:11px;color:var(--muted);margin-top:2px">Locais: © colaboradores do OpenStreetMap</p>
     <button class="btn" id="vescolher">Escolher o vídeo</button>
     <button class="btn ghost" id="vsair">Cancelar</button>`;
   $("#vmodal").classList.add("on");
   $("#vsair").onclick=vFechar;
   $("#vloc").onclick=vLocalizar;
-  $("#vnome").oninput=()=>{vMetros=null};
-  $("#vchips").onclick=e=>{const b=e.target.closest("[data-vnome]");if(!b)return;$("#vnome").value=decodeURIComponent(b.dataset.vnome);vMetros=b.dataset.m?+b.dataset.m:null;[...$("#vchips").children].forEach(c=>c.style.outline="");b.style.outline="2px solid var(--green2)"};
+  /* catálogo da região: ao digitar, sugere os mercados que combinam (são muitos, então é por busca) */
+  vRegiao=[];
+  fetch("/api/v1/regiao?cidade="+encodeURIComponent(CITIES[city].name)).then(r=>r.json()).then(d=>{if(d.ok){vRegiao=d.dados;vBuscar()}}).catch(()=>{});
+  $("#vnome").oninput=()=>{vMetros=null;vBuscar()};
+  $("#vbox").onclick=e=>{const b=e.target.closest("[data-vnome]");if(!b)return;$("#vnome").value=decodeURIComponent(b.dataset.vnome);vMetros=b.dataset.m?+b.dataset.m:null;
+    $("#vbox").querySelectorAll("[data-vnome]").forEach(c=>c.style.outline="");b.style.outline="2px solid var(--green2)";$("#vbusca").innerHTML=""};
   $("#vescolher").onclick=()=>{if(!$("#vnome").value.trim()){$("#vnome").focus();toast("Diga qual é o mercado");return}$("#vfile").value="";$("#vfile").click()};
 }
 $("#vid").onclick=()=>{if(!usuario){toast("Entre com o Google para enviar vídeos");$("#conta").scrollIntoView({behavior:"smooth",block:"center"});return}vInicio()};
