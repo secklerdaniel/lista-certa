@@ -146,6 +146,19 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
 .modal.on{display:flex}
 .vf{width:260px;height:260px;border-radius:22px;position:relative;background:repeating-linear-gradient(45deg,#1b2a22,#1b2a22 10px,#20322a 10px,#20322a 20px);overflow:hidden}
 .vf video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vbox{background:var(--card);color:var(--ink);border-radius:20px;padding:18px;width:100%;max-width:360px;max-height:88%;overflow:auto;text-align:left}
+.vbox h3{font-size:19px;color:var(--green);margin-bottom:4px}
+.vbox p{font-size:13.5px;color:var(--muted);margin:6px 0}
+.vbox input[type=text]{width:100%;padding:11px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-size:15px;outline:none}
+.vbox input[type=text]:focus{border-color:var(--green2)}
+.vbox .btn{margin-top:10px;box-shadow:none}
+.vbox .dicas{font-size:13px;background:var(--bg);border-radius:12px;padding:10px 12px;margin:10px 0;line-height:1.5}
+.vprog{height:8px;border-radius:8px;background:var(--bg);margin:12px 0}.vprog i{display:block;height:100%;width:0;border-radius:8px;background:var(--gold);transition:width .3s}
+.vrow{display:grid;grid-template-columns:22px 1fr 78px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.vrow input[type=checkbox]{width:20px;height:20px;accent-color:#1c7a57}
+.vrow input[type=text]{padding:8px 9px;font-size:14px}
+.vrow small{grid-column:2/4;color:var(--muted);font-size:12px;margin-top:-4px}
+.vrow small.baixa{color:var(--bad);font-weight:700}
 .manual{display:flex;gap:8px;width:100%;max-width:330px}
 .manual input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:14px;outline:none}
 .manual input::placeholder{color:rgba(255,255,255,.55)}
@@ -205,6 +218,11 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M4 12h16"/></svg>
         Ler QR code do cupom
       </button>
+      <button class="btn ghost" id="vid" style="margin-top:10px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10.5l6-3.5v10l-6-3.5"/></svg>
+        Enviar vídeo das prateleiras
+      </button>
+      <input type="file" id="vfile" accept="video/*" hidden>
       <div class="how">
         <div><i>1</i><span><b>Compre normalmente</b>Todo cupom fiscal eletrônico (NFC-e) tem um QR code.</span></div>
         <div><i>2</i><span><b>Escaneie em segundos</b>A câmera lê o QR e identifica o mercado, a data e a nota.</span></div>
@@ -233,6 +251,7 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
     </div>
     <div class="ok" id="ok"></div>
   </div>
+  <div class="modal" id="vmodal" role="dialog" aria-modal="true" aria-label="Vídeo das prateleiras"><div class="vbox" id="vbox"></div></div>
   <div class="sheet" id="sheet" aria-hidden="true">
     <div class="pn" role="dialog" aria-modal="true" aria-labelledby="sheetT">
       <h3 id="sheetT">Onde você vai comprar?</h3>
@@ -602,6 +621,125 @@ async function carregarApi(){
   }catch(e){}finally{apiBusy=false}
 }
 try{JSON.parse(localStorage.getItem("lc-cupons")||"[]").forEach(z=>aplicarCupom(z.d,z.k,false))}catch(e){}
+/* VÍDEO DAS PRATELEIRAS: o vídeo NÃO sai do aparelho — só alguns quadros nítidos vão para a visão (OpenAI) ler as etiquetas.
+   A pessoa revisa a lista e só ao confirmar os preços são gravados no banco (/api/v1/coletas, "pendente de verificação"). */
+const vbox=()=>$("#vbox");
+let vCancel=false;
+function vFechar(){vCancel=true;$("#vmodal").classList.remove("on")}
+function vInicio(){
+  vCancel=false;
+  const sug=CITIES[city].markets.filter(m=>!m.api).map(m=>`<option value="${m.name}">`).join("");
+  vbox().innerHTML=`<h3>Vídeo das prateleiras</h3>
+    <p>Filme as etiquetas de preço e a gente lê para você. O vídeo fica no seu aparelho; só alguns quadros são analisados.</p>
+    <div class="dicas"><b>Para ler bem:</b> chegue perto, filme devagar (cada etiqueta por ~1 segundo), uma prateleira por vez e com a etiqueta bem iluminada.</div>
+    <label for="vnome" style="font-size:13px;color:var(--muted)">Mercado filmado (${CITIES[city].name})</label>
+    <input type="text" id="vnome" list="vsug" placeholder="Nome do mercado" autocomplete="off"><datalist id="vsug">${sug}</datalist>
+    <button class="btn" id="vescolher">Escolher o vídeo</button>
+    <button class="btn ghost" id="vsair">Cancelar</button>`;
+  $("#vmodal").classList.add("on");
+  $("#vsair").onclick=vFechar;
+  $("#vescolher").onclick=()=>{if(!$("#vnome").value.trim()){$("#vnome").focus();toast("Diga qual é o mercado");return}$("#vfile").value="";$("#vfile").click()};
+}
+$("#vid").onclick=vInicio;
+$("#vfile").onchange=e=>{const f=e.target.files[0];if(f)vProcessar(f,$("#vnome").value.trim())};
+
+const vSeek=(v,t)=>new Promise(r=>{v.onseeked=()=>{v.onseeked=null;r()};v.currentTime=t});
+function nitidez(ctx,w,h){const d=ctx.getImageData(0,0,w,h).data,g=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  let s=0,s2=0,n=0;for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-w]-g[i+w];s+=l;s2+=l*l;n++}
+  return s2/n-(s/n)*(s/n)}
+async function extrairFrames(file,max=12,prog){
+  const url=URL.createObjectURL(file),v=document.createElement("video");
+  v.muted=true;v.playsInline=true;v.preload="auto";v.src=url;
+  try{
+    await new Promise((ok,no)=>{v.onloadedmetadata=ok;v.onerror=()=>no(new Error("Não consegui abrir esse vídeo."))});
+    if(!isFinite(v.duration)){await new Promise(r=>{v.ontimeupdate=()=>{v.ontimeupdate=null;r()};v.currentTime=1e7});await vSeek(v,0)}
+    const dur=Math.min(v.duration,120);if(!(dur>0.3))throw new Error("O vídeo é curto demais.");
+    const n=Math.min(30,Math.max(max,Math.floor(dur*2))),pq=document.createElement("canvas"),pc=pq.getContext("2d",{willReadFrequently:true});
+    pq.width=200;pq.height=Math.round(200*v.videoHeight/v.videoWidth)||150;
+    const cand=[];
+    for(let i=0;i<n;i++){if(vCancel)throw new Error("cancelado");
+      const t=Math.min(dur-0.05,0.1+(dur-0.2)*i/Math.max(1,n-1));await vSeek(v,t);
+      pc.drawImage(v,0,0,pq.width,pq.height);cand.push({t,s:nitidez(pc,pq.width,pq.height)});prog&&prog(.5*(i+1)/n)}
+    const esc=[];for(const c of cand.slice().sort((a,b)=>b.s-a.s)){if(esc.length>=max)break;if(esc.every(e=>Math.abs(e.t-c.t)>.4))esc.push(c)}
+    esc.sort((a,b)=>a.t-b.t);
+    const W=Math.min(1024,v.videoWidth),H=Math.round(W*v.videoHeight/v.videoWidth),cv=document.createElement("canvas"),cx=cv.getContext("2d");cv.width=W;cv.height=H;
+    const out=[];
+    for(let i=0;i<esc.length;i++){await vSeek(v,esc[i].t);cx.drawImage(v,0,0,W,H);out.push(cv.toDataURL("image/jpeg",.82));prog&&prog(.5+.5*(i+1)/esc.length)}
+    return out;
+  }finally{URL.revokeObjectURL(url)}
+}
+function vTela(titulo,corpo){vbox().innerHTML=`<h3>${titulo}</h3>${corpo}`}
+function vProg(txt,f){const e=$("#vprg");if(e){e.style.width=Math.round(f*100)+"%";$("#vtxt").textContent=txt}}
+async function vProcessar(file,nome){
+  vCancel=false;
+  vTela("Lendo o vídeo",`<p id="vtxt">Escolhendo os quadros mais nítidos…</p><div class="vprog"><i id="vprg"></i></div><button class="btn ghost" id="vsair">Cancelar</button>`);
+  $("#vsair").onclick=vFechar;
+  try{
+    const frames=await extrairFrames(file,12,f=>vProg("Escolhendo os quadros mais nítidos…",f*.4));
+    let itens=[];
+    for(let i=0;i<frames.length;i+=4){
+      if(vCancel)return;
+      vProg(`Lendo as etiquetas… (${Math.min(i+4,frames.length)}/${frames.length} quadros)`,.4+.6*i/frames.length);
+      const r=await fetch("/api/v1/video",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({frames:frames.slice(i,i+4)})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok)throw new Error(d.msg||"Não consegui ler as imagens agora.");
+      itens=itens.concat(d.itens);
+    }
+    const vistos=new Set();itens=itens.filter(x=>{const k=(x.gtin||norm(x.descricao))+"|"+x.preco;if(vistos.has(k))return false;vistos.add(k);return true});
+    if(vCancel)return;
+    vRevisar(nome,itens);
+  }catch(e){
+    if(vCancel||e.message==="cancelado")return;
+    vTela("Não deu certo",`<p>${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}</p><button class="btn" id="vtent">Tentar de novo</button><button class="btn ghost" id="vsair">Fechar</button>`);
+    $("#vtent").onclick=vInicio;$("#vsair").onclick=vFechar;
+  }
+}
+const num2=s=>{const n=parseFloat(String(s).replace(/\./g,"").replace(",","."));return n>0?Math.round(n*100)/100:NaN};
+function vRevisar(nome,itens){
+  if(!itens.length){vTela("Nenhuma etiqueta lida",`<p>Não consegui ler nenhuma etiqueta nesse vídeo. Tente de novo mais perto, mais devagar e com mais luz.</p><button class="btn" id="vtent">Escolher outro vídeo</button><button class="btn ghost" id="vsair">Fechar</button>`);$("#vtent").onclick=vInicio;$("#vsair").onclick=vFechar;return}
+  vTela(`${itens.length} ${itens.length===1?"etiqueta lida":"etiquetas lidas"}`,
+    `<p><b>${nome}</b> · confira antes de salvar. Desmarque o que estiver errado e corrija nome ou preço.</p>
+    <div id="vlista">${itens.map((x,i)=>`<div class="vrow"><input type="checkbox" data-i="${i}" ${x.confianca==="baixa"?"":"checked"} aria-label="Incluir">
+      <input type="text" data-d="${i}" value="${x.descricao.replace(/"/g,"&quot;")}" aria-label="Produto"><input type="text" inputmode="decimal" data-p="${i}" value="${String(x.promocao||x.preco).replace(".",",")}" aria-label="Preço">
+      <small class="${x.confianca==="baixa"?"baixa":""}">${x.promocao?`oferta (normal ${brl(x.preco)}) · `:""}${x.gtin?"código "+x.gtin+" · ":""}leitura ${x.confianca==="baixa"?"incerta — confira":x.confianca}</small></div>`).join("")}</div>
+    <button class="btn" id="vsalvar">Salvar preços</button><button class="btn ghost" id="vsair">Descartar</button>`);
+  $("#vsair").onclick=vFechar;
+  $("#vsalvar").onclick=async()=>{
+    const sel=[];
+    itens.forEach((x,i)=>{if(!$(`[data-i="${i}"]`).checked)return;
+      const p=num2($(`[data-p="${i}"]`).value),d=$(`[data-d="${i}"]`).value.trim();if(!d||isNaN(p))return;
+      const promo=x.promocao&&Math.abs(p-x.promocao)<.005;
+      sel.push({descricao:d,preco:promo?x.preco:p,promocao:promo?x.promocao:null,gtin:x.gtin||null})});
+    if(!sel.length){toast("Nenhum item marcado");return}
+    $("#vsalvar").disabled=true;$("#vsalvar").textContent="Salvando…";
+    try{
+      const r=await fetch("/api/v1/coletas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mercado:{nome,cidade:CITIES[city].name},itens:sel})});
+      const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.msg||"Não consegui salvar agora.");
+      const reg={nome,cidade:city,itens:sel,em:Date.now()};
+      aplicarVideo(reg,true);
+      try{const s=JSON.parse(localStorage.getItem("lc-videos")||"[]");s.push(reg);localStorage.setItem("lc-videos",JSON.stringify(s.slice(-10)))}catch(e){}
+      vTela("Preços salvos ✓",`<p>${d.recebidos} ${d.recebidos===1?"preço enviado":"preços enviados"} de <b>${nome}</b>. Eles entram na comparação como <b>vídeo da comunidade · não verificado</b> e ficam guardados para a equipe conferir.</p><p style="color:var(--green)"><b>+1 coleta</b></p><button class="btn" id="vok">Fechar</button>`);
+      $("#vok").onclick=()=>{vFechar();renderContr();toast("Veja o mercado na aba Comparar")};
+    }catch(e){$("#vsalvar").disabled=false;$("#vsalvar").textContent="Salvar preços";toast(e.message==="Failed to fetch"?"Sem conexão com o servidor":e.message)}
+  };
+}
+/* os preços do vídeo entram na comparação como um mercado "da comunidade" (não verificado) */
+function aplicarVideo(v,novo){
+  const ck=CITIES[v.cidade]?v.cidade:city,ct=CITIES[ck];
+  const id="vid-"+norm(v.nome).replace(/[^a-z0-9]+/g,"-");
+  let mk=ct.markets.find(m=>m.id===id);
+  if(!mk){const igual=ct.markets.some(m=>norm(m.name)===norm(v.nome));mk={id,name:v.nome+(igual?" (vídeo)":""),dist:"vídeo da comunidade · não verificado",f:1,real:true,video:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+  const idade=Math.max(0,Math.floor((Date.now()-v.em)/864e5));
+  v.itens.forEach(it=>{
+    const p=it.promocao||it.preco,g=it.gtin&&GT[it.gtin];
+    const y=g&&CATALOG[g.id]?{c:CATALOG[g.id],p:Math.round(p*g.f*100)/100}:resolver({nome:it.descricao,unit:p,un:"UN"});
+    if(y)prices[id][y.c.id]={p:y.p,age:idade};
+  });
+  if(novo){pts++;(feeds[ck]=feeds[ck]||[]).unshift(`<b>${mk.name}</b> · ${v.itens.length} preços lidos de vídeo<br><small>enviado por você agora</small>`);if(ck!==city)setCity(ck);else{cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}}
+}
+try{JSON.parse(localStorage.getItem("lc-videos")||"[]").forEach(v=>aplicarVideo(v,false))}catch(e){}
+
 $("#scan").onclick=abrirLeitor;
 $("#cancel").onclick=fechar;
 $("#manual").onsubmit=e=>{e.preventDefault();tratar($("#chave").value,false)};
