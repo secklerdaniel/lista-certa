@@ -461,12 +461,19 @@ $("#items").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;
 $("#chips").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
 $("#clear").onclick=()=>{list=[];renderList()};
 let matches=[];
-$("#q").oninput=e=>{const t=norm(e.target.value.trim());
+/* texto livre: o que não está no catálogo vira item novo (sem preço até alguém coletar) */
+function addLivre(txt){const nome=txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ").replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()),key=norm(nome)+"|";
+  let c=CATALOG.find(x=>x.key===key);
+  if(!c){c={id:CATALOG.length,name:nome,unit:"un",base:0,key,extra:true};CATALOG.push(c);
+    try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
+  add(c.id)}
+$("#q").oninput=e=>{const v=e.target.value.trim(),t=norm(v);
   matches=t?CATALOG.filter(c=>norm(c.name).includes(t)).slice(0,5):[];
-  $("#sugg").hidden=!matches.length;
-  $("#sugg").innerHTML=matches.map(c=>`<button data-add="${c.id}">${c.name}<small>${c.unit}</small></button>`).join("")};
-$("#q").onkeydown=e=>{if(e.key==="Enter"&&matches[0])add(matches[0].id)};
-$("#sugg").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
+  $("#sugg").hidden=!t;
+  $("#sugg").innerHTML=matches.map(c=>`<button data-add="${c.id}">${c.name}<small>${c.unit}</small></button>`).join("")
+    +(t.length>1&&!matches.some(c=>norm(c.name)===t)?`<button data-livre="1">+ Adicionar “${v.replace(/[&<>"]/g,"")}”<small>novo</small></button>`:"")};
+$("#q").onkeydown=e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(matches[0])add(matches[0].id);else if(v.length>1)addLivre(v)};
+$("#sugg").onclick=e=>{const l=e.target.closest("[data-livre]");if(l)return addLivre($("#q").value);const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("#sugg").hidden=true});
 
 /* comparação */
