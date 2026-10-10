@@ -124,7 +124,14 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
   <!-- COLETAS -->
   <div id="p-coletas" hidden>
     <div class="topo"><h2 id="cTit">Coletas</h2><input type="search" id="cBusca" placeholder="Buscar produto, mercado ou usuário"></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Preços enviados pelos usuários (últimas 300). Não há aprovação: entram direto na comparação. Aqui você só consulta e apaga o que estiver errado.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Preços enviados pelos usuários (últimas 300). Não há aprovação: entram direto na comparação. Aqui você adiciona, edita e apaga.</p>
+    <section class="card"><h2 id="cFormTit">Adicionar coleta</h2>
+      <form id="cForm"><input type="hidden" id="cId">
+        <div class="row"><div><label for="cMerc">Mercado</label><input type="text" id="cMerc" required maxlength="120"></div><div><label for="cCid">Cidade</label><input type="text" id="cCid" required maxlength="80" value="Gramado"></div></div>
+        <label for="cDesc">Descrição do produto</label><input type="text" id="cDesc" required maxlength="120" placeholder="Sabonete Palmolive Pétalas de Rosa 85 g">
+        <div class="row"><div><label for="cPreco">Preço (R$)</label><input type="text" id="cPreco" required inputmode="decimal" placeholder="2,79"></div><div><label for="cPromo">Preço promocional (opcional)</label><input type="text" id="cPromo" inputmode="decimal"></div></div>
+        <button class="btn" type="submit" id="cSalvar">Adicionar</button> <button class="btn sec" type="button" id="cCancelar" hidden>Cancelar edição</button>
+        <p class="msg" id="cMsg"></p></form></section>
     <div id="clista"></div>
   </div>
 
@@ -240,10 +247,27 @@ function desenharColetas() {
   $("#cTit").textContent = `Coletas (${l.length})`;
   $("#clista").innerHTML = l.length ? l.map(c => `<div class="card" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(c.descricao)}</b> · R$ ${Number(c.preco).toFixed(2).replace(".", ",")}${c.promocao_preco ? ` (promo ${Number(c.promocao_preco).toFixed(2).replace(".", ",")})` : ""}
     <div class="meta">${esc(c.mercado_nome)} · ${esc(c.cidade)} · ${esc(c.origem)} · ${esc(c.usuario || "anônimo")} · ${fmtData(c.criado_em)}</div></div>
-    <button class="btn sec" data-ex-coleta="${c.id}">Apagar</button></div></div>`).join("") : "<p>Nenhuma coleta.</p>";
+    <span><button class="btn sec" data-ed-coleta="${c.id}">Editar</button> <button class="btn sec" data-ex-coleta="${c.id}">Apagar</button></span></div></div>`).join("") : "<p>Nenhuma coleta.</p>";
 }
 $("#cBusca").oninput = desenharColetas;
+function cLimpar() { $("#cForm").reset(); $("#cId").value = ""; $("#cCid").value = "Gramado"; $("#cFormTit").textContent = "Adicionar coleta"; $("#cSalvar").textContent = "Adicionar"; $("#cCancelar").hidden = true; }
+$("#cCancelar").onclick = cLimpar;
+$("#cForm").onsubmit = async e => {
+  e.preventDefault(); $("#cMsg").textContent = ""; $("#cSalvar").disabled = true;
+  try {
+    await chamar("/api/admin/usuarios", "POST", { coletaId: $("#cId").value || undefined, coleta: { mercado: $("#cMerc").value, cidade: $("#cCid").value, descricao: $("#cDesc").value, preco: $("#cPreco").value, promocao: $("#cPromo").value } });
+    toast($("#cId").value ? "Coleta salva" : "Coleta adicionada"); cLimpar(); await carregarColetas();
+  } catch (err) { $("#cMsg").textContent = err.message; }
+  $("#cSalvar").disabled = false;
+};
 $("#clista").onclick = async e => {
+  const ed = e.target.closest("[data-ed-coleta]");
+  if (ed) {
+    const c = COLETAS.find(x => String(x.id) === ed.dataset.edColeta); if (!c) return;
+    $("#cId").value = c.id; $("#cMerc").value = c.mercado_nome; $("#cCid").value = c.cidade; $("#cDesc").value = c.descricao;
+    $("#cPreco").value = String(c.preco).replace(".", ","); $("#cPromo").value = c.promocao_preco ? String(c.promocao_preco).replace(".", ",") : "";
+    $("#cFormTit").textContent = "Editar coleta #" + c.id; $("#cSalvar").textContent = "Salvar"; $("#cCancelar").hidden = false; $("#cForm").scrollIntoView({ behavior: "smooth" }); return;
+  }
   const b = e.target.closest("[data-ex-coleta]"); if (!b || !confirm("Apagar este preço?")) return;
   try { await chamar("/api/admin/usuarios", "POST", { coletaId: b.dataset.exColeta, excluirColeta: true }); await carregarColetas(); } catch (err) { toast(err.message); }
 };

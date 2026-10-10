@@ -5,6 +5,8 @@
    POST { usuarioId, editar: { nome } }                  → corrige o nome exibido
    POST { usuarioId, bloqueado: true|false }             → bloqueia/desbloqueia (bloqueado não contribui nem entra)
    GET  /api/admin/usuarios?coletas=1                    → últimas 300 coletas (preços) enviadas, com o usuário
+   POST { coleta: { mercado, cidade, descricao, preco, promocao? } }  → cria uma coleta (origem 'admin')
+   POST { coletaId, coleta: { ... } }                    → edita uma coleta
    POST { coletaId, excluirColeta: true }                → apaga um preço da coleta
    POST { usuarioId, excluir: true }                     → APAGA a conta e as contribuições (as coletas ficam, anônimas) */
 const { sql, enviar, erro, corpo, admin } = require("../_lib");
@@ -31,6 +33,19 @@ module.exports = async (req, res) => {
     }
     if (req.method !== "POST") return erro(res, 405, "metodo", "Use GET ou POST.");
     const b = corpo(req) || {};
+    if (b.coleta && typeof b.coleta === "object") {
+      const t = (v, n) => String(v || "").replace(/\s+/g, " ").trim().slice(0, n);
+      const d = (v) => { const x = parseFloat(String(v).replace(",", ".")); return x > 0 && x < 10000 ? Math.round(x * 100) / 100 : null; };
+      const mercado = t(b.coleta.mercado, 120), cidade = t(b.coleta.cidade, 80), descricao = t(b.coleta.descricao, 120);
+      const preco = d(b.coleta.preco), promo = b.coleta.promocao ? d(b.coleta.promocao) : null;
+      if (!mercado || !cidade || !descricao || !preco) return erro(res, 400, "coleta", "Informe mercado, cidade, descrição e preço válido.");
+      if (b.coletaId) {
+        await sql().query(`update coletas set mercado_nome = $1, cidade = $2, descricao = $3, preco = $4, promocao_preco = $5 where id = $6`, [mercado, cidade, descricao, preco, promo, parseInt(b.coletaId, 10) || 0]);
+      } else {
+        await sql().query(`insert into coletas (mercado_nome, cidade, descricao, preco, promocao_preco, origem) values ($1,$2,$3,$4,$5,'admin')`, [mercado, cidade, descricao, preco, promo]);
+      }
+      return enviar(res, 200, { ok: true });
+    }
     if (b.excluirColeta === true) {
       await sql().query(`delete from coletas where id = $1`, [parseInt(b.coletaId, 10) || 0]);
       return enviar(res, 200, { ok: true });
