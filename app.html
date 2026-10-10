@@ -223,7 +223,7 @@ h1,h2,h3,.display,.lead,.best .tot,.mk .hd .p,.split .big,.nome{font-family:"Arc
 .btn.ghost{background:#fff;border:2.5px solid var(--ink);color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
 .btn[disabled]{background:#E3E0D3;border-color:#9AA0A2;color:#7A8184;box-shadow:none}
 .vbox .btn,.modal .btn{box-shadow:3px 3px 0 var(--ink)}
-.modal .btn.ghost{background:transparent;color:#fff;border-color:#fff;box-shadow:none}
+.modal .btn.ghost{background:transparent;color:#fff;border-color:#fff;box-shadow:none}.modal .ok .btn.ghost{color:var(--ink);border-color:var(--ink)}.modal{overflow-y:auto}.modal .ok{margin:auto 0}
 .cta{background:linear-gradient(transparent,var(--bg) 45%)}
 .best{background:#15191A;color:#fff;border-radius:8px}
 .best .tag{background:var(--gold);color:#15191A}
@@ -712,13 +712,11 @@ function mostrarCupom(c,raw){
       <textarea id="rawqr" readonly rows="4" style="width:100%;margin-top:6px;font:12px/1.4 monospace;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg);color:var(--ink)"></textarea>
       <button class="btn ghost" id="copiar" style="margin-top:6px;padding:10px;font-size:14px">Copiar texto do QR</button></details>
     <div class="nota" id="busca"></div>
-    <button class="btn ghost" id="sim" style="margin-bottom:8px">Ver como os preços entrariam (simulação)</button>
     <button class="btn" id="done" style="box-shadow:none">Fechar</button>`;
   buscarItens(c,raw);
   $("#rawqr").value=raw||"";
   $("#copiar").onclick=()=>{const t=$("#rawqr");t.select();let feito=false;try{feito=document.execCommand("copy")}catch(e){}
     if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(()=>toast("Texto do QR copiado"),()=>toast(feito?"Texto do QR copiado":"Selecione e copie o texto"));else toast(feito?"Texto do QR copiado":"Selecione e copie o texto")};
-  $("#sim").onclick=finishScan;
   $("#done").onclick=()=>{fechar();renderContr()};
 }
 /* itens do cupom: /api/cupom busca no portal da Fazenda; aqui casamos com o catálogo e criamos o mercado real */
