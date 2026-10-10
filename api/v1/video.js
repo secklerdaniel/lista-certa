@@ -21,7 +21,7 @@ const FERRAMENTA = {
             type: "object",
             properties: {
               imagem: { type: "integer", description: "Índice da imagem (começando em 0) em que a etiqueta aparece." },
-              descricao: { type: "string", description: "Nome do produto como está impresso na etiqueta." },
+              descricao: { type: "string", description: "Nome do produto por extenso e legível, em português, capitalização normal (só a 1ª letra de cada palavra em maiúscula), com marca e tamanho. EXPANDA as abreviações da etiqueta: DESOD REXONA 150ML -> Desodorante Rexona 150 ml; SAB PALMOLIVE -> Sabonete Palmolive; SH -> Shampoo; COND -> Condicionador; DET -> Detergente; AMAC -> Amaciante; REFRIG -> Refrigerante; BISC -> Biscoito; MACARR -> Macarrão; ACHOC -> Achocolatado; PAP HIG -> Papel higiênico. Nunca invente marca nem tamanho que não estejam na etiqueta." },
               preco: { type: "number", description: "O preço PRINCIPAL da etiqueta (o grande), em reais. Nunca o preço por kg/litro em letra pequena." },
               preco_promocional: { type: "number", description: "Preço de oferta, se a etiqueta mostrar oferta/promoção. 0 se não houver." },
               gtin: { type: "string", description: "Código de barras SOMENTE se os dígitos estiverem impressos e legíveis na etiqueta. Senão vazio." },
