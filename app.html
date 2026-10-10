@@ -76,6 +76,7 @@ main{flex:1;overflow-y:auto;padding:4px 20px 200px;scroll-behavior:smooth}
 .sec button{font-size:13px;color:var(--bad)}
 .items{display:flex;flex-direction:column;gap:8px}
 .item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.item{flex-wrap:wrap}.item .fac{flex-basis:100%;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:8px}.item .fac p{font-size:12.5px;color:var(--muted);margin:0}.item .fac label{display:inline-flex;align-items:center;gap:6px;margin:0 14px 4px 0;font-size:14px;cursor:pointer}.item .fac input{width:18px;height:18px;accent-color:#15191A}
 .item .nm{flex:1;min-width:0}.item .nm b{display:block;font-weight:500;font-size:15.5px}.item .nm small{color:var(--muted);font-size:12.5px}
 .step{display:flex;align-items:center;gap:2px;background:var(--bg);border-radius:99px;padding:3px}
 .step button{width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;display:grid;place-items:center}
@@ -452,13 +453,20 @@ function renderList(){
   $("#go").disabled=!n;$("#go").textContent=n?`Comparar ${n} ${n===1?"item":"itens"}`:"Adicione itens para comparar";
   $("#items").innerHTML=n?list.map(x=>{const c=CATALOG[x.id];return `<div class="item"><div class="nm"><b>${c.name}</b><small>${c.unit}</small></div>
     <div class="step"><button data-a="-" data-id="${x.id}" aria-label="Menos">−</button><span>${x.qty}</span><button data-a="+" data-id="${x.id}" aria-label="Mais">+</button></div>
-    <button class="rm" data-a="x" data-id="${x.id}" aria-label="Remover ${c.name}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`}).join("")
+    <button class="rm" data-a="x" data-id="${x.id}" aria-label="Remover ${c.name}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>${blocoFiltros(x,c)}</div>`}).join("")
     :`<div class="empty">Sua lista está vazia.<br>Digite um produto acima ou toque numa sugestão.</div>`;
   const inList=new Set(list.map(x=>x.id));
   $("#chips").innerHTML=[0,1,9,12,13,18,21,16].filter(i=>!inList.has(i)).slice(0,6).map(i=>`<button class="chip" data-add="${i}">+ ${CATALOG[i].name}</button>`).join("");
   save();
 }
+function blocoFiltros(x,c){const F=facetas(c);if(!F)return "";const f=x.f||{};
+  const grupo=(tit,ch,L)=>L.length?`<div><p>${tit}</p>${L.map(v=>`<label><input type="checkbox" data-fid="${x.id}" data-fk="${ch}" data-fv="${v.replace(/[&<>"]/g,"")}"${(f[ch]||[]).includes(v)?" checked":""}>${v.replace(/[&<>"]/g,"")}</label>`).join("")}</div>`:"";
+  return `<div class="fac">${grupo("Embalagem","tam",F.tam)}${grupo("Tipo","tp",F.tp)}<p>${(f.tam&&f.tam.length)||(f.tp&&f.tp.length)?"Comparando só as opções marcadas.":"Marque para comparar só o que você quer; sem marcar vale qualquer uma."}</p></div>`}
 function add(id){const f=list.find(x=>x.id===id);if(f)f.qty++;else list.push({id,qty:1});renderList();$("#q").value="";$("#sugg").hidden=true}
+$("#items").onchange=e=>{const i=e.target.closest("[data-fk]");if(!i)return;const x=list.find(z=>z.id===+i.dataset.fid);if(!x)return;
+  x.f=x.f||{};const a=x.f[i.dataset.fk]=x.f[i.dataset.fk]||[],v=i.dataset.fv;
+  if(i.checked){if(!a.includes(v))a.push(v)}else x.f[i.dataset.fk]=a.filter(z=>z!==v);
+  aplicarPool();renderList()};
 $("#items").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const id=+b.dataset.id,x=list.find(i=>i.id===id);
   if(b.dataset.a==="+")x.qty=Math.min(x.qty+1,99);else if(b.dataset.a==="-")x.qty=Math.max(x.qty-1,1);else list=list.filter(i=>i.id!==id);renderList()};
 $("#chips").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
@@ -475,11 +483,29 @@ function addPool(k){
     try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:"un",base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
   aplicarPool();add(c.id)}
 /* preenche o preço dos itens "p|..." da lista em todos os mercados que venderam esse produto */
+/* filtros do item genérico: tamanho da embalagem e tipo, tirados dos nomes coletados */
+const TIPOS=["zero lactose","semidesnatado","desnatado","integral","parboilizado","agulhinha","branco","preto","carioca","vermelho","light","diet","tradicional","refinado","cristal","extra virgem","liquido","em po"];
+function tamanho(k){const m=/(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|lt|litros?)\b/.exec(k);if(!m)return null;
+  let q=parseFloat(m[1].replace(",",".")),u=m[2];if(u==="lt"||u.slice(0,5)==="litro")u="l";
+  if(u==="g"&&q>=1000){q/=1000;u="kg"}if(u==="ml"&&q>=1000){q/=1000;u="l"}
+  return (+q.toFixed(2))+" "+(u==="l"?"L":u)}
+function tiposDe(k){const r=[];let t=k;TIPOS.forEach(w=>{if(new RegExp("\\b"+w+"\\b").test(t)){r.push(w);t=t.replace(w," ")}});return r}
+const casaItem=(c,x)=>{const tk=norm(c.name).split(/\s+/).filter(Boolean);return c.key.slice(0,2)==="p|"?x.k===c.key.slice(2):tk.every(t=>x.k.includes(t))};
+function facetas(c){
+  if(!c.key||c.key.slice(0,2)==="p|"||!(c.extra&&c.base===0))return null;
+  const T=new Set(),P=new Set();POOL.forEach(x=>{if(casaItem(c,x)){if(x.tam)T.add(x.tam);x.tp.forEach(p=>P.add(p))}});
+  const num=a=>parseFloat(a),ord=[...T].sort((a,b)=>num(a)-num(b)||a.localeCompare(b));
+  const r={tam:ord.length>1?ord:[],tp:P.size>1?[...P].sort():[]};
+  return r.tam.length||r.tp.length?r:null}
 function aplicarPool(){CATALOG.forEach(c=>{
   if(!c.key)return;const pk=c.key.slice(0,2)==="p|";
   if(!pk&&!(c.extra&&c.base===0))return; /* itens digitados/genéricos: casam pelas palavras do nome */
-  const tk=norm(c.name).split(/\s+/).filter(Boolean),k=pk?c.key.slice(2):null,por={};
-  POOL.forEach(x=>{if(!prices[x.mid]||!(pk?x.k===k:tk.every(t=>x.k.includes(t))))return;(por[x.mid]=por[x.mid]||[]).push(x)});
+  const e=list.find(x=>x.id===c.id),f=e&&e.f||{},por={};
+  Object.keys(prices).forEach(mid=>{if(prices[mid][c.id])prices[mid][c.id]=null});
+  POOL.forEach(x=>{if(!prices[x.mid]||!casaItem(c,x))return;
+    if(f.tam&&f.tam.length&&!f.tam.includes(x.tam))return;
+    if(f.tp&&f.tp.length&&!x.tp.some(t=>f.tp.includes(t)))return;
+    (por[x.mid]=por[x.mid]||[]).push(x)});
   Object.entries(por).forEach(([mid,L])=>{L.sort((a,b)=>a.p-b.p);const m=L[0];
     prices[mid][c.id]={p:m.p,age:m.age,n:m.nome,alt:L.map(x=>({n:x.nome,p:x.p}))}})})}
 /* texto livre sem nenhum resultado: vira item novo, sem preço até alguém coletar */
@@ -510,6 +536,7 @@ document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("#sugg")
 
 /* comparação */
 function analyse(){
+  aplicarPool();
   const rows=MARKETS.map(m=>{let total=0,miss=[],lines=[];
     list.forEach(x=>{const c=CATALOG[x.id],p=prices[m.id][x.id];
       if(!p)miss.push(c.name);else total+=p.p*x.qty;
@@ -895,7 +922,7 @@ async function carregarCupons(){
       let ult=0;
       g.itens.forEach(x=>{
         const it={nome:x.descricao,unit:x.preco,un:x.unidade||"UN"};
-        POOL.push({k:norm(expandir(x.descricao)),nome:bonito(x.descricao),mid:id,p:x.preco,age:Math.max(0,Math.floor((Date.now()-new Date(x.emissao))/864e5))});
+        POOL.push({k:norm(expandir(x.descricao)),tam:tamanho(norm(x.descricao)),tp:tiposDe(norm(expandir(x.descricao))),nome:bonito(x.descricao),mid:id,p:x.preco,age:Math.max(0,Math.floor((Date.now()-new Date(x.emissao))/864e5))});
         const y=casar(it)||(quem[norm(x.descricao)].size>=2?obterExtra(it):null); // item fora do catálogo só entra se 2+ mercados vendem
         if(!y)return;
         const t=new Date(x.emissao).getTime();ult=Math.max(ult,t);
