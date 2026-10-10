@@ -472,8 +472,12 @@ function addPool(k){
     try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:"un",base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
   aplicarPool();add(c.id)}
 /* preenche o preço dos itens "p|..." da lista em todos os mercados que venderam esse produto */
-function aplicarPool(){CATALOG.forEach(c=>{if(!c.key||c.key.slice(0,2)!=="p|")return;const k=c.key.slice(2);
-  POOL.forEach(x=>{if(x.k===k&&prices[x.mid])prices[x.mid][c.id]={p:x.p,age:x.age}})})}
+function aplicarPool(){CATALOG.forEach(c=>{
+  if(!c.key)return;const pk=c.key.slice(0,2)==="p|";
+  if(!pk&&!(c.extra&&c.base===0))return; /* itens digitados antes: casam pelas palavras do nome */
+  const tk=norm(c.name).split(/\s+/).filter(Boolean),k=pk?c.key.slice(2):null;
+  POOL.forEach(x=>{if(!prices[x.mid]||!(pk?x.k===k:tk.every(t=>x.k.includes(t))))return;
+    const o=prices[x.mid][c.id];if(!o||x.p<o.p)prices[x.mid][c.id]={p:x.p,age:x.age}})})}
 /* texto livre sem nenhum resultado: vira item novo, sem preço até alguém coletar */
 function addLivre(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ")),key=norm(nome)+"|";
   let c=CATALOG.find(x=>x.key===key);
