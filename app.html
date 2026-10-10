@@ -121,8 +121,11 @@ nav.tabs button.on::before{content:"";position:absolute;top:0;width:34px;height:
 .bar i{display:block;height:100%;border-radius:6px;background:var(--green-2)}
 .mk .miss{color:var(--warn);font-weight:500}
 .mk .rows{border-top:1px solid var(--line);padding:6px 16px 12px}
-.mk .r{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px;border-bottom:1px dashed var(--line)}
+.mk .r{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px;border-bottom:1px dashed var(--line)}
 .mk .r:last-child{border:0}
+.mk .alt{flex-basis:100%;margin:8px 0 2px;padding-left:12px;border-left:3px solid var(--line);display:grid;gap:7px}
+.mk .alt div{display:flex;justify-content:space-between;gap:20px;font-size:13px;color:var(--muted)}
+.mk .r.r .alt b{color:var(--ink);font-weight:600;white-space:nowrap}
 .mk .r.low b{color:var(--green-2)}
 .mk .r.low .nm::after{content:" ●";color:var(--green-2);font-size:10px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
@@ -568,9 +571,9 @@ function renderComp(){
       <div class="bar"><i style="width:${max?Math.round(r.total/max*100):0}%"></i></div></summary>
       <div class="rows">${r.lines.map(l=>{
         const cheapest=l.p&&MARKETS.every(m=>{const o=prices[m.id][l.c.id];return !o||o.p>=l.p.p});
-        return `<div class="r ${cheapest?"low":""}"><span class="nm">${l.qty>1?l.qty+"× ":""}${l.c.name}${l.p&&l.p.alt?l.p.alt.map(a=>`<small style="display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-weight:400;font-size:12.5px"><span>${a.n.replace(/[&<>"]/g,"")}</span><span>${brl(a.p)}</span></small>`).join(""):""}</span>${l.p
+        return `<div class="r ${cheapest?"low":""}"><span class="nm">${l.qty>1?l.qty+"× ":""}${l.c.name}</span>${l.p
           ?`<span><b>${brl(l.p.p)}</b><span class="age"><span class="dot" style="background:${dotColor(l.p.age)}"></span>${ageTxt(l.p.age)}</span></span>`
-          :`<span class="age">sem preço</span>`}</div>`}).join("")}</div></details>`).join("")}
+          :`<span class="age">sem preço</span>`}${l.p&&l.p.alt?`<div class="alt">${l.p.alt.map(a=>`<div><span>${a.n.replace(/[&<>"]/g,"")}</span><b>${brl(a.p)}</b></div>`).join("")}</div>`:""}</div>`}).join("")}</div></details>`).join("")}
    <p class="legend"><span class="dot" style="background:var(--green-2)"></span>preço recente (até 2 dias) &nbsp;<span class="dot" style="background:var(--warn)"></span>3 a 5 dias &nbsp;<span class="dot" style="background:var(--old)"></span>mais antigo<br>● no item = menor preço entre os mercados. Os preços vêm dos cupons que os moradores escaneiam.</p>
    <button class="btn ghost" style="margin-top:14px" onclick="show('contr')">Ajude a atualizar os preços</button>`;
 }
