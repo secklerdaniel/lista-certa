@@ -477,7 +477,7 @@ function aplicarPool(){CATALOG.forEach(c=>{
   if(!pk&&!(c.extra&&c.base===0))return; /* itens digitados antes: casam pelas palavras do nome */
   const tk=norm(c.name).split(/\s+/).filter(Boolean),k=pk?c.key.slice(2):null;
   POOL.forEach(x=>{if(!prices[x.mid]||!(pk?x.k===k:tk.every(t=>x.k.includes(t))))return;
-    const o=prices[x.mid][c.id];if(!o||x.p<o.p)prices[x.mid][c.id]={p:x.p,age:x.age}})})}
+    const o=prices[x.mid][c.id];if(!o||x.p<o.p)prices[x.mid][c.id]={p:x.p,age:x.age,n:x.nome}})})}
 /* texto livre sem nenhum resultado: vira item novo, sem preço até alguém coletar */
 function addLivre(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ")),key=norm(nome)+"|";
   let c=CATALOG.find(x=>x.key===key);
@@ -567,7 +567,7 @@ function renderComp(){
       <div class="bar"><i style="width:${max?Math.round(r.total/max*100):0}%"></i></div></summary>
       <div class="rows">${r.lines.map(l=>{
         const cheapest=l.p&&MARKETS.every(m=>{const o=prices[m.id][l.c.id];return !o||o.p>=l.p.p});
-        return `<div class="r ${cheapest?"low":""}"><span class="nm">${l.qty>1?l.qty+"× ":""}${l.c.name}</span>${l.p
+        return `<div class="r ${cheapest?"low":""}"><span class="nm">${l.qty>1?l.qty+"× ":""}${l.c.name}${l.p&&l.p.n?`<small style="display:block;color:var(--muted);font-weight:400;font-size:12.5px">${l.p.n.replace(/[&<>"]/g,"")}</small>`:""}</span>${l.p
           ?`<span><b>${brl(l.p.p)}</b><span class="age"><span class="dot" style="background:${dotColor(l.p.age)}"></span>${ageTxt(l.p.age)}</span></span>`
           :`<span class="age">sem preço</span>`}</div>`}).join("")}</div></details>`).join("")}
    <p class="legend"><span class="dot" style="background:var(--green-2)"></span>preço recente (até 2 dias) &nbsp;<span class="dot" style="background:var(--warn)"></span>3 a 5 dias &nbsp;<span class="dot" style="background:var(--old)"></span>mais antigo<br>● no item = menor preço entre os mercados. Os preços vêm dos cupons que os moradores escaneiam.</p>
