@@ -4,6 +4,8 @@
    GET  /api/admin/usuarios?contribuicoes=<id>           → últimas contribuições do usuário
    POST { usuarioId, editar: { nome } }                  → corrige o nome exibido
    POST { usuarioId, bloqueado: true|false }             → bloqueia/desbloqueia (bloqueado não contribui nem entra)
+   GET  /api/admin/usuarios?coletas=1                    → últimas 300 coletas (preços) enviadas, com o usuário
+   POST { coletaId, excluirColeta: true }                → apaga um preço da coleta
    POST { usuarioId, excluir: true }                     → APAGA a conta e as contribuições (as coletas ficam, anônimas) */
 const { sql, enviar, erro, corpo, admin } = require("../_lib");
 
@@ -15,6 +17,11 @@ module.exports = async (req, res) => {
         const r = await sql().query(`select id, tipo, mercado_nome, cidade, itens, criado_em from contribuicoes where usuario_id = $1 order by id desc limit 50`, [parseInt(req.query.contribuicoes, 10)]);
         return enviar(res, 200, { ok: true, dados: r });
       }
+      if (req.query && req.query.coletas) {
+        const r = await sql().query(`select c.id, c.mercado_nome, c.cidade, c.descricao, c.gtin, c.preco, c.promocao_preco, c.origem, c.criado_em, u.nome as usuario
+          from coletas c left join usuarios u on u.id = c.usuario_id order by c.id desc limit 300`);
+        return enviar(res, 200, { ok: true, dados: r });
+      }
       const r = await sql().query(
         `select u.id, u.nome, u.email, u.foto, u.bloqueado, u.criado_em, u.ultimo_acesso,
                 (select count(*)::int from contribuicoes c where c.usuario_id = u.id) as pontos,
@@ -24,6 +31,10 @@ module.exports = async (req, res) => {
     }
     if (req.method !== "POST") return erro(res, 405, "metodo", "Use GET ou POST.");
     const b = corpo(req) || {};
+    if (b.excluirColeta === true) {
+      await sql().query(`delete from coletas where id = $1`, [parseInt(b.coletaId, 10) || 0]);
+      return enviar(res, 200, { ok: true });
+    }
     const id = parseInt(b.usuarioId, 10);
     if (!id) return erro(res, 400, "usuario", "Informe usuarioId.");
     const ex = await sql().query(`select id from usuarios where id = $1`, [id]);

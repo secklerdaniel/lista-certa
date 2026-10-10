@@ -1005,17 +1005,17 @@ function vRevisar(nome,itens){
       const reg={nome,cidade:city,itens:sel,em:Date.now(),cid:d.contribuicaoId};
       aplicarVideo(reg,true);
       try{const s=JSON.parse(localStorage.getItem("lc-videos")||"[]");s.push(reg);localStorage.setItem("lc-videos",JSON.stringify(s.slice(-10)))}catch(e){}
-      vTela("Preços salvos ✓",`<p>${d.recebidos} ${d.recebidos===1?"preço enviado":"preços enviados"} de <b>${nome}</b>. Eles entram na comparação como <b>vídeo da comunidade · não verificado</b> e ficam guardados para a equipe conferir.</p><p style="color:var(--green)"><b>+1 coleta</b></p><button class="btn" id="vok">Fechar</button>`);
+      vTela("Preços salvos ✓",`<p>${d.recebidos} ${d.recebidos===1?"preço enviado":"preços enviados"} de <b>${nome}</b>. Eles entram na comparação como <b>vídeo da comunidade</b>.</p><p style="color:var(--green)"><b>+1 coleta</b></p><button class="btn" id="vok">Fechar</button>`);
       $("#vok").onclick=()=>{vFechar();renderContr();toast("Veja o mercado na aba Comparar")};
     }catch(e){$("#vsalvar").disabled=false;$("#vsalvar").textContent="Salvar preços";toast(e.message==="Failed to fetch"?"Sem conexão com o servidor":e.message)}
   };
 }
-/* os preços do vídeo entram na comparação como um mercado "da comunidade" (não verificado) */
+/* os preços do vídeo entram na comparação como um mercado "da comunidade" */
 function aplicarVideo(v,novo){
   const ck=CITIES[v.cidade]?v.cidade:city,ct=CITIES[ck];
   const id="vid-"+norm(v.nome).replace(/[^a-z0-9]+/g,"-");
   let mk=ct.markets.find(m=>m.id===id);
-  if(!mk){const igual=ct.markets.some(m=>norm(m.name)===norm(v.nome));mk={id,name:v.nome+(igual?" (vídeo)":""),dist:"vídeo da comunidade · não verificado",f:1,real:true,video:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+  if(!mk){const igual=ct.markets.some(m=>norm(m.name)===norm(v.nome));mk={id,name:v.nome+(igual?" (vídeo)":""),dist:"vídeo da comunidade",f:1,real:true,video:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
   const idade=Math.max(0,Math.floor((Date.now()-v.em)/864e5));
   v.itens.forEach(it=>{
     const p=it.promocao||it.preco,g=it.gtin&&GT[it.gtin];

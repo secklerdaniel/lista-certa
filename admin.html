@@ -75,7 +75,7 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 <body>
 <header>
   <div><h1>Lista Certa · Admin</h1><small>Mercados, usuários e chaves da API</small></div>
-  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="regiao">Região</button></div>
+  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="regiao">Região</button></div>
   <button class="btn sec" id="sair" style="color:#fff;border-color:#fff;display:none">Sair</button>
 </header>
 <main>
@@ -119,6 +119,13 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
     </section>
     <div class="topo"><h2 id="gTit">Mercados da região</h2><input type="search" id="gBusca" placeholder="Buscar por nome, cidade ou rua"></div>
     <div id="glista"></div>
+  </div>
+
+  <!-- COLETAS -->
+  <div id="p-coletas" hidden>
+    <div class="topo"><h2 id="cTit">Coletas</h2><input type="search" id="cBusca" placeholder="Buscar produto, mercado ou usuário"></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Preços enviados pelos usuários (últimas 300). Não há aprovação: entram direto na comparação. Aqui você só consulta e apaga o que estiver errado.</p>
+    <div id="clista"></div>
   </div>
 
   <!-- USUÁRIOS -->
@@ -224,10 +231,28 @@ $("#fRegiao").onsubmit = async e => {
   $("#gBtn").disabled = false;
 };
 
+/* ---------- coletas ---------- */
+let COLETAS = [];
+async function carregarColetas() { COLETAS = (await chamar("/api/admin/usuarios?coletas=1")).dados; desenharColetas(); }
+function desenharColetas() {
+  const q = $("#cBusca").value.trim().toLowerCase();
+  const l = COLETAS.filter(c => !q || [c.descricao, c.mercado_nome, c.usuario, c.gtin].join(" ").toLowerCase().includes(q));
+  $("#cTit").textContent = `Coletas (${l.length})`;
+  $("#clista").innerHTML = l.length ? l.map(c => `<div class="card" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(c.descricao)}</b> · R$ ${Number(c.preco).toFixed(2).replace(".", ",")}${c.promocao_preco ? ` (promo ${Number(c.promocao_preco).toFixed(2).replace(".", ",")})` : ""}
+    <div class="meta">${esc(c.mercado_nome)} · ${esc(c.cidade)} · ${esc(c.origem)} · ${esc(c.usuario || "anônimo")} · ${fmtData(c.criado_em)}</div></div>
+    <button class="btn sec" data-ex-coleta="${c.id}">Apagar</button></div></div>`).join("") : "<p>Nenhuma coleta.</p>";
+}
+$("#cBusca").oninput = desenharColetas;
+$("#clista").onclick = async e => {
+  const b = e.target.closest("[data-ex-coleta]"); if (!b || !confirm("Apagar este preço?")) return;
+  try { await chamar("/api/admin/usuarios", "POST", { coletaId: b.dataset.exColeta, excluirColeta: true }); await carregarColetas(); } catch (err) { toast(err.message); }
+};
+
 /* ---------- abas e login ---------- */
 function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
-  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao";
+  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas";
+  if (n === "coletas") carregarColetas().catch(e => toast(e.message));
   if (n === "usuarios") carregarUsuarios().catch(e => toast(e.message));
   if (n === "regiao") carregarRegiao().catch(e => toast(e.message));
 }

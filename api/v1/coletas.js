@@ -1,5 +1,5 @@
 /* POST /api/v1/coletas  { mercado: { nome, cidade }, itens: [{ descricao, preco, promocao?, gtin? }] }
-   Guarda preços contribuídos pela comunidade (ex.: lidos de vídeo, já revisados pela pessoa) como "pendente de verificação".
+   Guarda preços contribuídos pela comunidade (ex.: lidos de vídeo, já revisados pela pessoa) (sem aprovação).
    Público, com limite por IP. Não entra em /precos: é separado dos preços enviados pelos mercados. */
 const { sql, sha256, enviar, erro, corpo, gtinValido } = require("../_lib");
 const A = require("../_auth");
@@ -39,6 +39,6 @@ module.exports = async (req, res) => {
        select $1, $2, d, g, p, pp, 'video', $7, $8, $9, $10 from unnest($3::text[], $4::text[], $5::numeric[], $6::numeric[]) as t(d, g, p, pp)`,
       [nome, cidade, ok.map(x => x[0]), ok.map(x => x[1]), ok.map(x => x[2]), ok.map(x => x[3]), ip, usr.id, m, cid]);
     const pts = await A.pontos(usr.id);
-    enviar(res, 201, { ok: true, contribuicaoId: cid, recebidos: ok.length, status: "pendente de verificação", pontos: pts, nivel: A.nivel(pts) });
+    enviar(res, 201, { ok: true, contribuicaoId: cid, recebidos: ok.length, status: "recebido", pontos: pts, nivel: A.nivel(pts) });
   } catch (e) { erro(res, 500, "interno", "Erro interno."); }
 };
