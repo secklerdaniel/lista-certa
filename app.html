@@ -487,15 +487,21 @@ function addLivre(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replac
 function buscaPool(tokens){
   const g={};POOL.forEach(x=>{if(tokens.every(t=>x.k.includes(t))){const r=g[x.k]=g[x.k]||{k:x.k,nome:x.nome,n:new Set(),min:1e9};r.n.add(x.mid);r.min=Math.min(r.min,x.p)}});
   return Object.values(g).sort((a,b)=>b.n.size-a.n.size||a.min-b.min)}
+function addGen(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ")),key="g|"+norm(nome);
+  let c=CATALOG.find(x=>x.key===key);
+  if(!c){c={id:CATALOG.length,name:nome,unit:"qualquer marca",base:0,key,extra:true};CATALOG.push(c);
+    try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
+  aplicarPool();add(c.id)}
 $("#q").oninput=e=>{const v=e.target.value.trim(),t=norm(v),tk=t.split(/\s+/).filter(Boolean);
   matches=[];
   const pool=tk.length?buscaPool(tk):[];
   $("#sugg").hidden=!t;
-  $("#sugg").innerHTML=matches.map(c=>`<button data-add="${c.id}">${c.name}<small>${c.unit}</small></button>`).join("")
+  const gen=pool.length?`<button data-gen="1"><b>${bonito(v).replace(/[&<>"]/g,"")}</b> · qualquer marca<small>${pool.length} ${pool.length===1?"produto":"produtos"} · ${new Set(POOL.filter(x=>tk.every(t=>x.k.includes(t))).map(x=>x.mid)).size} mercados</small></button>`:"";
+  $("#sugg").innerHTML=gen
     +pool.map(r=>`<button data-pool="${r.k.replace(/"/g,"")}">${r.nome}<small>${r.n.size} ${r.n.size===1?"mercado":"mercados"} · desde ${brl(r.min)}</small></button>`).join("")
     +(!matches.length&&!pool.length&&t.length>1?`<button data-livre="1">Ninguém coletou “${v.replace(/[&<>"]/g,"")}” ainda · adicionar mesmo assim<small>sem preço</small></button>`:"")};
-$("#q").onkeydown=e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(matches[0])add(matches[0].id);else{const p=buscaPool(norm(v).split(/\s+/).filter(Boolean))[0];if(p)addPool(p.k);else if(v.length>1)addLivre(v)}};
-$("#sugg").onclick=e=>{const l=e.target.closest("[data-livre]");if(l)return addLivre($("#q").value);const pb=e.target.closest("[data-pool]");if(pb)return addPool(pb.dataset.pool);const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
+$("#q").onkeydown=e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(matches[0])add(matches[0].id);else{const p=buscaPool(norm(v).split(/\s+/).filter(Boolean))[0];if(p)addGen(v);else if(v.length>1)addLivre(v)}};
+$("#sugg").onclick=e=>{const l=e.target.closest("[data-livre]");if(l)return addLivre($("#q").value);if(e.target.closest("[data-gen]"))return addGen($("#q").value);const pb=e.target.closest("[data-pool]");if(pb)return addPool(pb.dataset.pool);const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("#sugg").hidden=true});
 
 /* comparação */
