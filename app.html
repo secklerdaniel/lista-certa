@@ -62,7 +62,7 @@ main{flex:1;overflow-y:auto;padding:4px 20px 200px;scroll-behavior:smooth}
 .search input{width:100%;padding:15px 16px 15px 44px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);font-size:16px;outline:none;transition:border .15s,box-shadow .15s}
 .search input:focus{border-color:var(--green-2);box-shadow:0 0 0 4px rgba(28,122,87,.14)}
 .search svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted)}
-.sugg{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.sugg{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);overflow-y:auto;max-height:60vh}
 .sugg button{display:flex;justify-content:space-between;width:100%;padding:12px 16px;text-align:left;font-size:15px}
 .sugg button:hover,.sugg button:focus-visible{background:var(--mint);outline:0}
 .sugg small{color:var(--muted)}
@@ -486,9 +486,9 @@ function addLivre(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replac
   add(c.id)}
 function buscaPool(tokens){
   const g={};POOL.forEach(x=>{if(tokens.every(t=>x.k.includes(t))){const r=g[x.k]=g[x.k]||{k:x.k,nome:x.nome,n:new Set(),min:1e9};r.n.add(x.mid);r.min=Math.min(r.min,x.p)}});
-  return Object.values(g).sort((a,b)=>b.n.size-a.n.size||a.min-b.min).slice(0,6)}
+  return Object.values(g).sort((a,b)=>b.n.size-a.n.size||a.min-b.min)}
 $("#q").oninput=e=>{const v=e.target.value.trim(),t=norm(v),tk=t.split(/\s+/).filter(Boolean);
-  matches=t?CATALOG.filter(c=>!c.key||c.key.slice(0,2)!=="p|").filter(c=>norm(c.name).includes(t)).slice(0,4):[];
+  matches=[];
   const pool=tk.length?buscaPool(tk):[];
   $("#sugg").hidden=!t;
   $("#sugg").innerHTML=matches.map(c=>`<button data-add="${c.id}">${c.name}<small>${c.unit}</small></button>`).join("")
