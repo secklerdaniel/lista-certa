@@ -446,7 +446,7 @@ function renderList(){
   const n=list.length;
   $("#count").textContent=n?`Sua lista · ${n} ${n===1?"item":"itens"}`:"Sua lista";
   $("#clear").hidden=!n;
-  $("#go").disabled=!n;$("#go").textContent=n?`Comparar ${n} ${n===1?"item":"itens"} em ${MARKETS.length} mercados`:"Adicione itens para comparar";
+  $("#go").disabled=!n;$("#go").textContent=n?`Comparar ${n} ${n===1?"item":"itens"}`:"Adicione itens para comparar";
   $("#items").innerHTML=n?list.map(x=>{const c=CATALOG[x.id];return `<div class="item"><div class="nm"><b>${c.name}</b><small>${c.unit}</small></div>
     <div class="step"><button data-a="-" data-id="${x.id}" aria-label="Menos">−</button><span>${x.qty}</span><button data-a="+" data-id="${x.id}" aria-label="Mais">+</button></div>
     <button class="rm" data-a="x" data-id="${x.id}" aria-label="Remover ${c.name}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`}).join("")
@@ -460,20 +460,38 @@ $("#items").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;
   if(b.dataset.a==="+")x.qty=Math.min(x.qty+1,99);else if(b.dataset.a==="-")x.qty=Math.max(x.qty-1,1);else list=list.filter(i=>i.id!==id);renderList()};
 $("#chips").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
 $("#clear").onclick=()=>{list=[];renderList()};
-let matches=[];
-/* texto livre: o que não está no catálogo vira item novo (sem preço até alguém coletar) */
-function addLivre(txt){const nome=txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ").replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()),key=norm(nome)+"|";
+let matches=[],POOL=[];
+/* abreviações de cupom/etiqueta: valem para BUSCAR (desodorante acha DESOD) e para mostrar o nome */
+const ABREV={desod:"desodorante",sab:"sabonete",sabon:"sabonete",sh:"shampoo",shamp:"shampoo",cond:"condicionador",det:"detergente",amac:"amaciante",refrig:"refrigerante",bisc:"biscoito",macarr:"macarrão",achoc:"achocolatado",pap:"papel",hig:"higiênico",mist:"mistura",chocol:"chocolate",cr:"creme",dent:"dental",esc:"escova",marg:"margarina",ling:"linguiça",qj:"queijo",pres:"presunto",iog:"iogurte",cerv:"cerveja",cx:"caixa",unid:"unidade"};
+const expandir=t=>t.toLowerCase().split(/\s+/).map(w=>ABREV[norm(w)]||w).join(" ");
+const bonito=t=>expandir(t).replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()).replace(/ (De|Da|Do|Dos|Das|E|Com|Em|Para) /g,x=>x.toLowerCase());
+function addPool(k){
+  const it=POOL.find(x=>x.k===k);if(!it)return;
+  const key="p|"+k;let c=CATALOG.find(x=>x.key===key);
+  if(!c){c={id:CATALOG.length,name:it.nome,unit:"un",base:0,key,extra:true};CATALOG.push(c);
+    try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:"un",base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
+  aplicarPool();add(c.id)}
+/* preenche o preço dos itens "p|..." da lista em todos os mercados que venderam esse produto */
+function aplicarPool(){CATALOG.forEach(c=>{if(!c.key||c.key.slice(0,2)!=="p|")return;const k=c.key.slice(2);
+  POOL.forEach(x=>{if(x.k===k&&prices[x.mid])prices[x.mid][c.id]={p:x.p,age:x.age}})})}
+/* texto livre sem nenhum resultado: vira item novo, sem preço até alguém coletar */
+function addLivre(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ")),key=norm(nome)+"|";
   let c=CATALOG.find(x=>x.key===key);
   if(!c){c={id:CATALOG.length,name:nome,unit:"un",base:0,key,extra:true};CATALOG.push(c);
     try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
   add(c.id)}
-$("#q").oninput=e=>{const v=e.target.value.trim(),t=norm(v);
-  matches=t?CATALOG.filter(c=>norm(c.name).includes(t)).slice(0,5):[];
+function buscaPool(tokens){
+  const g={};POOL.forEach(x=>{if(tokens.every(t=>x.k.includes(t))){const r=g[x.k]=g[x.k]||{k:x.k,nome:x.nome,n:new Set(),min:1e9};r.n.add(x.mid);r.min=Math.min(r.min,x.p)}});
+  return Object.values(g).sort((a,b)=>b.n.size-a.n.size||a.min-b.min).slice(0,6)}
+$("#q").oninput=e=>{const v=e.target.value.trim(),t=norm(v),tk=t.split(/\s+/).filter(Boolean);
+  matches=t?CATALOG.filter(c=>!c.key||c.key.slice(0,2)!=="p|").filter(c=>norm(c.name).includes(t)).slice(0,4):[];
+  const pool=tk.length?buscaPool(tk):[];
   $("#sugg").hidden=!t;
   $("#sugg").innerHTML=matches.map(c=>`<button data-add="${c.id}">${c.name}<small>${c.unit}</small></button>`).join("")
-    +(t.length>1&&!matches.some(c=>norm(c.name)===t)?`<button data-livre="1">+ Adicionar “${v.replace(/[&<>"]/g,"")}”<small>novo</small></button>`:"")};
-$("#q").onkeydown=e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(matches[0])add(matches[0].id);else if(v.length>1)addLivre(v)};
-$("#sugg").onclick=e=>{const l=e.target.closest("[data-livre]");if(l)return addLivre($("#q").value);const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
+    +pool.map(r=>`<button data-pool="${r.k.replace(/"/g,"")}">${r.nome}<small>${r.n.size} ${r.n.size===1?"mercado":"mercados"} · desde ${brl(r.min)}</small></button>`).join("")
+    +(!matches.length&&!pool.length&&t.length>1?`<button data-livre="1">Ninguém coletou “${v.replace(/[&<>"]/g,"")}” ainda · adicionar mesmo assim<small>sem preço</small></button>`:"")};
+$("#q").onkeydown=e=>{if(e.key!=="Enter")return;const v=e.target.value.trim();if(matches[0])add(matches[0].id);else{const p=buscaPool(norm(v).split(/\s+/).filter(Boolean))[0];if(p)addPool(p.k);else if(v.length>1)addLivre(v)}};
+$("#sugg").onclick=e=>{const l=e.target.closest("[data-livre]");if(l)return addLivre($("#q").value);const pb=e.target.closest("[data-pool]");if(pb)return addPool(pb.dataset.pool);const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("#sugg").hidden=true});
 
 /* comparação */
@@ -482,7 +500,7 @@ function analyse(){
     list.forEach(x=>{const c=CATALOG[x.id],p=prices[m.id][x.id];
       if(!p)miss.push(c.name);else total+=p.p*x.qty;
       lines.push({c,qty:x.qty,p})});
-    return {m,total,miss,lines}});
+    return {m,total,miss,lines}}).filter(r=>r.lines.some(l=>l.p)); /* mercado sem preço de nenhum item da lista não aparece */
   rows.sort((a,b)=>a.miss.length-b.miss.length||a.total-b.total);
   /* "comprar um pouquinho em cada mercado": melhor divisão em 2 e em 3 mercados; a de 3 só vale se economizar pelo menos R$ 1 a mais que a de 2 */
   const b2=melhorDivisao(2),b3=melhorDivisao(3);
@@ -515,13 +533,14 @@ function renderComp(){
   const el=$("#v-comp");
   if(!list.length){el.innerHTML=`<h2 class="lead">Nada para comparar ainda.</h2><p class="sub">Monte sua lista primeiro.</p><button class="btn" onclick="show('lista')">Voltar para a lista</button>`;return}
   const {rows,best,b2}=analyse();
+  if(!rows.length){el.innerHTML=`<h2 class="lead">Ainda sem preço</h2><p class="sub">Nenhum mercado de ${CITIES[city].name} tem preço dos itens da sua lista. Leia um cupom ou envie um vídeo de prateleira na aba Contribuir.</p><button class="btn" onclick="show('lista')">Voltar para a lista</button>`;return}
   const top=rows[0],full=rows.filter(r=>!r.miss.length),worst=full.length?full[full.length-1]:rows[rows.length-1];
   const save=worst.total-top.total,pct=worst.total?Math.round(save/worst.total*100):0;
   const gain=best?top.total-best.total:0;
   const max=Math.max(...rows.map(r=>r.total));
   el.innerHTML=`
    <h2 class="lead">Sua cesta, mercado a mercado</h2>
-   <p class="sub">${CITIES[city].name} · ${MARKETS.length} mercados · ${list.length} ${list.length===1?"item":"itens"} na lista</p>
+   <p class="sub">${CITIES[city].name} · ${rows.length} ${rows.length===1?"mercado":"mercados"} com preço · ${list.length} ${list.length===1?"item":"itens"} na lista</p>
    <div class="best"><span class="tag">Mais barato</span><h3>${top.m.name}</h3>
      <div class="tot">${brl(top.total)}</div>
      <p>${top.m.dist} de você${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
@@ -839,6 +858,7 @@ async function carregarApi(){
       mk.dist="integrado pela API";
     });
     for(let i=ct.markets.length-1;i>=0;i--)if(ct.markets[i].api&&!grupos[ct.markets[i].id.slice(4)])ct.markets.splice(i,1);
+    aplicarPool();
     if(ck===city){cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}
   }catch(e){}finally{apiBusy=false}
 }
@@ -850,21 +870,24 @@ async function carregarCupons(){
   try{
     const d=await (await fetch("/api/v1/cupons?cidade="+encodeURIComponent(ct.name))).json();
     if(!d||!d.ok)return;
-    const quem={};d.dados.forEach(x=>{const k=norm(x.descricao);(quem[k]=quem[k]||new Set()).add(x.cnpj)});
-    const grupos={};d.dados.forEach(x=>(grupos[x.cnpj]=grupos[x.cnpj]||{nome:x.mercado,itens:[]}).itens.push(x));
+    const gk=x=>x.cnpj||"v:"+norm(x.mercado).replace(/[^a-z0-9]+/g,"-");
+    const quem={};d.dados.forEach(x=>{const k=norm(x.descricao);(quem[k]=quem[k]||new Set()).add(gk(x))});
+    const grupos={};d.dados.forEach(x=>(grupos[gk(x)]=grupos[gk(x)]||{nome:x.mercado,video:!x.cnpj,itens:[]}).itens.push(x));
+    POOL=[];
     Object.entries(grupos).forEach(([cnpj,g])=>{
-      const id="real-"+cnpj;
+      const id=g.video?"vid-"+cnpj.slice(2):"real-"+cnpj;
       let mk=ct.markets.find(m=>m.id===id);
-      if(!mk){mk={id,name:titulo(g.nome),dist:"",f:1,real:true};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+      if(!mk){mk={id,name:g.video?g.nome:titulo(g.nome),dist:g.video?"vídeo da comunidade":"",f:1,real:true,video:g.video};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
       let ult=0;
       g.itens.forEach(x=>{
         const it={nome:x.descricao,unit:x.preco,un:x.unidade||"UN"};
+        POOL.push({k:norm(expandir(x.descricao)),nome:bonito(x.descricao),mid:id,p:x.preco,age:Math.max(0,Math.floor((Date.now()-new Date(x.emissao))/864e5))});
         const y=casar(it)||(quem[norm(x.descricao)].size>=2?obterExtra(it):null); // item fora do catálogo só entra se 2+ mercados vendem
         if(!y)return;
         const t=new Date(x.emissao).getTime();ult=Math.max(ult,t);
         prices[id][y.c.id]={p:y.p,age:Math.max(0,Math.floor((Date.now()-t)/864e5))};
       });
-      if(ult){const dia=new Date(ult);mk.dist=`cupom real de ${String(dia.getDate()).padStart(2,"0")}/${String(dia.getMonth()+1).padStart(2,"0")}`}
+      if(ult&&!g.video){const dia=new Date(ult);mk.dist=`cupom real de ${String(dia.getDate()).padStart(2,"0")}/${String(dia.getMonth()+1).padStart(2,"0")}`}
     });
     if(ck===city){cityUI();renderList();if($("#v-comp").classList.contains("on"))renderComp()}
   }catch(e){}finally{cupBusy=false}

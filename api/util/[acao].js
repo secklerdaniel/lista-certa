@@ -104,7 +104,12 @@ async function cupons(req, res) {
        from precos_cupom p left join mercados_regiao g on g.cnpj = p.cnpj
       where ${cidade ? "lower(p.cidade) = lower($1) and " : ""}p.emissao > now() - interval '${dias} days'
       order by p.cnpj, lower(p.descricao), p.emissao desc limit 5000`, cidade ? [cidade] : []);
-  enviar(res, 200, { ok: true, dados: r });
+  /* vídeos de prateleira também são públicos (sem CNPJ: o mercado é identificado pelo nome) */
+  const v = await sql().query(
+    `select distinct on (lower(mercado_nome), lower(descricao)) null::text as cnpj, mercado_nome as mercado, descricao, 'UN' as unidade, coalesce(promocao_preco, preco)::float as preco, criado_em as emissao
+       from coletas where ${cidade ? "lower(cidade) = lower($1) and " : ""}criado_em > now() - interval '${dias} days'
+      order by lower(mercado_nome), lower(descricao), criado_em desc limit 2000`, cidade ? [cidade] : []);
+  enviar(res, 200, { ok: true, dados: r.concat(v) });
 }
 
 module.exports = async (req, res) => {
