@@ -380,32 +380,14 @@ const CATALOG=[
 /* produtos que entraram por cupom (lidos antes do resto, para os ids ficarem estáveis) */
 try{JSON.parse(localStorage.getItem("lc-extra")||"[]").forEach(e=>CATALOG.push({id:CATALOG.length,name:e.name,unit:e.unit,base:e.base,key:e.key,extra:true}))}catch(e){}
 
-/* mercados fictícios por cidade — cidades menores têm menos opções, como na vida real */
+/* Cidades disponíveis. Mercados só entram quando houver dados reais da API,
+   de cupons fiscais ou de contribuições verificadas. */
 const CITIES={
- gramado:{name:"Gramado",markets:[
-  {id:"hort",name:"Mercado Hortênsias",dist:"0,8 km",f:1.00},
-  {id:"serra",name:"Super Serra",dist:"1,9 km",f:0.96},
-  {id:"bela",name:"Atacado Bela Vista",dist:"4,2 km",f:0.89},
-  {id:"centro",name:"Mercadão Centro",dist:"1,2 km",f:1.07},
-  {id:"flor",name:"Empório Floresta",dist:"2,6 km",f:1.03}]},
- canela:{name:"Canela",markets:[
-  {id:"cat",name:"Mercado Catedral",dist:"0,6 km",f:1.02},
-  {id:"cara",name:"Super Caracol",dist:"1,8 km",f:0.97},
-  {id:"ferr",name:"Atacado Ferradura",dist:"3,5 km",f:0.90},
-  {id:"praca",name:"Empório da Praça",dist:"1,0 km",f:1.08}]},
- igrejinha:{name:"Igrejinha",markets:[
-  {id:"para",name:"Mercado Paranhana",dist:"0,7 km",f:1.00},
-  {id:"vale",name:"Super Vale",dist:"1,5 km",f:0.94},
-  {id:"acen",name:"Atacado Central",dist:"2,9 km",f:0.90}]},
- novapetropolis:{name:"Nova Petrópolis",markets:[
-  {id:"col",name:"Mercado Colina",dist:"0,5 km",f:1.01},
-  {id:"imig",name:"Super Imigrante",dist:"1,4 km",f:0.95},
-  {id:"parq",name:"Atacado Parque",dist:"3,1 km",f:0.91},
-  {id:"colo",name:"Empório da Colônia",dist:"1,1 km",f:1.06}]},
- sfpaula:{name:"São Francisco de Paula",markets:[
-  {id:"camp",name:"Mercado Campos de Cima",dist:"0,6 km",f:1.03},
-  {id:"arau",name:"Super Araucária",dist:"1,7 km",f:0.98},
-  {id:"alta",name:"Atacado Serra Alta",dist:"3,8 km",f:0.92}]}
+ gramado:{name:"Gramado",markets:[]},
+ canela:{name:"Canela",markets:[]},
+ igrejinha:{name:"Igrejinha",markets:[]},
+ novapetropolis:{name:"Nova Petrópolis",markets:[]},
+ sfpaula:{name:"São Francisco de Paula",markets:[]}
 };
 let city="gramado";
 try{const c=localStorage.getItem("lc-city");if(CITIES[c])city=c}catch(e){}
@@ -417,19 +399,13 @@ const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const hash=s=>[...s].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);
 
-/* base de preços simulada */
+/* Preços começam vazios: somente API, cupons ou coletas reais podem preenchê-los. */
 const prices={};
-Object.values(CITIES).forEach(ct=>ct.markets.forEach(m=>{prices[m.id]={};CATALOG.filter(c=>!c.extra).forEach(c=>{
-  const r=rng(hash(m.id+c.id));
-  if(r()<.1){prices[m.id][c.id]=null;return}
-  const p=Math.round(c.base*m.f*(.93+r()*.14)*10)/10-.01;
-  prices[m.id][c.id]={p:Math.max(p,.99),age:Math.floor(r()*9)};
-})}));
 
 /* estado */
 let list=[],pts=0;const feeds={}; /* pts = pontos do usuário logado (vêm do servidor) */
 try{const s=JSON.parse(localStorage.getItem("lc-list")||"null");if(Array.isArray(s))list=s.filter(x=>CATALOG[x.id])}catch(e){}
-if(!list.length)list=[0,1,2,3,9].map(id=>({id,qty:1}));
+/* A lista começa vazia; o usuário escolhe os produtos que deseja comparar. */
 const save=()=>{try{localStorage.setItem("lc-list",JSON.stringify(list))}catch(e){}};
 
 /* navegação */
@@ -584,7 +560,7 @@ function renderComp(){
    <p class="sub">${CITIES[city].name} · ${rows.length} ${rows.length===1?"mercado":"mercados"} com preço · ${list.length} ${list.length===1?"item":"itens"} na lista</p>
    <div class="best"><span class="tag">Mais barato</span><h3>${top.m.name}</h3>
      <div class="tot">${brl(top.total)}</div>
-     <p>${top.m.dist} de você${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
+     <p>${(top.m.dist && /^cupom real|vídeo da comunidade|integrado pela API/.test(top.m.dist))?top.m.dist:(top.m.dist||"localização não informada")}${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
      ${save>0.05?`<div class="save">Economia de <b>${brl(save)}</b> (${pct}%) vs. o mais caro</div>`:""}</div>
    ${gain>0.5&&best&&!best.miss?`<div class="split"><h3>Dá para economizar mais</h3>
      <p>Comprando um pouco em cada um de <b>${best.ms.length} mercados</b>, você paga <span class="big">${brl(best.total)}</span> — ${brl(gain)} a menos.</p>
@@ -1099,31 +1075,15 @@ try{JSON.parse(localStorage.getItem("lc-videos")||"[]").forEach(v=>aplicarVideo(
 $("#scan").onclick=abrirLeitor;
 $("#cancel").onclick=fechar;
 $("#manual").onsubmit=e=>{e.preventDefault();tratar($("#chave").value,false)};
-function finishScan(){
-  const m=MARKETS[mi++%MARKETS.length],r=rng(Date.now());
-  const pool=CATALOG.map(c=>c.id).sort(()=>r()-.5).slice(0,5);
-  const changes=pool.map(id=>{const old=prices[m.id][id],c=CATALOG[id];
-    const p=Math.round(c.base*MARKETS.find(x=>x.id===m.id).f*(.9+r()*.1)*10)/10-.01;
-    prices[m.id][id]={p:Math.max(p,.99),age:0};return {c,old:old&&old.p,p:prices[m.id][id].p}});
-  const when=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-  (feeds[city]=feeds[city]||[]).unshift(`<b>${m.name}</b> · ${changes.length} preços atualizados<br><small>hoje às ${when} · simulação</small>`);
-  $("#scanBox").style.display="none";
-  const ok=$("#ok");ok.style.display="block";
-  ok.innerHTML=`<h3>Simulação de preços</h3><p style="font-size:14px;color:var(--muted)">Exemplo com ${m.name}: ${changes.length} preços de teste, não são os itens do seu cupom.</p>
-    <ul style="margin-top:8px">${changes.map(x=>`<li>${x.c.name}: <b>${brl(x.p)}</b>${x.old?` <small style="color:var(--muted)">(antes ${brl(x.old)})</small>`:""}</li>`).join("")}</ul>
-    <p style="margin-top:10px;font-size:13px;color:var(--green)"><b>+1 coleta</b> (simulada) · veja o efeito na aba Comparar.</p>
-    <button class="btn" id="done" style="margin-top:12px;box-shadow:none">Fechar</button>`;
-  $("#done").onclick=()=>{fechar();renderContr();toast("Preços de teste aplicados na comparação")};
-}
 
 /* seletor de cidade */
 function cityUI(){
   $("#cityName").textContent=CITIES[city].name;
-  $("#subCity").textContent=`Compare a cesta inteira entre os ${MARKETS.length} mercados de ${CITIES[city].name}.`;
+  $("#subCity").textContent=`Compare preços reais disponíveis em ${CITIES[city].name}.`;
 }
 function sheet(on){const s=$("#sheet");s.classList.toggle("on",on);s.setAttribute("aria-hidden",!on);
   if(on){$("#cities").innerHTML=Object.entries(CITIES).map(([k,c])=>`<button data-city="${k}" class="${k===city?"on":""}" aria-pressed="${k===city}">
-    <span class="ck">${k===city?"✓":""}</span><b>${c.name}</b><small>${c.markets.length} mercados</small></button>`).join("");
+    <span class="ck">${k===city?"✓":""}</span><b>${c.name}</b><small>${c.markets.length} mercados com dados nesta sessão</small></button>`).join("");
     $("#cities .on").focus()}else $("#cityBtn").focus()}
 function setCity(k){
   if(!CITIES[k]){return}
