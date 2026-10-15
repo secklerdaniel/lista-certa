@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 15000);
   try {
-    const r = await fetch(PORTAL + p, { signal: ctl.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; ListaCerta/1.0)" } });
+    const r = await fetch(PORTAL + p, { signal: ctl.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; Sacolista/1.0)" } });
     const html = await r.text();
     const dados = parse(html);
     if (!dados.itens.length) {

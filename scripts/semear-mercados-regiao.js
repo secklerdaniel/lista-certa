@@ -21,7 +21,7 @@ const dorme = ms => new Promise(r => setTimeout(r, ms));
     let lat = null, lng = null;
     try {
       const q = encodeURIComponent(`${m.rua} ${m.num}, ${m.cidade}, RS, Brasil`);
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=br`, { headers: { "User-Agent": "ListaCerta/1.0 (seed manual; https://lista-certa-omega.vercel.app)" } });
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=br`, { headers: { "User-Agent": "Sacolista/1.0 (seed manual; https://lista-certa-omega.vercel.app)" } });
       const j = await r.json();
       if (j[0]) { lat = +j[0].lat; lng = +j[0].lon; }
     } catch (e) { /* sem coordenadas, tudo bem */ }

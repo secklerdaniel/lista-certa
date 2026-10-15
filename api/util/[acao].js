@@ -44,7 +44,7 @@ async function overpass(lat, lng, fetchFn = fetch) {
   for (const url of ENDPOINTS) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
     try {
-      const r = await fetchFn(url, { method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "ListaCerta/1.0 (https://lista-certa-omega.vercel.app)" }, body: "data=" + encodeURIComponent(q) });
+      const r = await fetchFn(url, { method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Sacolista/1.0 (https://lista-certa-omega.vercel.app)" }, body: "data=" + encodeURIComponent(q) });
       if (!r.ok) { ultimo = new Error("overpass_" + r.status); continue; }
       return (await r.json()).elements || [];
     } catch (e) { ultimo = e; } finally { clearTimeout(t); }

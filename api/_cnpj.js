@@ -5,7 +5,7 @@ const semSufixo = s => String(s || "").replace(/\b(LTDA|EIRELI|EPP|ME|MEI|S\/?A|
 async function consultar(cnpj, fetchFn = fetch) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 6000);
   try {
-    const r = await fetchFn(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, { signal: ctl.signal, headers: { "User-Agent": "ListaCerta/1.0 (https://lista-certa-omega.vercel.app)" } });
+    const r = await fetchFn(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, { signal: ctl.signal, headers: { "User-Agent": "Sacolista/1.0 (https://lista-certa-omega.vercel.app)" } });
     if (r.status === 404) return { encontrado: false };
     if (!r.ok) return null;
     const j = await r.json();

@@ -1,4 +1,4 @@
-"""Gera o logo da Lista Certa: símbolo (cupom serrilhado + visto) e palavra em curvas (Archivo condensada, peso 900)."""
+"""Gera o logo da Sacolista: símbolo (cupom serrilhado + visto) e palavra em curvas (Archivo condensada, peso 900)."""
 import os, json
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
@@ -47,7 +47,7 @@ def cupom(cor_papel, cor_visto, barras=True):
         s += f'<path d="M18 31 L28 42 L47 18" fill="none" stroke="{cor_visto}" stroke-width="8" stroke-linecap="square" stroke-linejoin="miter"/>'
     return s
 
-def svg(w, h, corpo, titulo="Lista Certa"):
+def svg(w, h, corpo, titulo="Sacolista"):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w:g} {h:g}" width="{w:g}" height="{h:g}" role="img" aria-label="{titulo}">'
             f'<title>{titulo}</title>{corpo}</svg>\n')
 
@@ -56,7 +56,7 @@ def grava(nome, conteudo):
 
 # ---------- palavra ----------
 TRACK = -8
-pal, larg_pal, ymin, ymax = palavra("Lista Certa", TRACK)
+pal, larg_pal, ymin, ymax = palavra("Sacolista", TRACK)
 escala = 34 / CAP                      # altura das maiúsculas = 34 unidades
 w_txt = larg_pal * escala
 def texto(cor, x, y_base):
