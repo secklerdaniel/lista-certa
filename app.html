@@ -844,7 +844,8 @@ async function buscarItens(c,raw){
       <ul style="margin:8px 0 0 16px">${d.itens.map(it=>{const x=resolver(it);return `<li>${it.nome.toLowerCase()} — <b>${brl(it.unit)}</b>/${it.un.toLowerCase()}${x?` <span style="color:var(--green)">→ ${x.c.name}${x.c.extra?` (${x.c.unit}) · <b>novo no catálogo</b>`:` ${brl(x.p)}`}</span>`:` <span style="opacity:.6">(ignorado)</span>`}</li>`}).join("")}</ul>
       ${d.contribuicao?(d.contribuicao.novo?"<p style='margin-top:8px;color:var(--green)'><b>+1 coleta</b> registrada no seu nome.</p>":"<p style='margin-top:8px'>Esse cupom já tinha sido lido, então não soma pontos de novo.</p>"):"<p style='margin-top:8px'>Entre com o Google para ganhar pontos pelos cupons que ler.</p>"}`;
     renderContr();
-  }catch(e){el.innerHTML=`<b>Não consegui buscar os itens agora.</b> ${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}`}
+  }catch(e){el.innerHTML=`<b>Não consegui buscar os itens agora.</b> ${e.message==="Failed to fetch"?"Sem conexão com o servidor.":e.message}<button class="btn ghost" id="retry" style="margin-top:8px;padding:10px;font-size:14px">Tentar de novo</button>`;
+    $("#retry").onclick=()=>buscarItens(c,raw)}
 }
 /* GTIN = identidade do produto. 1ª vez que um código aparece, ligamos ao item do catálogo (pelo nome) e guardamos;
    depois, qualquer mercado que mande o mesmo código cai no mesmo item, não importa como escreva o nome.
