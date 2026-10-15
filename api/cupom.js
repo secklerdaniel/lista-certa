@@ -3,7 +3,7 @@
    O host é FIXO e o parâmetro p é validado por regex: a função não busca URL que o cliente mande.
    Não devolve nem registra o CPF do consumidor (a página o traz, mas ele nunca é lido aqui). */
 const PORTAL = "https://dfe-portal.svrs.rs.gov.br/Dfe/QrCodeNFce?p=";
-const FORMATO = /^\d{44}\|\d\|\d\|\d+\|[0-9A-Fa-f]{40}$/;
+const FORMATO = /^\d{44}\|\d\|\d(?:\|[0-9A-Za-z.+\/=]+){1,5}\|[0-9A-Fa-f]{40}$/; /* normal: chave|2|1|1|hash; contingência: chave|2|1|dia|valor|digest|1|hash */
 
 const ent = s => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ");
 const txt = s => ent(String(s || "").replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
@@ -64,7 +64,8 @@ module.exports = async (req, res) => {
     const dados = parse(html);
     if (!dados.itens.length) {
       const aviso = txt(html).slice(0, 200);
-      return res.status(502).end(JSON.stringify({ ok: false, erro: "portal", msg: "O portal não devolveu os itens.", detalhe: aviso }));
+      const rej = /^\d{3} - .{5,150}/.exec(aviso); /* recusa da Fazenda (ex.: 234 - prazo de 24h) */
+      return res.status(502).end(JSON.stringify({ ok: false, erro: "portal", msg: /^23[48] /.test(aviso) ? "A nota ainda não está disponível no portal da Fazenda. Tente de novo mais tarde." : rej ? "A Fazenda respondeu: " + rej[0] : "O portal não devolveu os itens.", detalhe: aviso }));
     }
     /* o mercado do cupom entra no catálogo da região (pelo CNPJ), para aparecer nas sugestões do envio de vídeo */
     try {
