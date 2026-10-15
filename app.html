@@ -433,8 +433,9 @@ function renderList(){
     <button class="rm" data-a="x" data-id="${x.id}" aria-label="Remover ${c.name}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>${blocoFiltros(x,c)}</div>`}).join("")
     :`<div class="empty">Sua lista está vazia.<br>Digite um produto acima ou toque numa sugestão.</div>`;
   const inList=new Set(list.map(x=>x.id));
-  /* os 4 itens que mais aparecem no banco (coletas + cupons, 15/10/2026): detergente, macarrão, leite, arroz */
-  $("#chips").innerHTML=[19,7,0,2].filter(i=>!inList.has(i)).map(i=>`<button class="chip" data-add="${i}">+ ${CATALOG[i].name}</button>`).join("");
+  /* só sugere o que existe no banco: os 4 termos que mais aparecem nos produtos coletados (POOL), sem os que já estão na lista */
+  const emLista=new Set(list.map(x=>CATALOG[x.id].key));
+  $("#chips").innerHTML=termosTop().filter(w=>!emLista.has("g|"+norm(w))).map(w=>`<button class="chip" data-gen="${w.replace(/[&<>"]/g,"")}">+ ${w.replace(/[&<>"]/g,"")}</button>`).join("");
   save();
 }
 function blocoFiltros(x,c){const F=facetas(c);if(!F)return "";const f=x.f||{};
@@ -447,7 +448,11 @@ $("#items").onchange=e=>{const i=e.target.closest("[data-fk]");if(!i)return;cons
   aplicarPool();renderList()};
 $("#items").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const id=+b.dataset.id,x=list.find(i=>i.id===id);
   if(b.dataset.a==="+")x.qty=Math.min(x.qty+1,99);else if(b.dataset.a==="-")x.qty=Math.max(x.qty-1,1);else list=list.filter(i=>i.id!==id);renderList()};
-$("#chips").onclick=e=>{const b=e.target.closest("[data-add]");if(b)add(+b.dataset.add)};
+const PREFIXO=new Set(["flv","pd","ac","hf","pad","hort","merc","promo","mist"]); /* siglas de seção que vêm antes do nome no cupom */
+function termosTop(n=4){const c={};
+  POOL.forEach(x=>{const w=x.nome.split(" ").find(w=>w.length>=4&&!PREFIXO.has(norm(w)));if(!w)return;const k=norm(w),r=c[k]=c[k]||{w,n:0};r.n++});
+  return Object.values(c).sort((a,b)=>b.n-a.n).slice(0,n).map(r=>r.w)}
+$("#chips").onclick=e=>{const b=e.target.closest("[data-gen]");if(b)addGen(b.dataset.gen)};
 $("#clear").onclick=()=>{list=[];renderList()};
 let matches=[],POOL=[];
 /* abreviações de cupom/etiqueta: valem para BUSCAR (desodorante acha DESOD) e para mostrar o nome */
