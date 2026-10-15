@@ -404,7 +404,9 @@ const prices={};
 
 /* estado */
 let list=[],pts=0;const feeds={}; /* pts = pontos do usuário logado (vêm do servidor) */
-try{const s=JSON.parse(localStorage.getItem("lc-list")||"null");if(Array.isArray(s))list=s.filter(x=>CATALOG[x.id])}catch(e){}
+try{const s=JSON.parse(localStorage.getItem("lc-list")||"null");if(Array.isArray(s))list=s.filter(x=>CATALOG[x.id]);
+  /* a lista inicial antiga (leite, café, arroz, feijão, ovos, 1 de cada) ficou salva nos aparelhos: sai uma vez */
+  if(list.length===5&&[0,1,2,3,9].every((id,i)=>list[i].id===id&&list[i].qty===1&&!list[i].f))list=[]}catch(e){}
 /* A lista começa vazia; o usuário escolhe os produtos que deseja comparar. */
 const save=()=>{try{localStorage.setItem("lc-list",JSON.stringify(list))}catch(e){}};
 
