@@ -45,6 +45,10 @@
       "destination": "/privacidade.html"
     },
     {
+      "source": "/grupo",
+      "destination": "/grupo.html"
+    },
+    {
       "source": "/mercado",
       "destination": "/mercado.html"
     }

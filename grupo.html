@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sacolista · As ofertas da cidade num grupo só</title>
+<meta name="description" content="Receba as ofertas dos mercados de Gramado e Canela no WhatsApp, todo dia ao meio-dia. Grátis.">
+<meta property="og:title" content="sacolista · As ofertas da cidade. Num grupo só.">
+<meta property="og:description" content="Receba as ofertas dos mercados de Gramado e Canela no WhatsApp, todo dia ao meio-dia.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://grupo.sacolista.digital">
+<meta name="theme-color" content="#FFD83A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23FFD83A'/%3E%3Cpath d='M18 24h28l-2 24a3 3 0 0 1-3 3H23a3 3 0 0 1-3-3z' fill='none' stroke='%23111' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M25 24v-3a7 7 0 0 1 14 0v3' fill='none' stroke='%23111' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yellow: #FFD83A;
+    --cream: #FFFDF6;
+    --ink: #151515;
+    --green: #167A45;
+    --muted: #4a4a45;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "Lexend", system-ui, sans-serif;
+    background: var(--yellow);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 480px; text-align: center; }
+  .card {
+    background: var(--cream);
+    border: 2px solid var(--ink);
+    border-radius: 28px;
+    box-shadow: 8px 8px 0 var(--ink);
+    padding: 28px 28px 24px;
+  }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .brand svg { width: 52px; height: 52px; flex: none; }
+  .brand-text { text-align: left; line-height: 1.1; }
+  .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand-city { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+  h1 {
+    font-size: clamp(34px, 9vw, 46px);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 28px 0 16px;
+  }
+  h1 .green { color: var(--green); display: block; }
+  .lead { font-size: 17px; line-height: 1.5; color: var(--muted); margin: 0 auto 20px; max-width: 360px; }
+  .chips { font-size: 13px; font-weight: 700; margin-bottom: 20px; }
+  .chips .dot { color: #aaa; margin: 0 8px; }
+  .cta {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: var(--green); color: #fff; text-decoration: none;
+    font-weight: 700; font-size: 18px;
+    border: 2px solid var(--ink); border-radius: 18px;
+    box-shadow: 0 5px 0 var(--ink);
+    padding: 17px 20px;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .cta:hover { transform: translateY(2px); box-shadow: 0 3px 0 var(--ink); }
+  .cta:active { transform: translateY(5px); box-shadow: 0 0 0 var(--ink); }
+  .cta svg { width: 22px; height: 22px; fill: currentColor; }
+  .fine { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
+  footer { margin-top: 28px; font-size: 13px; font-weight: 500; }
+  footer a, footer button {
+    color: var(--ink); background: none; border: 0; padding: 0; margin: 0 8px;
+    font: inherit; text-decoration: underline; cursor: pointer;
+  }
+
+  dialog {
+    border: 2px solid var(--ink); border-radius: 24px; background: var(--cream); color: var(--ink);
+    padding: 0; width: min(560px, calc(100% - 32px)); max-height: calc(100vh - 48px);
+    font-family: inherit;
+  }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .modal-inner { padding: 24px 26px 28px; overflow-y: auto; max-height: calc(100vh - 52px); text-align: left; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-head h2 { margin: 0; font-size: 24px; font-weight: 700; }
+  .close {
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid #ccc; background: #fff;
+    font-size: 18px; line-height: 1; cursor: pointer; color: var(--ink);
+  }
+  .meta { font-size: 12px; margin: 0 0 18px; }
+  dialog h3 { font-size: 17px; font-weight: 700; margin: 22px 0 8px; }
+  dialog p { font-size: 14.5px; line-height: 1.7; margin: 0 0 12px; }
+  dialog a { color: var(--green); }
+</style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="32" fill="#FFD83A"/>
+        <path d="M17 24h30l-2 24a3.5 3.5 0 0 1-3.5 3.2h-19A3.5 3.5 0 0 1 19 48z" fill="none" stroke="#151515" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M25 24v-3a7 7 0 0 1 14 0v3" fill="none" stroke="#151515" stroke-width="3" stroke-linecap="round"/>
+        <g fill="#151515"><circle cx="26" cy="33" r="1.6"/><circle cx="26" cy="39" r="1.6"/><circle cx="26" cy="45" r="1.6"/></g>
+        <g stroke="#151515" stroke-width="2.4" stroke-linecap="round"><path d="M31 33h9"/><path d="M31 39h9"/><path d="M31 45h9"/></g>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-name">sacolista</div>
+        <div class="brand-city">Gramado e Canela</div>
+      </div>
+    </div>
+
+    <h1>As ofertas da cidade. <span class="green">Num grupo só.</span></h1>
+    <p class="lead">Receba as ofertas dos mercados de Gramado e Canela no WhatsApp, todo dia ao meio-dia.</p>
+    <div class="chips">✓ Grátis <span class="dot">•</span> 1 post por dia</div>
+
+    <a class="cta" id="cta" href="https://chat.whatsapp.com/Hg2ChsxSSDdIsae7D4GR5C" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.15.83.84-3.07-.2-.32a8.2 8.2 0 1 1 7.01 3.89Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.13-.16.24-.63.8-.78.96-.14.17-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.1-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.43.06-.65.31-.22.24-.86.84-.86 2.05s.88 2.38 1 2.55c.12.16 1.73 2.64 4.2 3.7.59.26 1.05.41 1.4.52.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.66-1.17.2-.58.2-1.07.14-1.17-.06-.1-.22-.16-.47-.28Z"/></svg>
+      Entrar no grupo grátis
+    </a>
+    <p class="fine">Sem bagunça. Você pode sair quando quiser.</p>
+  </section>
+
+  <footer>
+    <a href="https://instagram.com/sacolista.digital" target="_blank" rel="noopener">@sacolista.digital</a>
+    <button type="button" id="open-privacy">Privacidade</button>
+  </footer>
+</main>
+
+<dialog id="privacy" aria-labelledby="privacy-title">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <h2 id="privacy-title">Privacidade</h2>
+      <button class="close" type="button" id="close-privacy" aria-label="Fechar">✕</button>
+    </div>
+    <p class="meta">Sacolista · @sacolista.digital · atualizado em outubro de 2026</p>
+
+    <h3>Dados que pedimos</h3>
+    <p>Nenhum. Esta página não tem formulário e não pede nome, telefone, e-mail ou qualquer dado pessoal. O botão só abre o convite do grupo no WhatsApp.</p>
+
+    <h3>Meta Pixel e cookies</h3>
+    <p>Usamos o Meta Pixel (ferramenta da Meta Platforms, dona do Facebook e do Instagram) para medir os resultados dos nossos anúncios: por exemplo, quantas pessoas visitaram a página e quantas tocaram no botão do grupo. Para isso, o Pixel pode usar cookies e coletar informações técnicas do seu navegador e da sua visita (como endereço IP, tipo de dispositivo, página acessada e cliques). Esses dados são tratados pela Meta conforme a <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">Política de Privacidade da Meta</a>.</p>
+    <p>Você pode bloquear ou apagar cookies nas configurações do seu navegador e ajustar suas preferências de anúncios em <a href="https://www.facebook.com/adpreferences/" target="_blank" rel="noopener">Preferências de anúncios da Meta</a>.</p>
+
+    <h3>Grupo no WhatsApp</h3>
+    <p>Ao entrar no grupo, seu número fica visível para os administradores e participantes, como em qualquer grupo do WhatsApp, e o uso segue as regras do próprio WhatsApp. Você pode sair do grupo quando quiser.</p>
+
+    <h3>Contato</h3>
+    <p>Dúvidas? Fale com a gente pelo Instagram <a href="https://instagram.com/sacolista.digital" target="_blank" rel="noopener">@sacolista.digital</a>.</p>
+  </div>
+</dialog>
+
+<script>
+  var dlg = document.getElementById('privacy');
+  document.getElementById('open-privacy').addEventListener('click', function () { dlg.showModal(); });
+  document.getElementById('close-privacy').addEventListener('click', function () { dlg.close(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+</script>
+</body>
+</html>
