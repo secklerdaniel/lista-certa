@@ -10,6 +10,21 @@
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#FFD83A">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23FFD83A'/%3E%3Cpath d='M18 24h28l-2 24a3 3 0 0 1-3 3H23a3 3 0 0 1-3-3z' fill='none' stroke='%23111' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M25 24v-3a7 7 0 0 1 14 0v3' fill='none' stroke='%23111' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- ===================== META PIXEL ===================== -->
+<script>
+var PIXEL_ID = '1073583875720411';
+var PIXEL_ON = /^\d+$/.test(PIXEL_ID); // só carrega o Pixel quando houver um ID real
+if (PIXEL_ON) {
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', PIXEL_ID);
+  fbq('track', 'PageView');
+}
+</script>
+<!-- =================== FIM META PIXEL =================== -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -157,6 +172,18 @@
   document.getElementById('open-privacy').addEventListener('click', function () { dlg.showModal(); });
   document.getElementById('close-privacy').addEventListener('click', function () { dlg.close(); });
   dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+
+  var hasFbq = function () { return PIXEL_ON && typeof window.fbq === 'function'; };
+  document.getElementById('cta').addEventListener('click', function (e) {
+    if (!hasFbq() || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    var url = this.href;
+    try { fbq('track', 'Lead', { content_name: 'Grupo WhatsApp Sacolista' }); } catch (err) {}
+    setTimeout(function () { window.location.href = url; }, 300);
+  });
+  setTimeout(function () {
+    if (hasFbq()) { try { fbq('track', 'ViewContent', { content_name: 'Landing Grupo WhatsApp Sacolista' }); } catch (err) {} }
+  }, 5000);
 </script>
 </body>
 </html>
