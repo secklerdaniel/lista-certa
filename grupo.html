@@ -139,10 +139,10 @@ if (PIXEL_ON) {
 
     <a class="cta" id="cta" href="https://chat.whatsapp.com/Hg2ChsxSSDdIsae7D4GR5C" rel="noopener">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.15.83.84-3.07-.2-.32a8.2 8.2 0 1 1 7.01 3.89Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.13-.16.24-.63.8-.78.96-.14.17-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.25-.02-.38.1-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.43.06-.65.31-.22.24-.86.84-.86 2.05s.88 2.38 1 2.55c.12.16 1.73 2.64 4.2 3.7.59.26 1.05.41 1.4.52.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.66-1.17.2-.58.2-1.07.14-1.17-.06-.1-.22-.16-.47-.28Z"/></svg>
-      Entrar no grupo grátis
+      <span id="cta-label">Entrar no grupo grátis</span>
     </a>
     <p class="fine">Sem bagunça. Você pode sair quando quiser.</p>
-    <p class="auto" id="auto" aria-live="polite">Abrindo o grupo em <span id="auto-n">5</span>s <button type="button" id="auto-cancel">Cancelar</button></p>
+    <p class="auto" id="auto"><button type="button" id="auto-cancel">Cancelar abertura automática</button></p>
   </section>
 
   <footer>
@@ -193,24 +193,23 @@ if (PIXEL_ON) {
     goGrupo(false);
   });
 
-  // reforço: botão pulsa depois de 4 s
-  setTimeout(function () { cta.classList.add('pulse'); }, 4000);
+  // botão pulsa a partir de 2 s
+  setTimeout(function () { cta.classList.add('pulse'); }, 2000);
 
-  // teste: /grupo?auto=1 abre o grupo sozinho (contagem de 5 s, com cancelar) depois de 8 s
-  if (/[?&]auto=1\b/.test(location.search)) {
-    var box = document.getElementById('auto'), n = 5, tick;
-    function stop() { clearInterval(tick); box.classList.remove('on'); }
-    document.getElementById('auto-cancel').addEventListener('click', stop);
-    setTimeout(function () {
-      box.classList.add('on');
-      document.getElementById('auto-n').textContent = n;
-      tick = setInterval(function () {
-        n--;
-        document.getElementById('auto-n').textContent = n;
-        if (n <= 0) { stop(); goGrupo(true); }
-      }, 1000);
-    }, 8000);
-  }
+  // a partir de 10 s a contagem regressiva (5 s) aparece no texto do botão; no zero abre o grupo
+  var label = document.getElementById('cta-label'), box = document.getElementById('auto'), n = 5, tick;
+  var labelOriginal = label.textContent;
+  function stop() { clearInterval(tick); box.classList.remove('on'); label.textContent = labelOriginal; }
+  document.getElementById('auto-cancel').addEventListener('click', stop);
+  setTimeout(function () {
+    box.classList.add('on');
+    label.textContent = 'Abrindo o grupo em ' + n + 's';
+    tick = setInterval(function () {
+      n--;
+      if (n <= 0) { clearInterval(tick); label.textContent = 'Abrindo…'; goGrupo(true); return; }
+      label.textContent = 'Abrindo o grupo em ' + n + 's';
+    }, 1000);
+  }, 10000);
   setTimeout(function () {
     if (hasFbq()) { try { fbq('track', 'ViewContent', { content_name: 'Landing Grupo WhatsApp Sacolista' }); } catch (err) {} }
   }, 5000);
