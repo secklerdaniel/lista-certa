@@ -85,6 +85,12 @@ if (PIXEL_ON) {
   .cta:active { transform: translateY(5px); box-shadow: 0 0 0 var(--ink); }
   .cta svg { width: 22px; height: 22px; fill: currentColor; }
   .fine { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
+  .cta.pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  @media (prefers-reduced-motion: reduce) { .cta.pulse { animation: none; } }
+  .auto { display: none; font-size: 13px; font-weight: 600; margin: 14px 0 0; }
+  .auto.on { display: block; }
+  .auto button { font: inherit; color: var(--ink); background: none; border: 0; padding: 0; margin-left: 6px; text-decoration: underline; cursor: pointer; }
   footer { margin-top: 28px; font-size: 13px; font-weight: 500; }
   footer a, footer button {
     color: var(--ink); background: none; border: 0; padding: 0; margin: 0 8px;
@@ -136,6 +142,7 @@ if (PIXEL_ON) {
       Entrar no grupo grátis
     </a>
     <p class="fine">Sem bagunça. Você pode sair quando quiser.</p>
+    <p class="auto" id="auto" aria-live="polite">Abrindo o grupo em <span id="auto-n">5</span>s <button type="button" id="auto-cancel">Cancelar</button></p>
   </section>
 
   <footer>
@@ -174,13 +181,36 @@ if (PIXEL_ON) {
   dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
 
   var hasFbq = function () { return PIXEL_ON && typeof window.fbq === 'function'; };
-  document.getElementById('cta').addEventListener('click', function (e) {
+  var cta = document.getElementById('cta');
+  // Lead sai antes de abrir o WhatsApp; 300 ms para o evento ir embora
+  function goGrupo(auto) {
+    try { if (hasFbq()) fbq('track', 'Lead', { content_name: 'Grupo WhatsApp Sacolista', source: auto ? 'auto' : 'clique' }); } catch (err) {}
+    setTimeout(function () { window.location.href = cta.href; }, hasFbq() ? 300 : 0);
+  }
+  cta.addEventListener('click', function (e) {
     if (!hasFbq() || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    var url = this.href;
-    try { fbq('track', 'Lead', { content_name: 'Grupo WhatsApp Sacolista' }); } catch (err) {}
-    setTimeout(function () { window.location.href = url; }, 300);
+    goGrupo(false);
   });
+
+  // reforço: botão pulsa depois de 4 s
+  setTimeout(function () { cta.classList.add('pulse'); }, 4000);
+
+  // teste: /grupo?auto=1 abre o grupo sozinho (contagem de 5 s, com cancelar) depois de 8 s
+  if (/[?&]auto=1\b/.test(location.search)) {
+    var box = document.getElementById('auto'), n = 5, tick;
+    function stop() { clearInterval(tick); box.classList.remove('on'); }
+    document.getElementById('auto-cancel').addEventListener('click', stop);
+    setTimeout(function () {
+      box.classList.add('on');
+      document.getElementById('auto-n').textContent = n;
+      tick = setInterval(function () {
+        n--;
+        document.getElementById('auto-n').textContent = n;
+        if (n <= 0) { stop(); goGrupo(true); }
+      }, 1000);
+    }, 8000);
+  }
   setTimeout(function () {
     if (hasFbq()) { try { fbq('track', 'ViewContent', { content_name: 'Landing Grupo WhatsApp Sacolista' }); } catch (err) {} }
   }, 5000);
