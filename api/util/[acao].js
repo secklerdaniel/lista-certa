@@ -106,9 +106,12 @@ async function cupons(req, res) {
       order by p.cnpj, lower(p.descricao), p.emissao desc limit 5000`, cidade ? [cidade] : []);
   /* vídeos de prateleira também são públicos (sem CNPJ: o mercado é identificado pelo nome) */
   const v = await sql().query(
-    `select distinct on (lower(mercado_nome), lower(descricao)) null::text as cnpj, mercado_nome as mercado, descricao, 'UN' as unidade, coalesce(promocao_preco, preco)::float as preco, criado_em as emissao
+    `select distinct on (lower(mercado_nome), lower(descricao)) null::text as cnpj, mercado_nome as mercado, cidade, descricao, 'UN' as unidade, coalesce(promocao_preco, preco)::float as preco, criado_em as emissao
        from coletas where ${cidade ? "lower(cidade) = lower($1) and " : ""}criado_em > now() - interval '${dias} days'
       order by lower(mercado_nome), lower(descricao), criado_em desc limit 2000`, cidade ? [cidade] : []);
+  /* nome oficial do catálogo (e CNPJ) também para os vídeos: "Mercado Dia" e "Dia Após Dia" são um mercado só */
+  const { mapaOficial, oficial } = require("../_ofertas"), mapa = await mapaOficial();
+  v.forEach(x => { const g = oficial(mapa, x.mercado, x.cidade); if (g) { x.mercado = g.nome; x.cnpj = g.cnpj; } delete x.cidade; });
   /* ofertas de folheto (tabela ofertas, sem GTIN): valem até valido_ate; sem data, 14 dias */
   /* limpeza: apaga ofertas vencidas (ponytail: roda a cada consulta, é um delete barato; cron da Vercel só se passar das 12 funções do plano) */
   await sql().query(`delete from ofertas where coalesce(valido_ate < current_date, criado_em < now() - interval '14 days')`);

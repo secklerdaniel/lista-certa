@@ -43,16 +43,16 @@ const chave = (nome, cidade) => {
   return c + "|" + w;
 };
 async function mapaOficial() {
-  const cat = await sql().query(`select nome, cidade from mercados_regiao where ativo order by id`);
+  const cat = await sql().query(`select nome, cidade, cnpj from mercados_regiao where ativo order by id`);
   const mapa = new Map();
-  cat.forEach(k => { const c = chave(k.nome, k.cidade); if (!mapa.has(c)) mapa.set(c, k.nome); });
+  cat.forEach(k => { const c = chave(k.nome, k.cidade); if (!mapa.has(c)) mapa.set(c, { nome: k.nome, cnpj: k.cnpj }); });
   return mapa;
 }
 const oficial = (mapa, nome, cidade) => { const c = chave(nome, cidade); return mapa.get(ALIAS[c] || c); };
 async function oficiais(ok, avisos) {
   const mapa = await mapaOficial(), novos = new Map();
   ok.forEach(x => {
-    const nome = oficial(mapa, x[0], x[1]);
+    const nome = (oficial(mapa, x[0], x[1]) || {}).nome;
     if (nome) { if (nome !== x[0]) { avisos.push(`mercado "${x[0]}" (${x[1]}) gravado como "${nome}"`); x[0] = nome; } }
     else novos.set(chave(x[0], x[1]), [x[0], x[1]]);
   });
