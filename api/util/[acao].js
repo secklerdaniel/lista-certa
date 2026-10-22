@@ -109,7 +109,11 @@ async function cupons(req, res) {
     `select distinct on (lower(mercado_nome), lower(descricao)) null::text as cnpj, mercado_nome as mercado, descricao, 'UN' as unidade, coalesce(promocao_preco, preco)::float as preco, criado_em as emissao
        from coletas where ${cidade ? "lower(cidade) = lower($1) and " : ""}criado_em > now() - interval '${dias} days'
       order by lower(mercado_nome), lower(descricao), criado_em desc limit 2000`, cidade ? [cidade] : []);
-  enviar(res, 200, { ok: true, dados: r.concat(v) });
+  /* ofertas de folheto (tabela ofertas, sem GTIN): valem até valido_ate; sem data, 14 dias */
+  const o = await sql().query(
+    `select null::text as cnpj, mercado, 'oferta' as tipo, concat_ws(' ', produto, marca, quantidade::float8::text, unidade) as descricao, 'UN' as unidade, preco::float as preco, coalesce(valido_de::timestamptz, criado_em) as emissao
+       from ofertas where ${cidade ? "lower(cidade) = lower($1) and " : ""}coalesce(valido_ate >= current_date, criado_em > now() - interval '14 days') limit 2000`, cidade ? [cidade] : []);
+  enviar(res, 200, { ok: true, dados: r.concat(v, o) });
 }
 
 module.exports = async (req, res) => {

@@ -897,12 +897,12 @@ async function carregarCupons(){
     if(!d||!d.ok)return;
     const gk=x=>x.cnpj||"v:"+norm(x.mercado).replace(/[^a-z0-9]+/g,"-");
     const quem={};d.dados.forEach(x=>{const k=norm(x.descricao);(quem[k]=quem[k]||new Set()).add(gk(x))});
-    const grupos={};d.dados.forEach(x=>(grupos[gk(x)]=grupos[gk(x)]||{nome:x.mercado,video:!x.cnpj,itens:[]}).itens.push(x));
+    const grupos={};d.dados.forEach(x=>(grupos[gk(x)]=grupos[gk(x)]||{nome:x.mercado,video:!x.cnpj,oferta:x.tipo==="oferta",itens:[]}).itens.push(x));
     POOL=[];
     Object.entries(grupos).forEach(([cnpj,g])=>{
       const id=g.video?"vid-"+cnpj.slice(2):"real-"+cnpj;
       let mk=ct.markets.find(m=>m.id===id);
-      if(!mk){mk={id,name:g.video?g.nome:titulo(g.nome),dist:g.video?"vídeo da comunidade":"",f:1,real:true,video:g.video};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
+      if(!mk){mk={id,name:g.video?g.nome:titulo(g.nome),dist:g.oferta?"ofertas do folheto":g.video?"vídeo da comunidade":"",f:1,real:true,video:g.video};ct.markets.push(mk);prices[id]={};CATALOG.forEach(c=>prices[id][c.id]=null)}
       let ult=0;
       g.itens.forEach(x=>{
         const it={nome:x.descricao,unit:x.preco,un:x.unidade||"UN"};
