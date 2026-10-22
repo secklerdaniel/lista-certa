@@ -1,4 +1,4 @@
-/* Carga diária de ofertas (admin). Esquema: ver docs no painel /admin > Ofertas.
+/* Carga diária de ofertas (admin). Esquema: ver docs no painel interno > Ofertas.
    Regra: o lote enviado SUBSTITUI as ofertas dos mercados (mercado+cidade) que aparecem nele, salvo acrescentar=true. */
 const { sql } = require("./_lib");
 

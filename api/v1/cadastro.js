@@ -1,7 +1,7 @@
 /* POST /api/v1/cadastro  { nome, cidade, email, cnpj? }
    Cadastro ABERTO: qualquer mercado se cadastra e recebe as chaves (teste e produção) na hora, sem aprovação.
    Limite por IP; CNPJ (se informado) precisa ser válido e não pode já estar cadastrado.
-   A equipe pode desativar qualquer mercado depois em /admin. */
+   A equipe pode desativar qualquer mercado depois no painel interno. */
 const { sql, sha256, enviar, erro, corpo, crypto } = require("../_lib");
 const { verificarAtivo } = require("../_cnpj");
 

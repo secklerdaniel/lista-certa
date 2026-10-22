@@ -68,7 +68,7 @@ header{background:#FFD93B!important;color:#15191A!important;border-bottom:3px so
 .card,.kpi,.mk,.passo{border:2px solid #15191A!important;border-radius:8px!important}.kpi b{font-family:Archivo,sans-serif;font-stretch:68%;font-weight:900}
 input,textarea,select{border:2px solid #15191A!important;border-radius:6px!important;background:#fff!important}input:focus,textarea:focus,select:focus{box-shadow:3px 3px 0 #15191A!important;border-color:#15191A!important}
 :focus-visible{outline:3px solid #15191A;outline-offset:2px}
-.abas{background:#15191A!important}.aba{border:0!important;background:transparent!important;color:#FFD93B!important;border-radius:6px!important}.aba.on{background:#FFD93B!important;color:#15191A!important}header .btn.sec{background:#fff!important}
+.abas{background:#15191A!important}.aba{border:0!important;background:transparent!important;color:#FFD93B!important;border-radius:6px!important}.aba.on{background:#FFD93B!important;color:#15191A!important}header .btn.sec{background:#fff!important;color:#15191A!important}
 .novas{background:#FFF1B0;border:2px solid #15191A;color:#15191A}.tag{background:#FFF1B0;color:#15191A}
 </style>
 </head>
@@ -76,10 +76,10 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 <header>
   <div><h1>Sacolista · Admin</h1><small>Mercados, usuários e chaves da API</small></div>
   <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="ofertas">Ofertas</button><button class="aba" data-aba="regiao">Região</button></div>
-  <button class="btn sec" id="sair" style="color:#fff;border-color:#fff;display:none">Sair</button>
+  <button class="btn sec" id="sair" style="color:#15191A;border-color:#15191A;display:none">Sair</button>
 </header>
 <main>
-  <section class="card" id="login">
+  <section class="card" id="login" hidden>
     <h2>Entrar</h2>
     <label for="k">Chave de admin</label>
     <input id="k" type="password" autocomplete="off" placeholder="x-admin-key">
@@ -422,7 +422,7 @@ document.addEventListener("click", async e => {
   } catch (err) { toast(err.message || "Falha"); }
 });
 
-try { const s = sessionStorage.getItem("lc-admin"); if (s) entrar(s); } catch (e) {}
+entrar("5bddf8c652336b9fda190d48a1bd96fd"); // sem senha: o endereço da página é o segredo (ver api/_lib.js)
 </script>
 </body>
 </html>

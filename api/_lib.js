@@ -41,11 +41,13 @@ async function autenticar(req) {
   return r[0] || null;
 }
 
+/* Painel sem digitar senha: a página /adminklm08 (endereço não divulgado) manda este token sozinha. A API continua exigindo
+   o header, então chamar /api/admin/* "no escuro" dá 401. Quem achar a página entra: o endereço é o segredo. ADMIN_KEY segue valendo. */
+const TOKEN_PAINEL = "5bddf8c652336b9fda190d48a1bd96fd";
 function admin(req) {
-  const esperado = process.env.ADMIN_KEY, dado = String(req.headers["x-admin-key"] || "");
-  if (!esperado) return false;
-  const a = Buffer.from(sha256(esperado)), b = Buffer.from(sha256(dado));
-  return crypto.timingSafeEqual(a, b);
+  const dado = String(req.headers["x-admin-key"] || "");
+  const ok = k => k && crypto.timingSafeEqual(Buffer.from(sha256(k)), Buffer.from(sha256(dado)));
+  return ok(process.env.ADMIN_KEY) || ok(TOKEN_PAINEL);
 }
 
 module.exports = { sql, sha256, enviar, erro, corpo, gtinValido, autenticar, admin, crypto };
