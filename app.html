@@ -562,10 +562,11 @@ function renderComp(){
   const save=worst.total-top.total,pct=worst.total?Math.round(save/worst.total*100):0;
   const gain=best?top.total-best.total:0;
   const max=Math.max(...rows.map(r=>r.total));
+  const emp=rows.filter(r=>r.miss.length===top.miss.length&&Math.abs(r.total-top.total)<0.005); /* empate no topo */
   el.innerHTML=`
    <h2 class="lead">Sua cesta, mercado a mercado</h2>
    <p class="sub">${CITIES[city].name} · ${rows.length} ${rows.length===1?"mercado":"mercados"} com preço · ${list.length} ${list.length===1?"item":"itens"} na lista</p>
-   <div class="best"><span class="tag">Mais barato</span><h3>${top.m.name}</h3>
+   <div class="best"><span class="tag">${emp.length>1?"Empate":"Mais barato"}</span><h3>${emp.length>1?emp.map(r=>r.m.name).join(" = "):top.m.name}</h3>
      <div class="tot">${brl(top.total)}</div>
      <p>${(top.m.dist && /^cupom real|vídeo da comunidade|integrado pela API/.test(top.m.dist))?top.m.dist:(top.m.dist||"localização não informada")}${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
      ${save>0.05?`<div class="save">Economia de <b>${brl(save)}</b> (${pct}%) vs. o mais caro</div>`:""}</div>
@@ -584,7 +585,7 @@ function renderComp(){
         return `<div class="r ${cheapest?"low":""}"><span class="nm">${l.qty>1?l.qty+"× ":""}${l.c.name}</span>${l.p
           ?`<span><b>${brl(l.p.p)}</b><span class="age"><span class="dot" style="background:${dotColor(l.p.age)}"></span>${ageTxt(l.p.age)}</span></span>`
           :`<span class="age">sem preço</span>`}${l.p&&l.p.alt?`<div class="alt">${l.p.alt.map(a=>`<div><span>${a.n.replace(/[&<>"]/g,"")}</span><b>${brl(a.p)}</b></div>`).join("")}</div>`:""}</div>`}).join("")}</div></details>`).join("")}
-   <p class="legend"><span class="dot" style="background:var(--green-2)"></span>preço recente (até 2 dias) &nbsp;<span class="dot" style="background:var(--warn)"></span>3 a 5 dias &nbsp;<span class="dot" style="background:var(--old)"></span>mais antigo<br>● no item = menor preço entre os mercados. Os preços vêm dos cupons que os moradores escaneiam.</p>
+   <p class="legend"><span class="dot" style="background:var(--green-2)"></span>preço recente (até 2 dias) &nbsp;<span class="dot" style="background:var(--warn)"></span>3 a 5 dias &nbsp;<span class="dot" style="background:var(--old)"></span>mais antigo<br>● no item = menor preço entre os mercados. Os preços vêm de cupons escaneados pelos moradores, de vídeos de prateleira e dos folhetos dos mercados.</p>
    <button class="btn ghost" style="margin-top:14px" onclick="show('contr')">Ajude a atualizar os preços</button>`;
 }
 
