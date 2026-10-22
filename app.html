@@ -564,8 +564,6 @@ function renderComp(){
   const max=Math.max(...rows.map(r=>r.total));
   const emp=rows.filter(r=>r.miss.length===top.miss.length&&Math.abs(r.total-top.total)<0.005); /* empate no topo */
   el.innerHTML=`
-   <h2 class="lead">Sua cesta, mercado a mercado</h2>
-   <p class="sub">${CITIES[city].name} · ${rows.length} ${rows.length===1?"mercado":"mercados"} com preço · ${list.length} ${list.length===1?"item":"itens"} na lista</p>
    <div class="best"><span class="tag">${emp.length>1?"Empate":"Mais barato"}</span><h3>${emp.length>1?emp.map(r=>r.m.name).join(" = "):top.m.name}</h3>
      <div class="tot">${brl(top.total)}</div>
      <p>${(top.m.dist && /^cupom real|vídeo da comunidade|integrado pela API/.test(top.m.dist))?top.m.dist:(top.m.dist||"localização não informada")}${top.miss.length?` · faltam ${top.miss.length} ${top.miss.length===1?"item":"itens"}`:" · todos os itens"}</p>
