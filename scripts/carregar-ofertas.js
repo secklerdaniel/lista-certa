@@ -51,6 +51,23 @@ const G = [
   ["Matinais","Cereal Matinal","Snow Flakes",230,"g",5.99],[BI,"Biscoito Maria / Maizena","Germani",345,"g",3.99],[M,"Molho de Tomate","Fugini",300,"g",1.39],
   [LI,"Amaciante de Roupas Concentrado","Downy",750,"ml",12.99],[LI,"Lava Roupas Líquido","Tixan Ypê",3,"l",21.99],["Matinais","Achocolatado em Pó","Chocolatto",560,"g",12.99],
   [B,"Cerveja Lager","Therezópolis",473,"ml",3.99],[B,"Refrigerante Cola","Pepsi",2,"l",8.29]].map(r => [...r, null, "2026-10-25"])],
+ ["Super Berti", "Gramado", [["Higiene","Sabonete","Lux",85,"g",2.59],[M,"Massa de Tapioca","Rocha",500,"g",4.99]].map(r => [...r, null, "2026-10-25"])],
+ ["Mercado Du Povão", "Canela", [
+  [A,"Ponta de Peito",null,1,"kg",26.99],[A,"Agulha",null,1,"kg",27.99],[A,"Carne Moída",null,1,"kg",24.99],[A,"Coxa com Sobrecoxa",null,1,"kg",8.99],
+  ["Hortifrúti","Abacaxi",null,1,"un",8.99],["Hortifrúti","Maçã",null,1,"kg",3.99],["Hortifrúti","Banana",null,1,"kg",3.99],["Hortifrúti","Tomate",null,1,"kg",12.99],
+  [M,"Tempero em Pó","Sazón",1,"un",2.99],[M,"Açúcar Cristal","Euroçucar",1,"kg",3.99],[M,"Farinha de Trigo","Roseflor",5,"kg",19.99],[B,"Cerveja","Lokal",350,"ml",2.98],
+  [M,"Feijão Preto","Colonial",1,"kg",4.99],[BI,"Bisnaga/Bolacha Recheada","Rancheiro",1,"un",1.99],[M,"Massa Parafuso","Santa Felicidade",500,"g",2.49],
+  [LI,"Detergentes","Bilha Sul",500,"ml",2.49]].map(r => [...r, null, "domingo (25/10)"])],
+ ["Rissul", "Gramado", [[B,"Espumante","Salton",750,"ml",29.9],[B,"Espumante","Salton",750,"ml",22.9],[B,"Espumante","Salton",750,"ml",25.9]].map(r => [...r, D, "2026-10-31"])],
+ ["Mercado Paiol", "Canela", [
+  [LI,"Papel Higiênico","Stylus",32,"un",29.95],[M,"Massa Espaguete","Farotti",500,"g",2.5],[BI,"Wafers","Isabela",100,"g",2.5],[M,"Arroz Parboilizado","Rozcato",5,"kg",18.99],
+  [M,"Açúcar Cristal","Euroçucar",5,"kg",16.95],[M,"Farinha de Milho/Polenta","Zanin",1,"kg",1.99],[LI,"Papel Higiênico Rolão","Maxpet",300,"m",83],[M,"Amendoim","Bella Dica",400,"g",6.99],
+  [M,"Farinha de Milho","Fritz Frida",1,"kg",2.99],[M,"Farinha de Trigo","Maria Inês",5,"kg",14.99],[L,"Leite UHT","Tirol",1,"l",4.75],[L,"Nata","Baky",300,"g",6.99],
+  [A,"Salsicha","Cerrer",1,"kg",9.95],[C,"Pão de Queijo","Ghesla",1,"kg",19.95],[B,"Cachaça","3 Pipas",1,"l",5],[LI,"Amaciante","Downy",1,"l",17.99],
+  ["Variedades","Chinelo Infantil",null,1,"un",29.95],["Variedades","Chinelo Adulto",null,1,"un",26.95]].map(r => [...r, D, ENQ])],
+ ["Supermercado Semprebon", "Gramado", [
+  [A,"Filé de Frango Resfriado",null,1,"kg",14.99],[A,"Chuleta",null,1,"kg",33.99],[M,"Ovos Vermelhos","Grings",20,"un",12.99],[B,"Guaraná","Antarctica",1,"l",3.99],
+  [B,"Cerveja","Stella Artois",473,"ml",6.49],[L,"Leite Integral","Dalia",1,"l",4.89]].map(r => [...r, D, D])],
 ];
 
 (async () => {
@@ -63,7 +80,7 @@ const G = [
   await q(`delete from ofertas where fonte = $1`, [FONTE]);
   let n = 0;
   for (const [mercado, cidade, itens] of G) for (const [cat, prod, marca, qtd, un, preco, de, ate] of itens) {
-    const data = s => (/^\d{4}-\d{2}-\d{2}$/.test(s || "") ? s : null);
+    const data = s => { const m = /^\d{4}-\d{2}-\d{2}$/.test(s || "") ? s : (s || "").match(/\((\d{2})\/(\d{2})\)/); return typeof m === "string" ? m : m ? `2026-${m[2]}-${m[1]}` : null; };
     await q(`insert into ofertas (mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs,fonte) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [mercado, cidade, cat, prod, marca, qtd, un, preco, data(de), data(ate), ate && !data(ate) ? ate : null, FONTE]);
     n++;
