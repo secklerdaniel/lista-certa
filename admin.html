@@ -75,7 +75,7 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 <body>
 <header>
   <div><h1>Sacolista · Admin</h1><small>Mercados, usuários e chaves da API</small></div>
-  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="regiao">Região</button></div>
+  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="ofertas">Ofertas</button><button class="aba" data-aba="regiao">Região</button></div>
   <button class="btn sec" id="sair" style="color:#fff;border-color:#fff;display:none">Sair</button>
 </header>
 <main>
@@ -103,6 +103,21 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
     </section>
     <div class="topo"><h2 id="mTit">Mercados</h2><input type="search" id="mBusca" placeholder="Buscar mercado ou cidade"></div>
     <div id="lista"></div>
+  </div>
+
+  <!-- OFERTAS: carga diária de folhetos -->
+  <div id="p-ofertas" hidden>
+    <section class="card">
+      <h2>Carregar ofertas do dia</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:6px">Cole o JSON. Para cada mercado que aparecer no envio, as ofertas antigas dele são <b>substituídas</b> pelas novas (marque a caixa para só acrescentar). Ofertas vencidas somem sozinhas.</p>
+      <textarea id="oJson" rows="9" spellcheck="false" placeholder='[{"mercado":"Mercado Drumm","cidade":"Gramado","categoria":"Açougue","produto_normalizado":"Costela Suína","marca":null,"quantidade":1,"unidade_medida":"kg","preco":24.9,"valido_de":"2026-10-22","valido_ate":"2026-10-22","observacao":null}]' style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px"></textarea>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="oAcr" style="width:auto"> Só acrescentar (não substituir as ofertas dos mercados do envio)</label>
+      <button class="btn" id="oEnviar">Carregar</button> <button class="btn sec" id="oCopiar" type="button">Copiar o esquema</button>
+      <div id="oRes" class="msg" style="white-space:pre-wrap"></div>
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:800">Esquema do JSON</summary><pre id="oEsq" style="white-space:pre-wrap;font-size:12px;margin-top:8px"></pre></details>
+    </section>
+    <div class="topo"><h2 id="oTit">Ofertas no ar</h2></div>
+    <div id="olista"></div>
   </div>
 
   <!-- REGIÃO: catálogo de mercados da região (sugestões no envio de vídeo) -->
@@ -158,7 +173,7 @@ function guardar(k) { try { k ? sessionStorage.setItem("lc-admin", k) : sessionS
 async function chamar(url, method, body) {
   const r = await fetch(url, { method: method || "GET", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error(d.msg || "Falha"); e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error(d.msg || "Falha"); e.status = r.status; e.dados = d; throw e; }
   return d;
 }
 const M = (m, b) => chamar("/api/admin/mercados", "POST", Object.assign({ mercadoId: m }, b));
@@ -272,10 +287,45 @@ $("#clista").onclick = async e => {
   try { await chamar("/api/admin/usuarios", "POST", { coletaId: b.dataset.exColeta, excluirColeta: true }); await carregarColetas(); } catch (err) { toast(err.message); }
 };
 
+/* ---------- ofertas ---------- */
+const ESQUEMA = `Array JSON, um objeto por oferta (máx. 2000 por envio). Campos:
+mercado              texto, obrigatório (mesmo nome em todo envio, ex.: "Mercado Drumm")
+cidade               texto, obrigatório ("Gramado", "Canela"...)
+categoria            texto ou null (Açougue, Hortifrúti, Laticínios, Mercearia, Bebidas, Limpeza, Higiene, Padaria, Congelados, Biscoitos, Frios e Embutidos, Doces e Sobremesas, Variedades)
+produto_normalizado  texto, obrigatório, sem marca nem tamanho ("Queijo Mussarela Fatiado")
+marca                texto ou null
+quantidade           número > 0 ou null (peso/volume/unidades da embalagem; produto a granel por kg = 1)
+unidade_medida       "kg" | "g" | "l" | "ml" | "un" | "m" | "dz" (minúsculo) ou null
+preco                número em reais com ponto (24.9), obrigatório
+valido_de            "AAAA-MM-DD" ou null
+valido_ate           "AAAA-MM-DD" ou null  (NUNCA texto; data por extenso vira AAAA-MM-DD)
+observacao           texto livre ou null ("Enquanto durarem os estoques", "Ofertas da Semana")
+Regras: sem valido_ate a oferta vale 14 dias; oferta com valido_ate no passado é recusada; o mesmo produto pode aparecer mais de uma vez (variações).`;
+$("#oEsq").textContent = ESQUEMA;
+$("#oCopiar").onclick = () => { navigator.clipboard.writeText(ESQUEMA).then(() => toast("Esquema copiado")); };
+async function carregarOfertas() {
+  const l = (await chamar("/api/admin/usuarios?ofertas=1")).dados;
+  $("#oTit").textContent = `Ofertas no ar (${l.reduce((a, x) => a + x.itens, 0)})`;
+  $("#olista").innerHTML = l.map(x => `<div class="card"><b>${esc(x.mercado)}</b> · ${esc(x.cidade)}<div class="meta">${x.itens} ofertas · ${x.ate ? "até " + new Date(x.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "sem data (14 dias)"} · carregado em ${fmtData(x.carregado_em)}</div></div>`).join("") || '<p class="msg">Nenhuma oferta no ar.</p>';
+}
+$("#oEnviar").onclick = async () => {
+  let j; $("#oRes").textContent = "";
+  try { j = JSON.parse($("#oJson").value); } catch (e) { $("#oRes").textContent = "JSON inválido: " + e.message; return; }
+  $("#oEnviar").disabled = true;
+  try {
+    const d = await chamar("/api/admin/usuarios", "POST", { ofertas: j, acrescentar: $("#oAcr").checked });
+    $("#oRes").textContent = `✓ ${d.inseridas} ofertas carregadas, ${d.substituidas} antigas substituídas.\n` + Object.entries(d.porMercado).map(([k, n]) => `  ${k}: ${n}`).join("\n") + fim(d);
+    $("#oJson").value = ""; await carregarOfertas();
+  } catch (e) { $("#oRes").textContent = "✗ " + e.message + (e.dados ? fim(e.dados) : ""); }
+  $("#oEnviar").disabled = false;
+};
+const fim = d => (d.rejeitados && d.rejeitados.length ? "\n\nRecusadas:\n" + d.rejeitados.map(r => `  linha ${r.linha} (${r.produto || "?"}): ${r.erro}`).join("\n") : "") + (d.avisos && d.avisos.length ? "\n\nAvisos:\n  " + d.avisos.join("\n  ") : "");
+
 /* ---------- abas e login ---------- */
 function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
-  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas";
+  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; $("#p-ofertas").hidden = n !== "ofertas";
+  if (n === "ofertas") carregarOfertas().catch(e => toast(e.message));
   if (n === "coletas") carregarColetas().catch(e => toast(e.message));
   if (n === "usuarios") carregarUsuarios().catch(e => toast(e.message));
   if (n === "regiao") carregarRegiao().catch(e => toast(e.message));
