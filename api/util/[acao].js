@@ -110,6 +110,8 @@ async function cupons(req, res) {
        from coletas where ${cidade ? "lower(cidade) = lower($1) and " : ""}criado_em > now() - interval '${dias} days'
       order by lower(mercado_nome), lower(descricao), criado_em desc limit 2000`, cidade ? [cidade] : []);
   /* ofertas de folheto (tabela ofertas, sem GTIN): valem até valido_ate; sem data, 14 dias */
+  /* limpeza: apaga ofertas vencidas (ponytail: roda a cada consulta, é um delete barato; cron da Vercel só se passar das 12 funções do plano) */
+  await sql().query(`delete from ofertas where coalesce(valido_ate < current_date, criado_em < now() - interval '14 days')`);
   const o = await sql().query(
     `select null::text as cnpj, mercado, 'oferta' as tipo, concat_ws(' ', produto, marca, quantidade::float8::text, unidade) as descricao, 'UN' as unidade, preco::float as preco, coalesce(valido_de::timestamptz, criado_em) as emissao
        from ofertas where ${cidade ? "lower(cidade) = lower($1) and " : ""}coalesce(valido_ate >= current_date, criado_em > now() - interval '14 days') limit 2000`, cidade ? [cidade] : []);
