@@ -114,7 +114,18 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
       <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="oAcr" style="width:auto"> Só acrescentar (não substituir as ofertas dos mercados do envio)</label>
       <button class="btn" id="oEnviar">Carregar</button> <button class="btn sec" id="oCopiar" type="button">Copiar o esquema</button>
       <div id="oRes" class="msg" style="white-space:pre-wrap"></div>
-      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:800">Esquema do JSON</summary><pre id="oEsq" style="white-space:pre-wrap;font-size:12px;margin-top:8px"></pre></details>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-top:10px">
+        <details style="flex:1 1 280px"><summary style="cursor:pointer;font-weight:800">Esquema do JSON</summary><pre id="oEsq" style="white-space:pre-wrap;font-size:12px;margin-top:8px"></pre></details>
+        <details style="flex:1 1 280px"><summary style="cursor:pointer;font-weight:800">Instruções (agente de IA)</summary>
+          <ol style="font-size:13px;margin:8px 0 8px 18px;line-height:1.5">
+            <li>Clique em <b>Copiar prompt + esquema</b> e cole no agente, com as imagens (ou o link) das ofertas de um mercado.</li>
+            <li>Confira 3 ou 4 preços do JSON contra a imagem.</li>
+            <li>Cole o JSON na caixa acima e clique em <b>Carregar</b>.</li>
+          </ol>
+          <p style="font-size:13px;line-height:1.5;margin-bottom:8px"><b>Mande o folheto completo de cada mercado:</b> ao carregar, as ofertas antigas dele são substituídas. Oferta vencida é recusada. Sem validade, vale 14 dias.</p>
+          <button class="btn sec" id="oCopiarPrompt" type="button">Copiar prompt + esquema</button>
+          <pre id="oPrompt" style="white-space:pre-wrap;font-size:12px;margin-top:8px"></pre></details>
+      </div>
     </section>
     <div class="topo"><h2 id="oTit">Ofertas no ar</h2></div>
     <div id="olista"></div>
@@ -302,6 +313,13 @@ valido_ate           "AAAA-MM-DD" ou null  (NUNCA texto; data por extenso vira A
 observacao           texto livre ou null ("Enquanto durarem os estoques", "Ofertas da Semana")
 Regras: sem valido_ate a oferta vale 14 dias; oferta com valido_ate no passado é recusada; o mesmo produto pode aparecer mais de uma vez (variações).`;
 $("#oEsq").textContent = ESQUEMA;
+const PROMPT = `Estas imagens são o folheto de ofertas do mercado [NOME DO MERCADO], em [CIDADE]. Leia todos os produtos e devolva SOMENTE um array JSON, sem texto antes ou depois, seguindo o esquema abaixo. Um objeto por produto.
+Regras: produto_normalizado é o nome genérico, sem marca nem tamanho (marca e tamanho vão nos campos próprios). Produto a granel por kg: quantidade 1, unidade_medida "kg". preco é número com ponto. Datas sempre AAAA-MM-DD (ex.: "válido até domingo" vira a data, no ano atual). "Enquanto durarem os estoques" vai em observacao. Campo ilegível: null. Não invente produto nem preço.
+
+ESQUEMA:
+`;
+$("#oPrompt").textContent = PROMPT;
+$("#oCopiarPrompt").onclick = () => { navigator.clipboard.writeText(PROMPT + ESQUEMA).then(() => toast("Prompt e esquema copiados")); };
 $("#oCopiar").onclick = () => { navigator.clipboard.writeText(ESQUEMA).then(() => toast("Esquema copiado")); };
 async function carregarOfertas() {
   const l = (await chamar("/api/admin/usuarios?ofertas=1")).dados;
