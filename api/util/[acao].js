@@ -112,9 +112,11 @@ async function cupons(req, res) {
   /* ofertas de folheto (tabela ofertas, sem GTIN): valem até valido_ate; sem data, 14 dias */
   /* limpeza: apaga ofertas vencidas (ponytail: roda a cada consulta, é um delete barato; cron da Vercel só se passar das 12 funções do plano) */
   await sql().query(`delete from ofertas where coalesce(valido_ate < current_date, criado_em < now() - interval '14 days')`);
+  /* pelo nome, a oferta se liga ao mesmo mercado do catálogo (e ao CNPJ), então funde com os cupons do mesmo mercado */
   const o = await sql().query(
-    `select null::text as cnpj, mercado, 'oferta' as tipo, concat_ws(' ', produto, marca, quantidade::float8::text, unidade) as descricao, 'UN' as unidade, preco::float as preco, coalesce(valido_de::timestamptz, criado_em) as emissao
-       from ofertas where ${cidade ? "lower(cidade) = lower($1) and " : ""}coalesce(valido_ate >= current_date, criado_em > now() - interval '14 days') limit 2000`, cidade ? [cidade] : []);
+    `select g.cnpj, coalesce(g.nome, f.mercado) as mercado, 'oferta' as tipo, concat_ws(' ', f.produto, f.marca, f.quantidade::float8::text, f.unidade) as descricao, 'UN' as unidade, f.preco::float as preco, coalesce(f.valido_de::timestamptz, f.criado_em) as emissao
+       from ofertas f left join mercados_regiao g on lower(g.nome) = lower(f.mercado) and lower(g.cidade) = lower(f.cidade)
+      where ${cidade ? "lower(f.cidade) = lower($1) and " : ""}coalesce(f.valido_ate >= current_date, f.criado_em > now() - interval '14 days') limit 2000`, cidade ? [cidade] : []);
   enviar(res, 200, { ok: true, dados: r.concat(v, o) });
 }
 

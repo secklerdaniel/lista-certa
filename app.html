@@ -910,7 +910,7 @@ async function carregarCupons(){
         POOL.push({k:norm(expandir(x.descricao)),tam:tamanho(norm(x.descricao)),tp:tiposDe(norm(expandir(x.descricao))),nome:bonito(x.descricao),mid:id,p:x.preco,age:Math.max(0,Math.floor((Date.now()-new Date(x.emissao))/864e5))});
         const y=casar(it)||(quem[norm(x.descricao)].size>=2?obterExtra(it):null); // item fora do catálogo só entra se 2+ mercados vendem
         if(!y)return;
-        const t=new Date(x.emissao).getTime();ult=Math.max(ult,t);
+        const t=new Date(x.emissao).getTime();if(x.tipo!=="oferta")ult=Math.max(ult,t);
         prices[id][y.c.id]={p:y.p,age:Math.max(0,Math.floor((Date.now()-t)/864e5))};
       });
       if(ult&&!g.video){const dia=new Date(ult);mk.dist=`cupom real de ${String(dia.getDate()).padStart(2,"0")}/${String(dia.getMonth()+1).padStart(2,"0")}`}

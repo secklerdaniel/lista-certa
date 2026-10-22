@@ -30,25 +30,36 @@ function validar(lista, hoje) {
   return { ok, rejeitados, avisos };
 }
 
-/* nomes oficiais: variações ("Supermercados Dia", "Super Berti") viram o nome já conhecido do mercado na cidade.
-   Conhecidos = mercados que já têm ofertas (prioridade) + catálogo da região. Apelidos que a regra não pega vão em ALIAS.
+/* Nome oficial = o do catálogo da região (mercados_regiao), o mesmo que os cupons usam (por CNPJ). Variações de nome
+   ("Supermercados Dia", "Super Berti") viram o nome do catálogo; mercado novo entra no catálogo (fonte 'folheto').
+   Ignora acento, caixa, palavras como "supermercado"/"mercado" e a cidade no fim. Apelidos que a regra não pega vão em ALIAS.
    ponytail: ALIAS é mapa fixo no código; vira tabela no banco se crescer. */
-const ALIAS = { "gramado|dia": "Dia Após Dia" };
+const ALIAS = { "gramado|dia": "gramado|dia apos dia" };
 const sem = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const chave = (nome, cidade) => {
   const c = sem(cidade).replace(/[^a-z0-9]+/g, " ").trim();
-  let w = sem(nome).replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(x => !["supermercado", "supermercados", "super", "mercado", "mini", "de", "do", "da"].includes(x));
-  if (w.join(" ").endsWith(" " + c)) w = w.join(" ").slice(0, -(c.length + 1)).split(" ");
-  return c + "|" + w.join(" ");
+  let w = sem(nome).replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(x => !["supermercado", "supermercados", "super", "mercado", "mini", "de", "do", "da"].includes(x)).join(" ");
+  if (w.endsWith(" " + c)) w = w.slice(0, -(c.length + 1));
+  return c + "|" + w;
 };
+async function mapaOficial() {
+  const cat = await sql().query(`select nome, cidade from mercados_regiao where ativo order by id`);
+  const mapa = new Map();
+  cat.forEach(k => { const c = chave(k.nome, k.cidade); if (!mapa.has(c)) mapa.set(c, k.nome); });
+  return mapa;
+}
+const oficial = (mapa, nome, cidade) => { const c = chave(nome, cidade); return mapa.get(ALIAS[c] || c); };
 async function oficiais(ok, avisos) {
-  const conhecidos = await sql().query(`select mercado as nome, cidade from ofertas group by 1,2 union all select nome, cidade from mercados_regiao where ativo`);
-  const mapa = new Map(Object.entries(ALIAS));
-  conhecidos.forEach(k => { const c = chave(k.nome, k.cidade); if (!mapa.has(c)) mapa.set(c, k.nome); });
-  ok.forEach((x, i) => {
-    const nome = mapa.get(chave(x[0], x[1]));
-    if (nome && nome !== x[0]) { avisos.push(`mercado "${x[0]}" (${x[1]}) gravado como "${nome}"`); x[0] = nome; }
+  const mapa = await mapaOficial(), novos = new Map();
+  ok.forEach(x => {
+    const nome = oficial(mapa, x[0], x[1]);
+    if (nome) { if (nome !== x[0]) { avisos.push(`mercado "${x[0]}" (${x[1]}) gravado como "${nome}"`); x[0] = nome; } }
+    else novos.set(chave(x[0], x[1]), [x[0], x[1]]);
   });
+  for (const [nome, cidade] of novos.values()) {
+    await sql().query(`insert into mercados_regiao (nome, cidade, fonte) values ($1, $2, 'folheto') on conflict do nothing`, [nome, cidade]);
+    avisos.push(`mercado novo "${nome}" (${cidade}) adicionado ao catálogo da região`);
+  }
 }
 
 async function carregar(corpo, acrescentar) {
@@ -73,4 +84,4 @@ async function carregar(corpo, acrescentar) {
   return { status: 200, inseridas: r[0].inseridas, substituidas: r[0].substituidas, porMercado, rejeitados, avisos };
 }
 
-module.exports = { carregar, validar };
+module.exports = { carregar, validar, mapaOficial, oficial };
