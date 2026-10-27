@@ -16,10 +16,10 @@ const ESQUEMA = {
       marca: { type: "STRING", description: "Marca se aparecer na imagem; senão vazio." },
       quantidade: { type: "NUMBER", description: "Quantidade da embalagem (1 para 1 kg, 500 para 500 g). 0 se não aparecer." },
       unidade: { type: "STRING", enum: UNIDADES },
-      preco: { type: "NUMBER", description: "Preço de oferta em reais, em número. Ex.: 19.9" },
+      preco: { type: "NUMBER", description: "Preço em reais que QUALQUER cliente paga levando uma unidade, em número. Ex.: 19.9" },
       categoria: { type: "STRING", enum: CATEGORIAS },
       valido_ate: { type: "STRING", description: "Último dia da oferta em AAAA-MM-DD, se a arte tiver data (se não tiver o ano, use 2026). Vazio se não houver." },
-      validade: { type: "STRING", description: "Texto de validade/condição impresso (ex.: 'Enquanto durarem os estoques', 'Seg e ter'); vazio se não houver." },
+      validade: { type: "STRING", description: "SEMPRE o texto de validade/condição impresso (ex.: 'Enquanto durarem os estoques', 'Seg e ter'); havendo também preço condicionado, acrescente-o no fim com o valor (ex.: 'Enquanto durarem os estoques. Cliente Clube: R$ 2,59'). Vazio só se a arte não trouxer nenhum dos dois." },
     },
     required: ["mercado", "cidade", "produto", "valido_ate", "marca", "quantidade", "unidade", "preco", "categoria", "validade"],
   },
@@ -30,8 +30,9 @@ const INSTRUCAO = [
   "O cabeçalho amarelo no topo traz o mercado e a cidade; o rodapé preto é de um agregador e deve ser ignorado.",
   "Preços podem vir com os centavos pequenos ao lado (ex.: 2 .48 = 2,48). Para produtos de hortifrúti, a unidade impressa (un/kg) é a unidade do preço.",
   "Extraia TODOS os produtos com preço legíveis. Nunca adivinhe nome, marca, tamanho ou preço; se não dá para ler, ignore o item.",
-  "Preço é o valor de oferta em destaque. Itens por peso: preço por kg, quantidade 1, unidade kg.",
-  "Se houver 'leve X pague Y' ou condição (ex.: só com cartão do clube), ponha a condição em 'validade' junto do texto de validade.",
+  "Preço é o que qualquer cliente paga levando uma unidade. Itens por peso: preço por kg, quantidade 1, unidade kg.",
+  "Preço que depende de condição (cartão do clube, preço no app, 'leve 3 pague 2', 'na compra de 4 unidades') NÃO é o preço: o preço é o cheio, o de cima, e o condicionado vai em 'validade' com o valor, junto do texto de validade. Ex.: arte com '3,29 cada' e 'Cliente Clube paga 2,59' -> preco 3.29, validade 'Cliente Clube: R$ 2,59'.",
+  "Só quando a arte não mostrar preço cheio nenhum é que o condicionado vira o preço, e aí a condição vai em 'validade'.",
 ].join("\n");
 
 const espera = ms => new Promise(ok => setTimeout(ok, ms));
