@@ -81,7 +81,7 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 .hb.on{font-weight:800}.hb.on .t i{background:#15191A}.hb em{font-style:normal;text-align:right;color:var(--muted)}
 .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.filtros select{padding:9px 10px;font:inherit;color:var(--ink);max-width:100%}
 .tag.cat{background:#FFD93B;color:#15191A}.tag.sem{background:#f6d9d3;color:var(--bad)}
-.subabas{display:flex;gap:8px;margin-bottom:12px}.subabas .btn.on{background:#FFD93B}.lin input{padding:7px 9px}.lin{flex-wrap:wrap}
+.lin input{padding:7px 9px}.lin{flex-wrap:wrap}
 .mkrow{border:2px solid #15191A;border-radius:8px;padding:8px 12px;margin-bottom:8px;background:var(--card)}.mkrow summary{cursor:pointer;list-style:none}.mkrow[open] summary{margin-bottom:6px}
 details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.05em}
 </style>
@@ -89,7 +89,7 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
 <body>
 <header>
   <div><h1>Sacolista · Admin</h1><small>Mercados, usuários e chaves da API</small></div>
-  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="produtos">Produtos</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="ofertas">Ofertas</button><button class="aba" data-aba="regiao">Região</button></div>
+  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="produtos">Produtos</button><button class="aba" data-aba="listas">Listas</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="ofertas">Ofertas</button><button class="aba" data-aba="regiao">Região</button></div>
   <button class="btn sec" id="sair" style="color:#15191A;border-color:#15191A;display:none">Sair</button>
 </header>
 <main>
@@ -163,7 +163,6 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
 
   <!-- PRODUTOS -->
   <div id="p-produtos" hidden>
-    <div class="subabas"><button class="btn sec on" data-pa="sub" data-v="prods" type="button">Produtos</button><button class="btn sec" data-pa="sub" data-v="listas" type="button">Listas</button></div>
     <div id="pv-prods">
       <div class="topo"><h2 id="pTit">Produtos</h2><input type="search" id="pBusca" placeholder='Buscar: "coxão mole", "arroz -integral"' autocomplete="off"></div>
       <div class="kpis" id="pKpis"></div>
@@ -189,7 +188,11 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
         <button class="btn sec" type="button" id="pfComp" aria-pressed="false">Só em 2+ mercados</button><button class="btn sec" type="button" id="pfLimpar">Limpar filtros</button></div>
       <div id="plista"></div>
     </div>
-    <div id="pv-listas" hidden>
+  </div>
+
+  <!-- LISTAS -->
+  <div id="p-listas" hidden>
+    <div id="pv-listas">
       <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Cada lista mostra <b>em qual mercado compensa comprar tudo</b>. Cada item é um produto <b>com o tamanho da embalagem</b> (ex.: Óleo de soja 900 ml × 2): marcas diferentes podem, mas só embalagens do <b>mesmo tamanho</b> são comparadas (1 kg com 1 kg). Item que o mercado não tem nesse tamanho aparece como "faltando", e nunca é trocado por outro. Em "busca" você afina o que o item procura (ex.: nome "Linguiça", busca "linguiça toscana"; um "-" na frente exclui, ex.: "arroz -parbo").</p>
       <details class="card" id="lNovaDet"><summary>Nova lista</summary><div id="lNovaForm"></div></details>
       <div id="llista"></div>
@@ -623,16 +626,11 @@ async function salvarLista(f) {
   } catch (x) { err.textContent = x.message; }
 }
 document.addEventListener("submit", e => { const f = e.target.closest("form[data-lform]"); if (f) { e.preventDefault(); salvarLista(f); } });
-function subaba(v) {
-  $("#pv-prods").hidden = v !== "prods"; $("#pv-listas").hidden = v !== "listas";
-  document.querySelectorAll("[data-pa=sub]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
-}
-$("#p-produtos").addEventListener("click", async e => {
+document.querySelector("main").addEventListener("click", async e => {
   const b = e.target.closest("[data-pa]"); if (!b) return;
   const a = b.dataset.pa;
   try {
-    if (a === "sub") subaba(b.dataset.v);
-    else if (a === "filtro") { PF[b.dataset.f] = PF[b.dataset.f] === b.dataset.v ? "" : b.dataset.v; PVER = 60; desenharProdutos(); }
+    if (a === "filtro") { PF[b.dataset.f] = PF[b.dataset.f] === b.dataset.v ? "" : b.dataset.v; PVER = 60; desenharProdutos(); }
     else if (a === "abrir") { const k = b.dataset.k; ABERTOS.has(k) ? ABERTOS.delete(k) : ABERTOS.add(k); desenharProdutos(); }
     else if (a === "mais") { PVER += 60; desenharProdutos(); }
     else if (a === "editarP") {
@@ -646,7 +644,7 @@ $("#p-produtos").addEventListener("click", async e => {
       await chamar("/api/admin/usuarios", "POST", b.dataset.fonte === "coleta" ? { coletaId: b.dataset.id, excluirColeta: true } : { oferta: { acao: "excluir", id: b.dataset.id } });
       toast("Preço apagado"); await carregarProdutos();
     }
-    else if (a === "ver") { PF.lista = b.dataset.id; PVER = 60; subaba("prods"); desenharProdutos(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    else if (a === "ver") { PF.lista = b.dataset.id; PVER = 60; aba("produtos"); window.scrollTo({ top: 0, behavior: "smooth" }); }
     else if (a === "editarL") { PEDIT = +b.dataset.id; desenharListas(); }
     else if (a === "fecharL") { PEDIT = null; desenharListas(); }
     else if (a === "excluirL") { if (!confirm(`Excluir a lista "${b.dataset.nome}"? Os preços não são afetados.`)) return; await chamar("/api/admin/usuarios", "POST", { lista: { acao: "excluir", id: +b.dataset.id } }); toast("Lista excluída"); await carregarProdutos(); }
@@ -658,8 +656,8 @@ $("#p-produtos").addEventListener("click", async e => {
 /* ---------- abas e login ---------- */
 function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
-  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; $("#p-ofertas").hidden = n !== "ofertas"; $("#p-produtos").hidden = n !== "produtos";
-  if (n === "produtos") carregarProdutos().catch(e => toast(e.message));
+  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; $("#p-ofertas").hidden = n !== "ofertas"; $("#p-produtos").hidden = n !== "produtos"; $("#p-listas").hidden = n !== "listas";
+  if (n === "produtos" || n === "listas") carregarProdutos().catch(e => toast(e.message));
   if (n === "ofertas") carregarOfertas().catch(e => toast(e.message));
   if (n === "coletas") carregarColetas().catch(e => toast(e.message));
   if (n === "usuarios") carregarUsuarios().catch(e => toast(e.message));
