@@ -106,13 +106,14 @@ module.exports = async (req, res) => {
       const cidade = cid ? cid.toLowerCase().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase()).replace(/ (De|Da|Do) /g, x => x.toLowerCase()) : null;
       const v = dados.itens.map((x, i) => ({ ...x, i })).filter(x => x.nome && x.unit > 0 && x.unit < 10000);
       if (cidade && cnpj.length === 14 && v.length) {
+        const cats = await require("./_ia").categorizar(v.map(x => x.nome.slice(0, 160)));
         await sql().query(
-          `insert into precos_cupom (chave, ordem, cnpj, mercado_nome, cidade, descricao, codigo_loja, unidade, qtd, preco_unit, emissao, contribuicao_id)
-           select $1, t.o, $2, $3, $4, t.d, t.c, t.u, t.q, t.p, ($5::timestamp at time zone 'America/Sao_Paulo'), $6
-             from unnest($7::int[], $8::text[], $9::text[], $10::text[], $11::numeric[], $12::numeric[]) as t(o, d, c, u, q, p)
+          `insert into precos_cupom (chave, ordem, cnpj, mercado_nome, cidade, descricao, codigo_loja, unidade, qtd, preco_unit, emissao, contribuicao_id, categoria)
+           select $1, t.o, $2, $3, $4, t.d, t.c, t.u, t.q, t.p, ($5::timestamp at time zone 'America/Sao_Paulo'), $6, t.k
+             from unnest($7::int[], $8::text[], $9::text[], $10::text[], $11::numeric[], $12::numeric[], $13::text[]) as t(o, d, c, u, q, p, k)
            on conflict (chave, ordem) do nothing`,
           [p.slice(0, 44), cnpj, dados.mercado.nome, cidade, dados.emissao, contribId,
-            v.map(x => x.i), v.map(x => x.nome.slice(0, 160)), v.map(x => x.codigo || null), v.map(x => (x.un || "").slice(0, 8) || null), v.map(x => x.qtd), v.map(x => x.unit)]);
+            v.map(x => x.i), v.map(x => x.nome.slice(0, 160)), v.map(x => x.codigo || null), v.map(x => (x.un || "").slice(0, 8) || null), v.map(x => x.qtd), v.map(x => x.unit), cats]);
       }
     } catch (e) { /* guardar é um bônus: nunca derruba a leitura do cupom */ }
     return res.status(200).end(JSON.stringify({ ok: true, ...dados, contribuicao }));

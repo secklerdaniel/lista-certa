@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
         return enviar(res, 200, { ok: true, dados: r });
       }
       if (req.query && req.query.coletas) {
-        const r = await sql().query(`select c.id, c.mercado_nome, c.cidade, c.descricao, c.gtin, c.preco, c.promocao_preco, c.origem, c.criado_em, u.nome as usuario
+        const r = await sql().query(`select c.id, c.mercado_nome, c.cidade, c.descricao, c.gtin, c.preco, c.promocao_preco, c.origem, c.categoria, c.criado_em, u.nome as usuario
           from coletas c left join usuarios u on u.id = c.usuario_id order by c.id desc limit 300`);
         return enviar(res, 200, { ok: true, dados: r });
       }
@@ -51,10 +51,13 @@ module.exports = async (req, res) => {
       const mercado = t(b.coleta.mercado, 120), cidade = t(b.coleta.cidade, 80), descricao = t(b.coleta.descricao, 120);
       const preco = d(b.coleta.preco), promo = b.coleta.promocao ? d(b.coleta.promocao) : null;
       if (!mercado || !cidade || !descricao || !preco) return erro(res, 400, "coleta", "Informe mercado, cidade, descrição e preço válido.");
+      const IA = require("../_ia"); /* categoria em branco: a IA decide; fora da lista: erro */
+      if (b.coleta.categoria && !IA.CATEGORIAS.includes(b.coleta.categoria)) return erro(res, 400, "categoria", "Categoria inválida.");
+      const categoria = b.coleta.categoria || (await IA.categorizar([descricao]))[0];
       if (b.coletaId) {
-        await sql().query(`update coletas set mercado_nome = $1, cidade = $2, descricao = $3, preco = $4, promocao_preco = $5 where id = $6`, [mercado, cidade, descricao, preco, promo, parseInt(b.coletaId, 10) || 0]);
+        await sql().query(`update coletas set mercado_nome = $1, cidade = $2, descricao = $3, preco = $4, promocao_preco = $5, categoria = $7 where id = $6`, [mercado, cidade, descricao, preco, promo, parseInt(b.coletaId, 10) || 0, categoria]);
       } else {
-        await sql().query(`insert into coletas (mercado_nome, cidade, descricao, preco, promocao_preco, origem) values ($1,$2,$3,$4,$5,'admin')`, [mercado, cidade, descricao, preco, promo]);
+        await sql().query(`insert into coletas (mercado_nome, cidade, descricao, preco, promocao_preco, origem, categoria) values ($1,$2,$3,$4,$5,'admin',$6)`, [mercado, cidade, descricao, preco, promo, categoria]);
       }
       return enviar(res, 200, { ok: true });
     }

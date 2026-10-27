@@ -100,13 +100,13 @@ async function cupons(req, res) {
   const cidade = req.query && req.query.cidade ? String(req.query.cidade) : null;
   const dias = Math.min(Math.max(parseInt(req.query && req.query.dias, 10) || 90, 1), 365);
   const r = await sql().query(
-    `select distinct on (p.cnpj, lower(p.descricao)) p.cnpj, coalesce(g.nome, p.mercado_nome) as mercado, p.descricao, p.unidade, p.preco_unit::float as preco, p.emissao
+    `select distinct on (p.cnpj, lower(p.descricao)) p.cnpj, coalesce(g.nome, p.mercado_nome) as mercado, p.descricao, p.unidade, p.preco_unit::float as preco, p.categoria, p.emissao
        from precos_cupom p left join mercados_regiao g on g.cnpj = p.cnpj
       where ${cidade ? "lower(p.cidade) = lower($1) and " : ""}p.emissao > now() - interval '${dias} days'
       order by p.cnpj, lower(p.descricao), p.emissao desc limit 5000`, cidade ? [cidade] : []);
   /* vídeos de prateleira também são públicos (sem CNPJ: o mercado é identificado pelo nome) */
   const v = await sql().query(
-    `select distinct on (lower(mercado_nome), lower(descricao)) null::text as cnpj, mercado_nome as mercado, cidade, descricao, 'UN' as unidade, coalesce(promocao_preco, preco)::float as preco, criado_em as emissao
+    `select distinct on (lower(mercado_nome), lower(descricao)) null::text as cnpj, mercado_nome as mercado, cidade, descricao, 'UN' as unidade, coalesce(promocao_preco, preco)::float as preco, categoria, criado_em as emissao
        from coletas where ${cidade ? "lower(cidade) = lower($1) and " : ""}criado_em > now() - interval '${dias} days'
       order by lower(mercado_nome), lower(descricao), criado_em desc limit 2000`, cidade ? [cidade] : []);
   /* nome oficial do catálogo (e CNPJ) também para os vídeos: "Mercado Dia" e "Dia Após Dia" são um mercado só */
@@ -117,7 +117,7 @@ async function cupons(req, res) {
   await sql().query(`delete from ofertas where coalesce(valido_ate < current_date, criado_em < now() - interval '14 days')`);
   /* pelo nome, a oferta se liga ao mesmo mercado do catálogo (e ao CNPJ), então funde com os cupons do mesmo mercado */
   const o = await sql().query(
-    `select g.cnpj, coalesce(g.nome, f.mercado) as mercado, 'oferta' as tipo, concat_ws(' ', f.produto, f.marca, f.quantidade::float8::text, f.unidade) as descricao, 'UN' as unidade, f.preco::float as preco, coalesce(f.valido_de::timestamptz, f.criado_em) as emissao
+    `select g.cnpj, coalesce(g.nome, f.mercado) as mercado, 'oferta' as tipo, concat_ws(' ', f.produto, f.marca, f.quantidade::float8::text, f.unidade) as descricao, 'UN' as unidade, f.preco::float as preco, null::text as categoria, coalesce(f.valido_de::timestamptz, f.criado_em) as emissao
        from ofertas f left join mercados_regiao g on lower(g.nome) = lower(f.mercado) and lower(g.cidade) = lower(f.cidade)
       where ${cidade ? "lower(f.cidade) = lower($1) and " : ""}coalesce(f.valido_ate >= current_date, f.criado_em > now() - interval '14 days') limit 2000`, cidade ? [cidade] : []);
   enviar(res, 200, { ok: true, dados: r.concat(v, o) });

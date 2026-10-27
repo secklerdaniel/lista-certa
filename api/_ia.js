@@ -103,4 +103,35 @@ async function resolverPendentes(fetchFn) {
   return { resolvidos: saida.length, pendentesNaFila: pend.length - saida.length };
 }
 
-module.exports = { resolverPendentes, limpar, prompt };
+/* Só a categoria, a partir da descrição do cupom/etiqueta (sem GTIN). Devolve um array do mesmo tamanho; null onde não classificou
+   (sem chave, falha ou lote que não respondeu). Quem chama grava null e o script scripts/categorizar.js completa depois. */
+const FERR_CAT = {
+  type: "function",
+  function: {
+    name: "categorizar",
+    description: "Categoria de cada produto da lista.",
+    parameters: { type: "object", properties: { itens: { type: "array", items: { type: "object",
+      properties: { indice: { type: "integer" }, categoria: { type: "string", enum: CATEGORIAS } }, required: ["indice", "categoria"] } } }, required: ["itens"] },
+  },
+};
+async function categorizar(descs, fetchFn = fetch, limiteMs = 8000) {
+  const out = descs.map(() => null);
+  if (!process.env.OPENAI_API_KEY && fetchFn === fetch) return out;
+  for (let i = 0; i < descs.length; i += 100) {
+    const lote = descs.slice(i, i + 100), ctl = new AbortController(), t = setTimeout(() => ctl.abort(), limiteMs);
+    try {
+      const r = await fetchFn("https://api.openai.com/v1/chat/completions", {
+        method: "POST", signal: ctl.signal,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({ model: MODEL, temperature: 0, tools: [FERR_CAT], tool_choice: { type: "function", function: { name: "categorizar" } },
+          messages: [{ role: "user", content: "Classifique cada descrição de produto de supermercado brasileiro (abreviada, em caixa alta) em UMA categoria. Use 'outros' só se nenhuma servir.\n" + lote.map((d, k) => `${k} | ${d}`).join("\n") }] }),
+      });
+      if (!r.ok) continue;
+      const j = await r.json(), a = j.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+      for (const x of JSON.parse(a || "{}").itens || []) if (CATEGORIAS.includes(x.categoria) && lote[x.indice] != null) out[i + x.indice] = x.categoria;
+    } catch (e) { /* fica null */ } finally { clearTimeout(t); }
+  }
+  return out;
+}
+
+module.exports = { resolverPendentes, limpar, prompt, categorizar, CATEGORIAS };

@@ -155,6 +155,7 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
       <form id="cForm"><input type="hidden" id="cId">
         <div class="row"><div><label for="cMerc">Mercado</label><input type="text" id="cMerc" required maxlength="120"></div><div><label for="cCid">Cidade</label><input type="text" id="cCid" required maxlength="80" value="Gramado"></div></div>
         <label for="cDesc">Descrição do produto</label><input type="text" id="cDesc" required maxlength="120" placeholder="Sabonete Palmolive Pétalas de Rosa 85 g">
+        <label for="cCat">Categoria</label><select id="cCat"><option value="">Automática (IA escolhe)</option><option value="mercearia">mercearia</option><option value="laticinios">laticínios</option><option value="hortifruti">hortifruti</option><option value="carnes">carnes</option><option value="bebidas">bebidas</option><option value="limpeza">limpeza</option><option value="higiene">higiene</option><option value="padaria">padaria</option><option value="frios">frios</option><option value="congelados">congelados</option><option value="outros">outros</option></select>
         <div class="row"><div><label for="cPreco">Preço (R$)</label><input type="text" id="cPreco" required inputmode="decimal" placeholder="2,79"></div><div><label for="cPromo">Preço promocional (opcional)</label><input type="text" id="cPromo" inputmode="decimal"></div></div>
         <button class="btn" type="submit" id="cSalvar">Adicionar</button> <button class="btn sec" type="button" id="cCancelar" hidden>Cancelar edição</button>
         <p class="msg" id="cMsg"></p></form></section>
@@ -272,7 +273,7 @@ function desenharColetas() {
   const l = COLETAS.filter(c => !q || [c.descricao, c.mercado_nome, c.usuario, c.gtin].join(" ").toLowerCase().includes(q));
   $("#cTit").textContent = `Coletas (${l.length})`;
   $("#clista").innerHTML = l.length ? l.map(c => `<div class="card" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(c.descricao)}</b> · R$ ${Number(c.preco).toFixed(2).replace(".", ",")}${c.promocao_preco ? ` (promo ${Number(c.promocao_preco).toFixed(2).replace(".", ",")})` : ""}
-    <div class="meta">${esc(c.mercado_nome)} · ${esc(c.cidade)} · ${esc(c.origem)} · ${esc(c.usuario || "anônimo")} · ${fmtData(c.criado_em)}</div></div>
+    <div class="meta">${esc(c.mercado_nome)} · ${esc(c.cidade)} · ${esc(c.origem)} · ${esc(c.categoria || "sem categoria")} · ${esc(c.usuario || "anônimo")} · ${fmtData(c.criado_em)}</div></div>
     <span><button class="btn sec" data-ed-coleta="${c.id}">Editar</button> <button class="btn sec" data-ex-coleta="${c.id}">Apagar</button></span></div></div>`).join("") : "<p>Nenhuma coleta.</p>";
 }
 $("#cBusca").oninput = desenharColetas;
@@ -281,7 +282,7 @@ $("#cCancelar").onclick = cLimpar;
 $("#cForm").onsubmit = async e => {
   e.preventDefault(); $("#cMsg").textContent = ""; $("#cSalvar").disabled = true;
   try {
-    await chamar("/api/admin/usuarios", "POST", { coletaId: $("#cId").value || undefined, coleta: { mercado: $("#cMerc").value, cidade: $("#cCid").value, descricao: $("#cDesc").value, preco: $("#cPreco").value, promocao: $("#cPromo").value } });
+    await chamar("/api/admin/usuarios", "POST", { coletaId: $("#cId").value || undefined, coleta: { mercado: $("#cMerc").value, cidade: $("#cCid").value, descricao: $("#cDesc").value, preco: $("#cPreco").value, promocao: $("#cPromo").value, categoria: $("#cCat").value } });
     toast($("#cId").value ? "Coleta salva" : "Coleta adicionada"); cLimpar(); await carregarColetas();
   } catch (err) { $("#cMsg").textContent = err.message; }
   $("#cSalvar").disabled = false;
@@ -290,7 +291,7 @@ $("#clista").onclick = async e => {
   const ed = e.target.closest("[data-ed-coleta]");
   if (ed) {
     const c = COLETAS.find(x => String(x.id) === ed.dataset.edColeta); if (!c) return;
-    $("#cId").value = c.id; $("#cMerc").value = c.mercado_nome; $("#cCid").value = c.cidade; $("#cDesc").value = c.descricao;
+    $("#cId").value = c.id; $("#cMerc").value = c.mercado_nome; $("#cCid").value = c.cidade; $("#cDesc").value = c.descricao; $("#cCat").value = c.categoria || "";
     $("#cPreco").value = String(c.preco).replace(".", ","); $("#cPromo").value = c.promocao_preco ? String(c.promocao_preco).replace(".", ",") : "";
     $("#cFormTit").textContent = "Editar coleta #" + c.id; $("#cSalvar").textContent = "Salvar"; $("#cCancelar").hidden = false; $("#cForm").scrollIntoView({ behavior: "smooth" }); return;
   }
