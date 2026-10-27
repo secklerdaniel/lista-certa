@@ -52,7 +52,7 @@ async function listar() {
     const cnpj = r.fonte === "cupom" ? cu.find(x => Number(x.id) === r.id) : null;
     r.mercado = (cnpj && porCnpj.get(cnpj.cnpj)) || (ofertas.oficial(mapa, r.mercado, r.cidade) || {}).nome || r.mercado;
   });
-  linhas.forEach(r => { const t = r.preco > 0 ? tamanho(r) : null; if (t) { r.base = t.base; r.pu = Math.round(r.preco / t.q * 100) / 100; } });
+  linhas.forEach(r => { const t = r.preco > 0 ? tamanho(r) : null; if (t) { r.base = t.base; r.q = t.q; r.pu = Math.round(r.preco / t.q * 100) / 100; r.pes = (r.fonte === "cupom" && /^kg$/i.test(r.un || "")) || (r.fonte === "oferta" && t.base === "kg" && t.q === 1 && ["carnes", "hortifruti"].includes(r.cat)); } });
   return { linhas, listas };
 }
 
@@ -77,7 +77,8 @@ async function oferta(b) {
 }
 
 /* ---------- listas de produtos ---------- */
-/* itens = [{ nome, termo, qtd, un }]  (termo = o que procurar nos nomes dos produtos; vazio = o próprio nome; qtd na unidade un = kg, l ou un) */
+/* itens = [{ nome, termo, tam, tu, qtd }]  (termo = o que procurar nos nomes; vazio = o próprio nome; tam+tu = tamanho da embalagem, ex.: 900 ml; qtd = quantas embalagens)
+   A lista só compara embalagens do MESMO tamanho (1 kg com 1 kg), marcas diferentes podem. */
 let pronto = false;
 async function tabela() {
   if (pronto) return;
@@ -90,7 +91,8 @@ async function listasTodas() {
 }
 function itensLimpos(l) {
   if (!Array.isArray(l)) return [];
-  return l.slice(0, 100).map(i => ({ nome: txt(i && i.nome, 80), termo: txt(i && i.termo, 80), un: ["kg", "l", "un"].includes(i && i.un) ? i.un : "kg", qtd: Math.min(999, Math.max(0.01, Number(String((i && i.qtd) || 1).replace(",", ".")) || 1)) })).filter(i => i.nome);
+  const n = (v, d) => { const x = Number(String(v == null ? "" : v).replace(",", ".")); return x > 0 && x < 100000 ? x : d; };
+  return l.slice(0, 100).map(i => ({ nome: txt(i && i.nome, 80), termo: txt(i && i.termo, 80), tam: n(i && i.tam, 1), tu: ["g", "kg", "ml", "l", "un"].includes(i && i.tu) ? i.tu : "kg", qtd: Math.min(999, n(i && i.qtd, 1)) })).filter(i => i.nome);
 }
 async function lista(b) {
   await tabela();
