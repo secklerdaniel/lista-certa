@@ -4,6 +4,7 @@
    GET  /api/admin/usuarios?contribuicoes=<id>           → últimas contribuições do usuário
    POST { usuarioId, editar: { nome } }                  → corrige o nome exibido
    POST { usuarioId, bloqueado: true|false }             → bloqueia/desbloqueia (bloqueado não contribui nem entra)
+   GET  /api/admin/usuarios?resumo=1                     → KPIs do dashboard (totais, últimos 7 dias, série de 30 dias, cidades, top mercados)
    GET  /api/admin/usuarios?coletas=1                    → últimas 300 coletas (preços) enviadas, com o usuário
    POST { coleta: { mercado, cidade, descricao, preco, promocao? } }  → cria uma coleta (origem 'admin')
    POST { coletaId, coleta: { ... } }                    → edita uma coleta
@@ -20,6 +21,29 @@ const ofertas = require("../_ofertas");
 const produtos = require("../_produtos");
 const gemini = require("../_gemini");
 
+/* KPIs do dashboard: uma rodada de consultas pequenas (tabelas pequenas; sem cache) */
+async function resumo() {
+  const q = (t, a) => sql().query(t, a);
+  const preco = `select mercado_nome as mercado, cidade, lower(descricao) as d, categoria, criado_em as em, 'coleta' as f from coletas
+    union all select mercado_nome, cidade, lower(descricao), categoria, emissao, 'cupom' from precos_cupom
+    union all select mercado, cidade, lower(produto), null, coalesce(valido_de::timestamptz, criado_em), 'oferta' from ofertas`;
+  const [u, c, pr, ser, cid, top, mer, lis] = await Promise.all([
+    q(`select count(*)::int total, count(*) filter (where criado_em > now() - interval '7 days')::int novos7, count(*) filter (where ultimo_acesso > now() - interval '7 days')::int ativos7, count(*) filter (where bloqueado)::int bloqueados from usuarios`),
+    q(`select count(*)::int total, count(*) filter (where tipo = 'cupom')::int cupons, count(*) filter (where tipo = 'video')::int videos, count(*) filter (where criado_em > now() - interval '7 days')::int d7, count(*) filter (where criado_em > now() - interval '1 day')::int d1 from contribuicoes`),
+    q(`select count(*)::int linhas, count(distinct d)::int produtos, count(distinct lower(mercado) || '|' || lower(cidade))::int mercados, count(*) filter (where categoria is null and f <> 'oferta')::int sem_cat,
+         count(*) filter (where f = 'cupom')::int cupom, count(*) filter (where f = 'coleta')::int coleta, count(*) filter (where f = 'oferta')::int oferta,
+         count(*) filter (where em > now() - interval '7 days')::int d7 from (${preco}) x`),
+    q(`select to_char(dia, 'YYYY-MM-DD') dia, coalesce(n, 0)::int n from generate_series(current_date - 29, current_date, '1 day') dia
+         left join (select criado_em::date d, count(*) n from contribuicoes where criado_em > current_date - 30 group by 1) t on t.d = dia order by dia`),
+    q(`select cidade, count(*)::int n, count(distinct d)::int produtos, count(distinct lower(mercado))::int mercados from (${preco}) x group by cidade order by n desc limit 8`),
+    q(`select mercado, max(cidade) cidade, count(*)::int n, count(distinct d)::int produtos from (${preco}) x group by lower(mercado), mercado order by n desc limit 8`),
+    q(`select (select count(*)::int from mercados) parceiros, (select count(*)::int from mercados where ativo) parceiros_ativos, (select count(*)::int from mercados_regiao where ativo) regiao,
+         (select count(*)::int from precos where ambiente = 'producao') precos_api, (select count(*)::int from ofertas) ofertas, (select count(distinct lower(mercado))::int from ofertas) mercados_folheto`),
+    q(`select count(*)::int n from listas_produtos`).catch(() => [{ n: 0 }]),
+  ]);
+  return { usuarios: u[0], contribuicoes: c[0], precos: pr[0], serie: ser, cidades: cid, mercados_top: top, base: mer[0], listas: lis[0].n };
+}
+
 module.exports = async (req, res) => {
   if (!admin(req)) return erro(res, 401, "nao_autorizado", "Não autorizado.");
   try {
@@ -28,6 +52,7 @@ module.exports = async (req, res) => {
         const r = await sql().query(`select id, tipo, mercado_nome, cidade, itens, criado_em from contribuicoes where usuario_id = $1 order by id desc limit 50`, [parseInt(req.query.contribuicoes, 10)]);
         return enviar(res, 200, { ok: true, dados: r });
       }
+      if (req.query && req.query.resumo) return enviar(res, 200, { ok: true, ...(await resumo()) });
       if (req.query && req.query.produtos) return enviar(res, 200, Object.assign({ ok: true }, await produtos.listar()));
       if (req.query && req.query.ofertas) {
         const r = await sql().query(`select mercado, cidade, count(*)::int as itens, min(valido_ate) as ate, max(criado_em) as carregado_em from ofertas group by 1,2 order by max(criado_em) desc`);
