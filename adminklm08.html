@@ -133,7 +133,7 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
     <section class="card" id="oRev" hidden>
       <h2 id="oRevTit">Conferir antes de salvar</h2>
       <div class="filtros"><button class="btn sec" type="button" id="oTodas">Marcar todas</button><button class="btn sec" type="button" id="oNenhuma">Desmarcar todas</button><button class="btn sec" type="button" id="oSoErro">Só com problema</button>
-        <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="oAcr2" style="width:auto"> Só acrescentar (não substituir as ofertas atuais)</label></div>
+        <select id="oModo" aria-label="Ao salvar"><option value="produto">Ao salvar: substituir só o mesmo produto (recomendado)</option><option value="mercado">Ao salvar: substituir tudo do mercado</option><option value="acrescentar">Ao salvar: só acrescentar</option></select></div>
       <div class="tabrol"><table id="oTab"></table></div>
       <datalist id="oMercados"></datalist>
       <div class="acoes"><button class="btn" type="button" id="oSalvar" style="margin-top:0">Aprovar e salvar as marcadas</button><button class="btn sec bad" type="button" id="oDescartar">Descartar tudo</button></div>
@@ -547,15 +547,15 @@ $("#oSalvar").onclick = async () => {
   if (!sel.length) return toast("Nenhuma oferta marcada");
   const ruins = sel.filter(problema);
   if (ruins.length && !confirm(`${ruins.length} marcada(s) têm problema (ex.: ${problema(ruins[0])}) e o servidor vai recusá-las. Salvar as outras mesmo assim?`)) return;
-  const acr = $("#oAcr2").checked, merc = {};
+  const modo = $("#oModo").value, merc = {};
   sel.forEach(r => { const k = r.mercado.trim() + " · " + r.cidade.trim(); merc[k] = (merc[k] || 0) + 1; });
-  const resumo = Object.entries(merc).map(([k, n]) => { const ar = OAR.find(x => norm(x.mercado + " · " + x.cidade) === norm(k)); return `• ${k}: ${n} novas${!acr && ar ? ` (substituem ${ar.itens} que estão no ar)` : ""}`; }).join("\n");
-  if (!confirm(`Salvar ${sel.length} ofertas?\n\n${resumo}\n\n${acr ? "As ofertas atuais serão mantidas." : "As ofertas atuais desses mercados são SUBSTITUÍDAS."}`)) return;
+  const resumo = Object.entries(merc).map(([k, n]) => { const ar = OAR.find(x => norm(x.mercado + " · " + x.cidade) === norm(k)); return `• ${k}: ${n} novas${modo === "mercado" && ar ? ` (substituem as ${ar.itens} que estão no ar)` : ""}`; }).join("\n");
+  if (!confirm(`Salvar ${sel.length} ofertas?\n\n${resumo}\n\n${modo === "acrescentar" ? "As ofertas atuais serão mantidas (pode duplicar produto que já está no ar)." : modo === "produto" ? "Só as ofertas do MESMO produto (nome, marca e tamanho) no mesmo mercado e cidade são substituídas. As outras ficam como estão." : "TODAS as ofertas atuais desses mercados são SUBSTITUÍDAS."}`)) return;
   const itens = sel.map(r => ({ mercado: r.mercado, cidade: r.cidade, categoria: r.cat || null, produto_normalizado: r.produto, marca: r.marca || null, quantidade: String(r.qtd).trim() === "" ? null : numO(r.qtd),
     unidade_medida: r.un || null, preco: numO(r.preco), valido_de: null, valido_ate: r.ate || null, observacao: r.obs || null }));
   $("#oSalvar").disabled = true;
   let d;
-  try { d = await chamar("/api/admin/usuarios", "POST", { ofertas: itens, acrescentar: acr }); }
+  try { d = await chamar("/api/admin/usuarios", "POST", { ofertas: itens, acrescentar: modo === "acrescentar", modo: modo === "produto" ? "produto" : undefined }); }
   catch (e) { d = e.dados && e.dados.rejeitados ? e.dados : null; if (!d) { $("#oRes2").textContent = "✗ " + e.message; $("#oSalvar").disabled = false; return; } d.inseridas = 0; d.substituidas = 0; d.porMercado = {}; }
   const rej = new Map((d.rejeitados || []).map(x => [x.linha, x.erro]));
   sel.forEach((r, i) => { if (rej.has(i + 1)) r.erro = rej.get(i + 1); });

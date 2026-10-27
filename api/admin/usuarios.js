@@ -8,7 +8,7 @@
    POST { coleta: { mercado, cidade, descricao, preco, promocao? } }  → cria uma coleta (origem 'admin')
    POST { coletaId, coleta: { ... } }                    → edita uma coleta
    POST { coletaId, excluirColeta: true }                → apaga um preço da coleta
-   POST { ofertas: [...] | { itens: [...] }, acrescentar? }  → carga diária de ofertas de folheto (ver api/_ofertas.js; mora aqui por causa do limite de 12 funções)
+   POST { ofertas: [...] | { itens: [...] }, acrescentar?, modo?: "produto" }  → carga diária de ofertas de folheto (ver api/_ofertas.js; mora aqui por causa do limite de 12 funções)
    GET  /api/admin/usuarios?ofertas=1                    → ofertas vigentes agrupadas por mercado
    GET  /api/admin/usuarios?produtos=1                   → preços de ofertas, coletas e cupons juntos + listas de produtos (ver api/_produtos.js)
    POST { lerImagem: { imagem: "data:image/jpeg;base64,..." } }  → o Gemini lê uma imagem de ofertas e devolve os itens para REVISÃO (não grava; ver api/_gemini.js)
@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
       catch (e) { return erro(res, e.status || 502, "ia", e.message || "Não consegui ler a imagem agora."); }
     }
     if (Array.isArray(b) || b.ofertas) {
-      const o = await ofertas.carregar(Array.isArray(b) ? b : b.ofertas, b.acrescentar);
+      const o = await ofertas.carregar(Array.isArray(b) ? b : b.ofertas, b.acrescentar, b.modo);
       const { status, msg, ...resto } = o;
       return status === 200 ? enviar(res, 200, { ok: true, ...resto }) : erro(res, status, "ofertas", msg, resto);
     }

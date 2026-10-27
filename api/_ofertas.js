@@ -62,7 +62,13 @@ async function oficiais(ok, avisos) {
   }
 }
 
-async function carregar(corpo, acrescentar) {
+/* mesmo produto = mesmo nome, marca, quantidade e unidade (ignora acento, caixa e pontuação) */
+const lim = t => sem(t || "").replace(/[^a-z0-9]+/g, " ").trim();
+const chaveProd = (m, c, p, ma, q, u) => [lim(m), lim(c), lim(p), lim(ma), Number(q) || 0, u || ""].join("|");
+
+/* modo: "produto" = troca só o MESMO produto no mesmo mercado e cidade (o resto fica); "mercado" (padrão) = troca todas as ofertas dos mercados do envio;
+   acrescentar=true = só soma. */
+async function carregar(corpo, acrescentar, modo) {
   const lista = Array.isArray(corpo) ? corpo : corpo && Array.isArray(corpo.itens) ? corpo.itens : null;
   if (!lista) return { status: 400, msg: 'Envie um array de ofertas (ou {"itens":[...]}).' };
   if (!lista.length) return { status: 400, msg: "A lista está vazia." };
@@ -72,6 +78,13 @@ async function carregar(corpo, acrescentar) {
   if (!ok.length) return { status: 422, msg: "Nenhuma oferta válida.", rejeitados, avisos };
   await oficiais(ok, avisos);
   const c = i => ok.map(x => x[i]);
+  let apagar = [];
+  if (modo === "produto") {
+    const novos = new Set(ok.map(x => chaveProd(x[0], x[1], x[3], x[4], x[5], x[6])));
+    const pares = [...new Set(ok.map(x => x[0].toLowerCase() + "|" + x[1].toLowerCase()))];
+    const ex = await sql().query(`select id, mercado, cidade, produto, marca, quantidade, unidade from ofertas where lower(mercado) || '|' || lower(cidade) = any($1::text[])`, [pares]);
+    apagar = ex.filter(o => novos.has(chaveProd(o.mercado, o.cidade, o.produto, o.marca, o.quantidade, o.unidade))).map(o => o.id);
+  }
   const r = await sql().query(
     `with entrada as (select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::numeric[],$7::text[],$8::numeric[],$9::date[],$10::date[],$11::text[])
          as t(mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs)),
@@ -79,9 +92,10 @@ async function carregar(corpo, acrescentar) {
      ins as (insert into ofertas (mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs,fonte)
          select *, 'admin' from entrada returning 1)
      select (select count(*) from ins)::int as inseridas, (select count(*) from del)::int as substituidas`,
-    [c(0), c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8), c(9), c(10), acrescentar === true]);
+    [c(0), c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8), c(9), c(10), acrescentar === true || modo === "produto"]);
+  if (apagar.length) await sql().query(`delete from ofertas where id = any($1::int[])`, [apagar]); /* depois de inserir: se a carga falhar, nada se perde */
   const porMercado = {}; ok.forEach(x => { const k = x[0] + " · " + x[1]; porMercado[k] = (porMercado[k] || 0) + 1; });
-  return { status: 200, inseridas: r[0].inseridas, substituidas: r[0].substituidas, porMercado, rejeitados, avisos };
+  return { status: 200, inseridas: r[0].inseridas, substituidas: modo === "produto" ? apagar.length : r[0].substituidas, porMercado, rejeitados, avisos };
 }
 
 module.exports = { carregar, validar, mapaOficial, oficial };
