@@ -190,7 +190,7 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
       <div id="plista"></div>
     </div>
     <div id="pv-listas" hidden>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Cada lista mostra <b>em qual mercado compensa comprar tudo</b>. Informe a quantidade em kg, litros ou unidades: o cálculo usa o preço por kg/litro/unidade, nunca o preço de embalagens de tamanhos diferentes. Item sem preço comparável aparece avisando, e mercado que não tem um item mostra o que falta. Em "busca" você afina o que o item procura (ex.: nome "Linguiça", busca "linguiça toscana").</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Cada lista mostra <b>em qual mercado compensa comprar tudo</b>. Informe a quantidade em kg, litros ou unidades: o cálculo usa o preço por kg/litro/unidade, nunca o preço de embalagens de tamanhos diferentes. Item sem preço comparável aparece avisando, e mercado que não tem um item mostra o que falta. Em "busca" você afina o que o item procura (ex.: nome "Linguiça", busca "linguiça toscana"; um "-" na frente exclui, ex.: "arroz -parbo").</p>
       <details class="card" id="lNovaDet"><summary>Nova lista</summary><div id="lNovaForm"></div></details>
       <div id="llista"></div>
     </div>
@@ -456,7 +456,8 @@ const PF = { cid: "", cat: "", fonte: "", merc: "", lista: "", comp: false, ord:
 const FONTE_NOME = f => ({ oferta: "folheto", coleta: "coleta", cupom: "cupom" }[f] || f);
 const catP = r => r.cat || SEM;
 const palavras = i => norm(i.termo || i.nome).split(/\s+/).filter(Boolean);
-const casa = (i, r) => { const p = palavras(i); return p.length > 0 && p.every(w => (" " + r.bn).includes(" " + w)); };
+/* "arroz -parbo": palavra com "-" na frente EXCLUI o produto que a contém (início de palavra) */
+const casa = (i, r) => { const p = palavras(i), tem = w => (" " + r.bn).includes(" " + w), pos = p.filter(w => w[0] !== "-"); return pos.length > 0 && pos.every(tem) && !p.some(w => w[0] === "-" && w.length > 1 && tem(w.slice(1))); };
 const tam = r => r.qtd && r.un ? ` · ${String(r.qtd).replace(".", ",")} ${r.un}` : "";
 const menorDe = rows => rows.reduce((a, r) => (!a || r.preco < a.preco ? r : a), null);
 const maiorDe = rows => rows.reduce((a, r) => (!a || r.preco > a.preco ? r : a), null);
@@ -592,16 +593,20 @@ function desenharListas() {
   if (!$("#lNovaForm").innerHTML) $("#lNovaForm").innerHTML = formLista(null);
   $("#llista").innerHTML = LISTAS.length ? LISTAS.map(l => {
     if (PEDIT === l.id) return `<div class="card">${formLista(l)}</div>`;
-    const a = analisarLista(l), M = l.itens.length, top = a.mercados[0], cheio = top && top.n === M;
-    const veredito = !M ? "Lista vazia. Clique em Editar para adicionar itens."
-      : !top ? "Nenhum mercado tem preço comparável para os itens desta lista."
-      : cheio ? `Compensa comprar em <b>${esc(top.mercado)}</b> (${esc(top.cidade)}): <b>${brl(top.t)}</b> pela lista inteira.`
-      : `<b>Nenhum mercado tem a lista toda.</b> O mais completo é <b>${esc(top.mercado)}</b> (${esc(top.cidade)}), com ${top.n} de ${M} itens: faltam ${esc(top.faltam.join(", "))}.`;
+    const a = analisarLista(l), M = l.itens.length;
+    /* o veredito vale por cidade: quem mora em Gramado não compra em Canela */
+    const cidades = [...new Set(a.mercados.map(m => m.cidade))].sort();
+    const bloco = cid => {
+      const ms = a.mercados.filter(m => m.cidade === cid), top = ms[0], cheio = top.n === M, completos = ms.filter(m => m.n === M).length;
+      const veredito = cheio ? `Em <b>${esc(cid)}</b> compensa comprar em <b>${esc(top.mercado)}</b>: <b>${brl(top.t)}</b> pela lista inteira${completos > 1 ? ` (${completos} mercados têm a lista completa)` : " (o único com a lista completa)"}.`
+        : `Em <b>${esc(cid)}</b> <b>nenhum mercado tem a lista toda.</b> O mais completo é <b>${esc(top.mercado)}</b>, com ${top.n} de ${M} itens: faltam ${esc(top.faltam.join(", "))}.`;
+      return `<h3 style="font-size:14px;margin:12px 0 6px">${esc(cid)}</h3><div class="painel" style="margin:0 0 8px;font-size:15px">${veredito}</div>
+        ${ms.map((m, n) => `<details class="mkrow"><summary><b>${n + 1}. ${esc(m.mercado)}</b> ${m.n === M ? '<span class="tag cat">lista completa</span>' : `<span class="tag sem">faltam ${M - m.n}</span>`} <span style="float:right"><b>${brl(m.t)}</b> <small>${m.n}/${M} itens</small></span></summary>
+          ${a.itens.map((it, idx) => { const r = m.por.get(idx); return r ? `<div class="lin"><span>${esc(it.i.nome)} <small>× ${esc(QTD(it.i.qtd))} ${it.u} · ${esc(r.nome)}${esc(tam(r))}</small></span><span>${brl(r.pu)}/${it.u} → <b>${brl(r.pu * it.i.qtd)}</b></span></div>` : `<div class="lin"><span>${esc(it.i.nome)}</span><span class="tag sem">sem preço neste mercado</span></div>`; }).join("")}</details>`).join("")}`;
+    };
     return `<div class="card"><div class="topo mk" style="margin:0 0 6px"><div><b style="font-size:17px">${esc(l.nome)}</b> <span class="tag">${M} itens</span>${a.semPreco.length ? `<span class="tag sem">${a.semPreco.length} sem preço</span>` : ""}${l.descricao ? `<div class="meta">${esc(l.descricao)}</div>` : ""}</div>
       <span><button class="btn sec" data-pa="ver" data-id="${l.id}">Ver produtos</button> <button class="btn sec" data-pa="editarL" data-id="${l.id}">Editar</button> <button class="btn sec bad" data-pa="excluirL" data-id="${l.id}" data-nome="${esc(l.nome)}">Excluir</button></span></div>
-      <div class="painel" style="margin:0 0 8px;font-size:15px">${veredito}</div>
-      ${a.mercados.map((m, n) => `<details class="mkrow"><summary><b>${n + 1}. ${esc(m.mercado)}</b> <small>${esc(m.cidade)}</small> ${m.n === M ? '<span class="tag cat">lista completa</span>' : `<span class="tag sem">faltam ${M - m.n}</span>`} <span style="float:right"><b>${brl(m.t)}</b> <small>${m.n}/${M} itens</small></span></summary>
-        ${a.itens.map((it, idx) => { const r = m.por.get(idx); return r ? `<div class="lin"><span>${esc(it.i.nome)} <small>× ${esc(QTD(it.i.qtd))} ${it.u} · ${esc(r.nome)}${esc(tam(r))}</small></span><span>${brl(r.pu)}/${it.u} → <b>${brl(r.pu * it.i.qtd)}</b></span></div>` : `<div class="lin"><span>${esc(it.i.nome)}</span><span class="tag sem">sem preço neste mercado</span></div>`; }).join("")}</details>`).join("")}
+      ${!M ? '<p class="vazio" style="padding:8px">Lista vazia. Clique em Editar para adicionar itens.</p>' : !cidades.length ? '<div class="painel">Nenhum mercado tem preço comparável para os itens desta lista.</div>' : cidades.map(bloco).join("")}
       ${a.mercados.length ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">Preço por kg/litro/unidade × quantidade, usando a opção mais barata de cada item no mercado. Preços sem tamanho conhecido ficam de fora (nada é suposto). Mercado que não tem um item não entra como mais barato: veja o que falta.</p>' : ""}
       ${a.semPreco.length ? `<p style="font-size:13px;margin-top:6px"><span class="tag sem">sem preço comparável</span> ${esc(a.semPreco.map(it => it.i.nome + (it.fora ? ` (${it.fora} preço(s) sem tamanho ou em outra unidade)` : "")).join("; "))}</p>` : ""}</div>`;
   }).join("") : '<p class="vazio">Nenhuma lista ainda. Abra “Nova lista” e monte a primeira (ex.: Churrasco).</p>';
