@@ -59,6 +59,9 @@
     },
     "api/v1/video.js": {
       "maxDuration": 60
+    },
+    "api/admin/usuarios.js": {
+      "maxDuration": 60
     }
   }
 }

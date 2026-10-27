@@ -83,6 +83,8 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 .tag.cat{background:#FFD93B;color:#15191A}.tag.sem{background:#f6d9d3;color:var(--bad)}
 .lin input{padding:7px 9px}.lin{flex-wrap:wrap}
 .mkrow{border:2px solid #15191A;border-radius:8px;padding:8px 12px;margin-bottom:8px;background:var(--card)}.mkrow summary{cursor:pointer;list-style:none}.mkrow[open] summary{margin-bottom:6px}
+.drop{display:block;border:2.5px dashed #15191A;border-radius:8px;padding:22px;text-align:center;cursor:pointer;font-weight:700;background:#FFF1B0}.drop.sobre{background:#FFD93B}
+.tabrol{overflow-x:auto;margin-bottom:10px}#oTab{border-collapse:collapse;font-size:13px;min-width:1250px;width:100%}#oTab th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);padding:4px}#oTab td{padding:3px 2px;border-bottom:1px solid var(--line)}#oTab input,#oTab select{padding:5px 6px;width:100%;min-width:0}#oTab input[type=checkbox]{width:auto}#oTab tr.pb td{background:#f6d9d3}#oTab .aviso{color:var(--bad);font-size:12px;min-width:150px}
 details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.05em}
 </style>
 </head>
@@ -122,7 +124,23 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
   <!-- OFERTAS: carga diária de folhetos -->
   <div id="p-ofertas" hidden>
     <section class="card">
-      <h2>Carregar ofertas do dia</h2>
+      <h2>Ler ofertas de imagens (Gemini)</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:8px">Envie as imagens das ofertas (posts do Instagram, folhetos). O Gemini lê mercado, cidade, produtos e preços, e <b>nada vai para o ar</b> até você conferir, editar e aprovar.</p>
+      <label class="drop" id="oDrop" for="oArq">Arraste as imagens aqui ou toque para escolher</label>
+      <input type="file" id="oArq" accept="image/*" multiple hidden>
+      <div id="oFila" style="margin-top:8px"></div>
+    </section>
+    <section class="card" id="oRev" hidden>
+      <h2 id="oRevTit">Conferir antes de salvar</h2>
+      <div class="filtros"><button class="btn sec" type="button" id="oTodas">Marcar todas</button><button class="btn sec" type="button" id="oNenhuma">Desmarcar todas</button><button class="btn sec" type="button" id="oSoErro">Só com problema</button>
+        <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="oAcr2" style="width:auto"> Só acrescentar (não substituir as ofertas atuais)</label></div>
+      <div class="tabrol"><table id="oTab"></table></div>
+      <datalist id="oMercados"></datalist>
+      <div class="acoes"><button class="btn" type="button" id="oSalvar" style="margin-top:0">Aprovar e salvar as marcadas</button><button class="btn sec bad" type="button" id="oDescartar">Descartar tudo</button></div>
+      <div id="oRes2" class="msg" style="white-space:pre-wrap"></div>
+    </section>
+    <details class="card">
+      <summary>Carregar por JSON (avançado)</summary>
       <p style="font-size:13px;color:var(--muted);margin-bottom:6px">Cole o JSON. Para cada mercado que aparecer no envio, as ofertas antigas dele são <b>substituídas</b> pelas novas (marque a caixa para só acrescentar). Ofertas vencidas somem sozinhas.</p>
       <textarea id="oJson" rows="9" spellcheck="false" placeholder='[{"mercado":"Mercado Drumm","cidade":"Gramado","categoria":"Açougue","produto_normalizado":"Costela Suína","marca":null,"quantidade":1,"unidade_medida":"kg","preco":24.9,"valido_de":"2026-10-22","valido_ate":"2026-10-22","observacao":null}]' style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px"></textarea>
       <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="oAcr" style="width:auto"> Só acrescentar (não substituir as ofertas dos mercados do envio)</label>
@@ -140,7 +158,7 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
           <button class="btn sec" id="oCopiarPrompt" type="button">Copiar prompt + esquema</button>
           <pre id="oPrompt" style="white-space:pre-wrap;font-size:12px;margin-top:8px"></pre></details>
       </div>
-    </section>
+    </details>
     <div class="topo"><h2 id="oTit">Ofertas no ar</h2></div>
     <div id="olista"></div>
   </div>
@@ -435,7 +453,7 @@ $("#oPrompt").textContent = PROMPT;
 $("#oCopiarPrompt").onclick = () => { navigator.clipboard.writeText(PROMPT + ESQUEMA).then(() => toast("Prompt e esquema copiados")); };
 $("#oCopiar").onclick = () => { navigator.clipboard.writeText(ESQUEMA).then(() => toast("Esquema copiado")); };
 async function carregarOfertas() {
-  const l = (await chamar("/api/admin/usuarios?ofertas=1")).dados;
+  const l = (await chamar("/api/admin/usuarios?ofertas=1")).dados; OAR = l;
   $("#oTit").textContent = `Ofertas no ar (${l.reduce((a, x) => a + x.itens, 0)})`;
   $("#olista").innerHTML = l.map(x => `<div class="card"><b>${esc(x.mercado)}</b> · ${esc(x.cidade)}<div class="meta">${x.itens} ofertas · ${x.ate ? "até " + new Date(x.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "sem data (14 dias)"} · carregado em ${fmtData(x.carregado_em)}</div></div>`).join("") || '<p class="msg">Nenhuma oferta no ar.</p>';
 }
@@ -451,6 +469,102 @@ $("#oEnviar").onclick = async () => {
   $("#oEnviar").disabled = false;
 };
 const fim = d => (d.rejeitados && d.rejeitados.length ? "\n\nRecusadas:\n" + d.rejeitados.map(r => `  linha ${r.linha} (${r.produto || "?"}): ${r.erro}`).join("\n") : "") + (d.avisos && d.avisos.length ? "\n\nAvisos:\n  " + d.avisos.join("\n  ") : "");
+
+/* ---------- ofertas por imagem (Gemini): ler, conferir/editar, aprovar ---------- */
+const ORV = [], OFILES = new Map();
+let ORID = 0, OFID = 0, OSO = false, OAR = [], OLER = Promise.resolve();
+const CATS = ["mercearia", "laticinios", "hortifruti", "carnes", "bebidas", "limpeza", "higiene", "padaria", "frios", "congelados", "outros"];
+const UNS = ["", "kg", "g", "l", "ml", "un", "m", "dz"];
+const hojeISO = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+const numO = v => parseFloat(String(v).replace(",", "."));
+function problema(r) {
+  if (!r.mercado.trim() || !r.cidade.trim() || !r.produto.trim()) return "faltam mercado, cidade ou produto";
+  if (!(numO(r.preco) > 0 && numO(r.preco) < 100000)) return "preço inválido";
+  if (String(r.qtd).trim() !== "" && !(numO(r.qtd) > 0)) return "quantidade inválida";
+  if (r.ate && r.ate < hojeISO()) return "a validade já passou";
+  return r.erro || "";
+}
+const inpO = (r, f, extra = "") => `<input type="text" data-f="${f}" value="${esc(r[f])}" ${extra}>`;
+function linhaRev(r) {
+  const pb = problema(r);
+  return `<tr data-id="${r.id}" class="${pb ? "pb" : ""}"><td><input type="checkbox" data-f="sel" aria-label="Aprovar"${r.sel ? " checked" : ""}></td><td>${inpO(r, "mercado", 'list="oMercados"')}</td><td>${inpO(r, "cidade", 'list="cidadesLista"')}</td><td>${inpO(r, "produto")}</td><td>${inpO(r, "marca")}</td>
+    <td>${inpO(r, "qtd", 'inputmode="decimal" style="width:64px"')}</td><td><select data-f="un">${UNS.map(u => `<option${r.un === u ? " selected" : ""}>${u}</option>`).join("")}</select></td><td>${inpO(r, "preco", 'inputmode="decimal" style="width:76px"')}</td>
+    <td><input type="date" data-f="ate" value="${esc(r.ate)}"></td><td>${inpO(r, "obs")}</td><td><select data-f="cat"><option value=""></option>${CATS.map(c => `<option${r.cat === c ? " selected" : ""}>${c}</option>`).join("")}</select></td>
+    <td class="aviso">${pb ? "⚠ " + esc(pb) : ""}</td><td><button class="btn sec bad" type="button" data-orm="${r.id}" aria-label="Remover">×</button></td></tr>`;
+}
+function contadoresRev() {
+  $("#oRevTit").textContent = `Conferir antes de salvar (${ORV.length} lidas · ${ORV.filter(r => r.sel).length} marcadas · ${ORV.filter(problema).length} com problema)`;
+}
+function desenharRev() {
+  $("#oRev").hidden = !ORV.length; contadoresRev();
+  $("#oSoErro").style.background = OSO ? "#FFD93B" : "";
+  $("#oTab").innerHTML = `<thead><tr><th></th><th>Mercado</th><th>Cidade</th><th>Produto</th><th>Marca</th><th>Qtd</th><th>Un</th><th>Preço (R$)</th><th>Vale até</th><th>Observação</th><th>Categoria</th><th></th><th></th></tr></thead><tbody>${ORV.filter(r => !OSO || problema(r)).map(linhaRev).join("")}</tbody>`;
+}
+$("#oTab").addEventListener("input", e => {
+  const tr = e.target.closest("tr[data-id]"), f = e.target.dataset.f; if (!tr || !f) return;
+  const r = ORV.find(x => x.id === +tr.dataset.id); r[f] = f === "sel" ? e.target.checked : e.target.value; r.erro = "";
+  const pb = problema(r); tr.classList.toggle("pb", !!pb); tr.querySelector(".aviso").textContent = pb ? "⚠ " + pb : ""; contadoresRev();
+});
+$("#oTab").addEventListener("click", e => { const b = e.target.closest("[data-orm]"); if (!b) return; ORV.splice(ORV.findIndex(x => x.id === +b.dataset.orm), 1); desenharRev(); });
+$("#oTodas").onclick = () => { ORV.forEach(r => r.sel = true); desenharRev(); };
+$("#oNenhuma").onclick = () => { ORV.forEach(r => r.sel = false); desenharRev(); };
+$("#oSoErro").onclick = () => { OSO = !OSO; desenharRev(); };
+$("#oDescartar").onclick = () => { if (!ORV.length || !confirm("Descartar todas as ofertas lidas? Nada foi salvo.")) return; ORV.length = 0; $("#oFila").innerHTML = ""; $("#oRes2").textContent = ""; OFILES.clear(); desenharRev(); };
+
+/* imagem -> JPEG de até 2000 px (o servidor aceita ~4 MB por chamada) */
+async function reduzir(file) {
+  const bmp = await createImageBitmap(file), k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+  for (const q of [0.88, 0.78, 0.65]) { const u = c.toDataURL("image/jpeg", q); if (u.length < 3.6e6) return u; }
+  throw new Error("Imagem grande demais mesmo reduzida.");
+}
+async function lerArquivo(fid) {
+  const f = OFILES.get(fid), st = document.querySelector(`[data-fila="${fid}"] .st`); if (!f || !st) return;
+  st.className = "st"; st.textContent = "lendo com o Gemini…";
+  try {
+    const d = await chamar("/api/admin/usuarios", "POST", { lerImagem: { imagem: await reduzir(f) } });
+    d.itens.forEach(x => ORV.push({ id: ++ORID, sel: true, arquivo: f.name, mercado: x.mercado || "", cidade: x.cidade || "", produto: x.produto_normalizado, marca: x.marca || "", qtd: x.quantidade == null ? "" : String(x.quantidade).replace(".", ","),
+      un: x.unidade_medida || "", preco: String(x.preco).replace(".", ","), ate: x.valido_ate || "", obs: x.observacao || "", cat: x.categoria || "", erro: "" }));
+    st.textContent = d.itens.length ? `✓ ${d.itens.length} ofertas lidas` : "nenhuma oferta encontrada nesta imagem"; OFILES.delete(fid); desenharRev();
+  } catch (e) { st.className = "st msg"; st.innerHTML = `✗ ${esc(e.message)} <button class="btn sec" type="button" data-ofr="${fid}">Tentar de novo</button>`; }
+}
+function enfileirar(files) {
+  [...files].filter(f => f.type.startsWith("image/")).forEach(f => {
+    const fid = ++OFID; OFILES.set(fid, f);
+    $("#oFila").insertAdjacentHTML("beforeend", `<div class="lin" data-fila="${fid}"><span>${esc(f.name)}</span><span class="st">na fila</span></div>`);
+    OLER = OLER.then(() => lerArquivo(fid));
+  });
+}
+$("#oArq").onchange = e => { enfileirar(e.target.files); e.target.value = ""; };
+$("#oDrop").ondragover = e => { e.preventDefault(); $("#oDrop").classList.add("sobre"); };
+$("#oDrop").ondragleave = () => $("#oDrop").classList.remove("sobre");
+$("#oDrop").ondrop = e => { e.preventDefault(); $("#oDrop").classList.remove("sobre"); enfileirar(e.dataTransfer.files); };
+$("#oFila").addEventListener("click", e => { const b = e.target.closest("[data-ofr]"); if (b) OLER = OLER.then(() => lerArquivo(+b.dataset.ofr)); });
+
+$("#oSalvar").onclick = async () => {
+  const sel = ORV.filter(r => r.sel); $("#oRes2").textContent = "";
+  if (!sel.length) return toast("Nenhuma oferta marcada");
+  const ruins = sel.filter(problema);
+  if (ruins.length && !confirm(`${ruins.length} marcada(s) têm problema (ex.: ${problema(ruins[0])}) e o servidor vai recusá-las. Salvar as outras mesmo assim?`)) return;
+  const acr = $("#oAcr2").checked, merc = {};
+  sel.forEach(r => { const k = r.mercado.trim() + " · " + r.cidade.trim(); merc[k] = (merc[k] || 0) + 1; });
+  const resumo = Object.entries(merc).map(([k, n]) => { const ar = OAR.find(x => norm(x.mercado + " · " + x.cidade) === norm(k)); return `• ${k}: ${n} novas${!acr && ar ? ` (substituem ${ar.itens} que estão no ar)` : ""}`; }).join("\n");
+  if (!confirm(`Salvar ${sel.length} ofertas?\n\n${resumo}\n\n${acr ? "As ofertas atuais serão mantidas." : "As ofertas atuais desses mercados são SUBSTITUÍDAS."}`)) return;
+  const itens = sel.map(r => ({ mercado: r.mercado, cidade: r.cidade, categoria: r.cat || null, produto_normalizado: r.produto, marca: r.marca || null, quantidade: String(r.qtd).trim() === "" ? null : numO(r.qtd),
+    unidade_medida: r.un || null, preco: numO(r.preco), valido_de: null, valido_ate: r.ate || null, observacao: r.obs || null }));
+  $("#oSalvar").disabled = true;
+  let d;
+  try { d = await chamar("/api/admin/usuarios", "POST", { ofertas: itens, acrescentar: acr }); }
+  catch (e) { d = e.dados && e.dados.rejeitados ? e.dados : null; if (!d) { $("#oRes2").textContent = "✗ " + e.message; $("#oSalvar").disabled = false; return; } d.inseridas = 0; d.substituidas = 0; d.porMercado = {}; }
+  const rej = new Map((d.rejeitados || []).map(x => [x.linha, x.erro]));
+  sel.forEach((r, i) => { if (rej.has(i + 1)) r.erro = rej.get(i + 1); });
+  for (let i = ORV.length - 1; i >= 0; i--) if (ORV[i].sel && !rej.has(sel.indexOf(ORV[i]) + 1)) ORV.splice(i, 1);
+  $("#oRes2").style.color = d.inseridas ? "var(--green2)" : "var(--bad)";
+  $("#oRes2").textContent = `${d.inseridas ? "✓" : "✗"} ${d.inseridas} ofertas salvas, ${d.substituidas} antigas substituídas.` + (rej.size ? `\n${rej.size} recusada(s) continuam na tabela, marcadas em vermelho: corrija e salve de novo.` : "") + (d.avisos && d.avisos.length ? "\n\nAvisos:\n  " + d.avisos.join("\n  ") : "");
+  $("#oSalvar").disabled = false; desenharRev(); await carregarOfertas();
+};
+async function mercadosOfertas() { try { $("#oMercados").innerHTML = [...new Set((await chamar("/api/admin/mercados?regiao=1")).dados.map(x => x.nome))].sort().map(n => `<option value="${esc(n)}">`).join(""); } catch (e) { /* sem sugestões */ } }
 
 /* ---------- produtos ---------- */
 let PL = [], LISTAS = [], PVER = 60, PEDIT = null;
@@ -658,7 +772,7 @@ function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
   $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; $("#p-ofertas").hidden = n !== "ofertas"; $("#p-produtos").hidden = n !== "produtos"; $("#p-listas").hidden = n !== "listas";
   if (n === "produtos" || n === "listas") carregarProdutos().catch(e => toast(e.message));
-  if (n === "ofertas") carregarOfertas().catch(e => toast(e.message));
+  if (n === "ofertas") { carregarOfertas().catch(e => toast(e.message)); mercadosOfertas(); }
   if (n === "coletas") carregarColetas().catch(e => toast(e.message));
   if (n === "usuarios") carregarUsuarios().catch(e => toast(e.message));
   if (n === "regiao") carregarRegiao().catch(e => toast(e.message));

@@ -11,12 +11,14 @@
    POST { ofertas: [...] | { itens: [...] }, acrescentar? }  → carga diária de ofertas de folheto (ver api/_ofertas.js; mora aqui por causa do limite de 12 funções)
    GET  /api/admin/usuarios?ofertas=1                    → ofertas vigentes agrupadas por mercado
    GET  /api/admin/usuarios?produtos=1                   → preços de ofertas, coletas e cupons juntos + listas de produtos (ver api/_produtos.js)
+   POST { lerImagem: { imagem: "data:image/jpeg;base64,..." } }  → o Gemini lê uma imagem de ofertas e devolve os itens para REVISÃO (não grava; ver api/_gemini.js)
    POST { oferta: { acao: criar|editar|excluir, id?, produto, mercado, cidade, preco, ... } }  → CRUD de uma oferta avulsa
    POST { lista: { acao: criar|editar|excluir, id?, nome, descricao?, itens: [{ nome, termo?, qtd }] } }  → CRUD das listas de produtos
    POST { usuarioId, excluir: true }                     → APAGA a conta e as contribuições (as coletas ficam, anônimas) */
 const { sql, enviar, erro, corpo, admin } = require("../_lib");
 const ofertas = require("../_ofertas");
 const produtos = require("../_produtos");
+const gemini = require("../_gemini");
 
 module.exports = async (req, res) => {
   if (!admin(req)) return erro(res, 401, "nao_autorizado", "Não autorizado.");
@@ -45,6 +47,13 @@ module.exports = async (req, res) => {
     }
     if (req.method !== "POST") return erro(res, 405, "metodo", "Use GET ou POST.");
     const b = corpo(req) || {};
+    if (b.lerImagem && typeof b.lerImagem === "object") {
+      const img = String(b.lerImagem.imagem || ""), i = img.indexOf(";base64,"), mime = img.slice(5, i);
+      if (!img.startsWith("data:image/") || i < 0 || !["image/jpeg", "image/png", "image/webp"].includes(mime) || img.length > 5.5e6) return erro(res, 400, "imagem", "Envie uma imagem JPEG, PNG ou WebP de até ~4 MB.");
+      if (!process.env.GEMINI_API_KEY) return erro(res, 503, "ia_indisponivel", "GEMINI_API_KEY não está configurada no servidor.");
+      try { return enviar(res, 200, { ok: true, itens: await gemini.lerImagem(mime, img.slice(i + 8)) }); }
+      catch (e) { return erro(res, e.status || 502, "ia", e.message || "Não consegui ler a imagem agora."); }
+    }
     if (Array.isArray(b) || b.ofertas) {
       const o = await ofertas.carregar(Array.isArray(b) ? b : b.ofertas, b.acrescentar);
       const { status, msg, ...resto } = o;
