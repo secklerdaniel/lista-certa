@@ -10,9 +10,13 @@
    POST { coletaId, excluirColeta: true }                → apaga um preço da coleta
    POST { ofertas: [...] | { itens: [...] }, acrescentar? }  → carga diária de ofertas de folheto (ver api/_ofertas.js; mora aqui por causa do limite de 12 funções)
    GET  /api/admin/usuarios?ofertas=1                    → ofertas vigentes agrupadas por mercado
+   GET  /api/admin/usuarios?produtos=1                   → preços de ofertas, coletas e cupons juntos + listas de produtos (ver api/_produtos.js)
+   POST { oferta: { acao: criar|editar|excluir, id?, produto, mercado, cidade, preco, ... } }  → CRUD de uma oferta avulsa
+   POST { lista: { acao: criar|editar|excluir, id?, nome, descricao?, itens: [{ nome, termo?, qtd }] } }  → CRUD das listas de produtos
    POST { usuarioId, excluir: true }                     → APAGA a conta e as contribuições (as coletas ficam, anônimas) */
 const { sql, enviar, erro, corpo, admin } = require("../_lib");
 const ofertas = require("../_ofertas");
+const produtos = require("../_produtos");
 
 module.exports = async (req, res) => {
   if (!admin(req)) return erro(res, 401, "nao_autorizado", "Não autorizado.");
@@ -22,6 +26,7 @@ module.exports = async (req, res) => {
         const r = await sql().query(`select id, tipo, mercado_nome, cidade, itens, criado_em from contribuicoes where usuario_id = $1 order by id desc limit 50`, [parseInt(req.query.contribuicoes, 10)]);
         return enviar(res, 200, { ok: true, dados: r });
       }
+      if (req.query && req.query.produtos) return enviar(res, 200, Object.assign({ ok: true }, await produtos.listar()));
       if (req.query && req.query.ofertas) {
         const r = await sql().query(`select mercado, cidade, count(*)::int as itens, min(valido_ate) as ate, max(criado_em) as carregado_em from ofertas group by 1,2 order by max(criado_em) desc`);
         return enviar(res, 200, { ok: true, dados: r });
@@ -44,6 +49,12 @@ module.exports = async (req, res) => {
       const o = await ofertas.carregar(Array.isArray(b) ? b : b.ofertas, b.acrescentar);
       const { status, msg, ...resto } = o;
       return status === 200 ? enviar(res, 200, { ok: true, ...resto }) : erro(res, status, "ofertas", msg, resto);
+    }
+    for (const k of ["oferta", "lista"]) {
+      if (b[k] && typeof b[k] === "object") {
+        const o = await produtos[k](b[k]);
+        return o.status === 200 ? enviar(res, 200, Object.assign({ ok: true }, o, { status: undefined })) : erro(res, o.status, k, o.msg);
+      }
     }
     if (b.coleta && typeof b.coleta === "object") {
       const t = (v, n) => String(v || "").replace(/\s+/g, " ").trim().slice(0, n);

@@ -81,13 +81,14 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 .hb.on{font-weight:800}.hb.on .t i{background:#15191A}.hb em{font-style:normal;text-align:right;color:var(--muted)}
 .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.filtros select{padding:9px 10px;font:inherit;color:var(--ink);max-width:100%}
 .tag.cat{background:#FFD93B;color:#15191A}.tag.sem{background:#f6d9d3;color:var(--bad)}
+.subabas{display:flex;gap:8px;margin-bottom:12px}.subabas .btn.on{background:#FFD93B}.lin input{padding:7px 9px}.lin{flex-wrap:wrap}
 details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.05em}
 </style>
 </head>
 <body>
 <header>
   <div><h1>Sacolista · Admin</h1><small>Mercados, usuários e chaves da API</small></div>
-  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="ofertas">Ofertas</button><button class="aba" data-aba="regiao">Região</button></div>
+  <div class="abas" id="abas" hidden><button class="aba on" data-aba="mercados">Mercados</button><button class="aba" data-aba="usuarios">Usuários</button><button class="aba" data-aba="produtos">Produtos</button><button class="aba" data-aba="coletas">Coletas</button><button class="aba" data-aba="ofertas">Ofertas</button><button class="aba" data-aba="regiao">Região</button></div>
   <button class="btn sec" id="sair" style="color:#15191A;border-color:#15191A;display:none">Sair</button>
 </header>
 <main>
@@ -157,6 +158,41 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
     </section>
     <div class="topo"><h2 id="gTit">Mercados da região</h2><input type="search" id="gBusca" placeholder="Buscar por nome, cidade ou rua"></div>
     <div id="glista"></div>
+  </div>
+
+  <!-- PRODUTOS -->
+  <div id="p-produtos" hidden>
+    <div class="subabas"><button class="btn sec on" data-pa="sub" data-v="prods" type="button">Produtos</button><button class="btn sec" data-pa="sub" data-v="listas" type="button">Listas</button></div>
+    <div id="pv-prods">
+      <div class="topo"><h2 id="pTit">Produtos</h2><input type="search" id="pBusca" placeholder='Buscar: "coxão mole", "arroz -integral"' autocomplete="off"></div>
+      <div class="kpis" id="pKpis"></div>
+      <div class="graficos">
+        <section class="card"><h2>Por categoria</h2><div id="pGCat"></div></section>
+        <section class="card"><h2>Por cidade e origem</h2><div id="pGCid"></div><div id="pGFonte" style="margin-top:8px"></div></section>
+        <section class="card"><h2>Por mercado</h2><div id="pGMerc"></div></section>
+        <section class="card"><h2>Maiores diferenças de preço</h2><div id="pGDif"></div></section>
+      </div>
+      <details class="card" id="pDet"><summary id="pFormTit">Adicionar preço de produto</summary>
+        <form id="pForm"><input type="hidden" id="pId"><input type="hidden" id="pFonte" value="oferta">
+          <label for="pProd">Produto</label><input type="text" id="pProd" required maxlength="120" list="pNomes" placeholder="Coxão Mole" autocomplete="off">
+          <div class="row"><div><label for="pMarca">Marca (opcional)</label><input type="text" id="pMarca" maxlength="60"></div><div><label for="pCat">Categoria</label><select id="pCat"><option value="">sem categoria</option><option value="mercearia">mercearia</option><option value="laticinios">laticínios</option><option value="hortifruti">hortifruti</option><option value="carnes">carnes</option><option value="bebidas">bebidas</option><option value="limpeza">limpeza</option><option value="higiene">higiene</option><option value="padaria">padaria</option><option value="frios">frios</option><option value="congelados">congelados</option><option value="outros">outros</option></select></div></div>
+          <div class="row"><div><label for="pQtd">Quantidade da embalagem (opcional)</label><input type="text" id="pQtd" inputmode="decimal" placeholder="1"></div><div><label for="pUn">Unidade</label><select id="pUn"><option value="">—</option><option>kg</option><option>g</option><option>l</option><option>ml</option><option>un</option><option>dz</option></select></div></div>
+          <div class="row"><div><label for="pMerc">Mercado</label><input type="text" id="pMerc" required maxlength="120" list="pMercados" autocomplete="off"></div><div><label for="pCid">Cidade</label><input type="text" id="pCid" required maxlength="80" value="Gramado" list="cidadesLista"></div></div>
+          <div class="row"><div><label for="pPreco">Preço (R$)</label><input type="text" id="pPreco" required inputmode="decimal" placeholder="24,90"></div><div><label for="pAte">Vale até (opcional)</label><input type="date" id="pAte"></div></div>
+          <button class="btn" type="submit" id="pSalvar">Adicionar</button> <button class="btn sec" type="button" id="pCancelar" hidden>Cancelar edição</button>
+          <p class="msg" id="pMsg"></p></form></details>
+      <datalist id="pNomes"></datalist><datalist id="pMercados"></datalist>
+      <div class="filtros"><select id="pfCid" aria-label="Cidade"></select><select id="pfCat" aria-label="Categoria"></select><select id="pfFonte" aria-label="Origem"></select><select id="pfMerc" aria-label="Mercado"></select><select id="pfLista" aria-label="Da lista"></select>
+        <select id="pfOrd" aria-label="Ordenar"><option value="nome">A–Z</option><option value="menor">Menor preço</option><option value="dif">Maior diferença (R$)</option><option value="pct">Maior diferença (%)</option><option value="merc">Mais mercados</option><option value="recente">Mais recentes</option></select>
+        <input type="text" id="pfMin" inputmode="decimal" placeholder="R$ mín." style="width:84px"><input type="text" id="pfMax" inputmode="decimal" placeholder="R$ máx." style="width:84px">
+        <button class="btn sec" type="button" id="pfComp" aria-pressed="false">Só em 2+ mercados</button><button class="btn sec" type="button" id="pfLimpar">Limpar filtros</button></div>
+      <div id="plista"></div>
+    </div>
+    <div id="pv-listas" hidden>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Monte listas de produtos (churrasco, cesta básica, café da manhã...). Cada item procura nos preços que o banco já tem; <b>só entra o que existe</b>, e item sem preço aparece avisando. Em "busca" você afina o que o item procura (ex.: nome "Linguiça", busca "linguiça toscana").</p>
+      <details class="card" id="lNovaDet"><summary>Nova lista</summary><div id="lNovaForm"></div></details>
+      <div id="llista"></div>
+    </div>
   </div>
 
   <!-- COLETAS -->
@@ -412,10 +448,191 @@ $("#oEnviar").onclick = async () => {
 };
 const fim = d => (d.rejeitados && d.rejeitados.length ? "\n\nRecusadas:\n" + d.rejeitados.map(r => `  linha ${r.linha} (${r.produto || "?"}): ${r.erro}`).join("\n") : "") + (d.avisos && d.avisos.length ? "\n\nAvisos:\n  " + d.avisos.join("\n  ") : "");
 
+/* ---------- produtos ---------- */
+let PL = [], LISTAS = [], PVER = 60, PEDIT = null;
+const ABERTOS = new Set();
+const PF = { cid: "", cat: "", fonte: "", merc: "", lista: "", comp: false, ord: "nome" };
+const FONTE_NOME = f => ({ oferta: "folheto", coleta: "coleta", cupom: "cupom" }[f] || f);
+const catP = r => r.cat || SEM;
+const palavras = i => norm(i.termo || i.nome).split(/\s+/).filter(Boolean);
+const casa = (i, r) => { const p = palavras(i); return p.length > 0 && p.every(w => (" " + r.bn).includes(" " + w)); };
+const tam = r => r.qtd && r.un ? ` · ${String(r.qtd).replace(".", ",")} ${r.un}` : "";
+const menorDe = rows => rows.reduce((a, r) => (!a || r.preco < a.preco ? r : a), null);
+const maiorDe = rows => rows.reduce((a, r) => (!a || r.preco > a.preco ? r : a), null);
+const decNum = v => { const x = parseFloat(String(v).replace(",", ".")); return x >= 0 ? x : null; };
+
+async function carregarProdutos() {
+  const d = await chamar("/api/admin/usuarios?produtos=1");
+  PL = d.linhas; LISTAS = d.listas;
+  PL.forEach(r => { r.k = norm(r.nome).replace(/\s+/g, " ").trim(); r.bn = r.k + " " + norm(r.marca); r.busca = r.bn + " " + norm(r.mercado + " " + r.cidade); });
+  $("#pNomes").innerHTML = [...new Set(PL.map(r => r.nome))].sort().slice(0, 600).map(n => `<option value="${esc(n)}">`).join("");
+  $("#pMercados").innerHTML = [...new Set(PL.map(r => r.mercado))].sort().map(n => `<option value="${esc(n)}">`).join("");
+  desenharProdutos(); desenharListas();
+}
+function passaP(r, ig) {
+  if (ig !== "cid" && PF.cid && r.cidade !== PF.cid) return false;
+  if (ig !== "cat" && PF.cat && catP(r) !== PF.cat) return false;
+  if (ig !== "fonte" && PF.fonte && r.fonte !== PF.fonte) return false;
+  if (ig !== "merc" && PF.merc && r.mercado !== PF.merc) return false;
+  const mn = decNum($("#pfMin").value), mx = decNum($("#pfMax").value);
+  if (mn != null && r.preco < mn) return false;
+  if (mx != null && r.preco > mx) return false;
+  if (PF.lista) { const l = LISTAS.find(x => String(x.id) === PF.lista); if (l && !l.itens.some(i => casa(i, r))) return false; }
+  const termos = norm($("#pBusca").value).split(/\s+/).filter(Boolean);
+  return termos.every(t => t[0] === "-" ? t.length < 2 || !r.busca.includes(t.slice(1)) : r.busca.includes(t));
+}
+function agrupar(rows) {
+  const m = new Map();
+  rows.forEach(r => { let g = m.get(r.k); if (!g) m.set(r.k, g = { k: r.k, nome: r.nome, rows: [] }); g.rows.push(r); });
+  return [...m.values()].map(g => {
+    const pr = g.rows.filter(r => r.preco > 0), mn = menorDe(pr), nm = new Set(g.rows.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size, cats = contar(g.rows.filter(r => r.cat), r => r.cat);
+    /* a diferença só vale entre preços do MESMO tamanho (3,99 de 4 rolos x 29,95 de 12 não é diferença de mercado): usa o tamanho com mais mercados */
+    const porTam = {}; pr.forEach(r => { const t = r.qtd && r.un ? r.qtd + r.un : "?"; (porTam[t] = porTam[t] || []).push(r); });
+    const mel = Object.values(porTam).map(rs => ({ rs, n: new Set(rs.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size })).sort((a, b) => b.n - a.n)[0];
+    const cmp = mel && mel.n > 1 ? { mn: menorDe(mel.rs), mx: maiorDe(mel.rs) } : null;
+    return Object.assign(g, { mn, mx: cmp && cmp.mx, cmp, nm, cat: cats.length ? cats[0][0] : null, dif: cmp ? cmp.mx.preco - cmp.mn.preco : 0, pct: cmp ? cmp.mx.preco / cmp.mn.preco - 1 : 0,
+      fontes: [...new Set(g.rows.map(r => r.fonte))], em: Math.max(...g.rows.map(r => +new Date(r.em))) });
+  });
+}
+const contarP = (rows, f) => { const m = {}; rows.forEach(r => (m[f(r)] = m[f(r)] || new Set()).add(r.k)); return Object.entries(m).map(([k, s]) => [k, s.size]).sort((a, b) => b[1] - a[1]); };
+function barrasP(el, dados, chave, nome = x => x) {
+  const max = Math.max(1, ...dados.map(d => d[1]));
+  el.innerHTML = dados.length ? dados.map(([k, n]) => `<button type="button" class="hb${PF[chave] === k ? " on" : ""}" data-pa="filtro" data-f="${chave}" data-v="${esc(k)}"><span>${esc(nome(k))}</span><span class="t"><i style="width:${n / max * 100}%"></i></span><em>${n}</em></button>`).join("") : '<p class="vazio" style="padding:8px">—</p>';
+}
+function desenharProdutos() {
+  const rows = PL.filter(r => passaP(r)), todos = agrupar(rows);
+  opcoes($("#pfCid"), "Todas as cidades", [...new Set(PL.map(r => r.cidade))].sort(), PF.cid);
+  opcoes($("#pfCat"), "Todas as categorias", [...new Set(PL.map(catP))].sort(), PF.cat, CAT_NOME);
+  opcoes($("#pfFonte"), "Todas as origens", [...new Set(PL.map(r => r.fonte))].sort(), PF.fonte, FONTE_NOME);
+  opcoes($("#pfMerc"), "Todos os mercados", [...new Set(PL.map(r => r.mercado))].sort(), PF.merc);
+  $("#pfLista").innerHTML = '<option value="">Qualquer lista</option>' + LISTAS.map(l => `<option value="${l.id}"${String(l.id) === PF.lista ? " selected" : ""}>Da lista: ${esc(l.nome)}</option>`).join("");
+  $("#pfOrd").value = PF.ord; $("#pfComp").setAttribute("aria-pressed", PF.comp); $("#pfComp").style.background = PF.comp ? "#FFD93B" : "";
+  const G = PF.comp ? todos.filter(g => g.nm >= 2) : todos;
+  const kpi = (n, t, alerta) => `<div class="kpi card${alerta ? " alerta" : ""}"><b>${n}</b><span>${t}</span></div>`;
+  const sc = G.filter(g => !g.cat).length;
+  $("#pKpis").innerHTML = kpi(G.length, "Produtos") + kpi(G.reduce((a, g) => a + g.rows.length, 0), "Preços") + kpi(new Set(rows.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size, "Mercados") +
+    kpi(todos.filter(g => g.nm >= 2).length, "Em 2+ mercados") + kpi(sc, "Sem categoria", sc > 0) + kpi(LISTAS.length, "Listas");
+  const sem = ig => PL.filter(r => passaP(r, ig));
+  barrasP($("#pGCat"), contarP(sem("cat"), catP), "cat", CAT_NOME);
+  barrasP($("#pGCid"), contarP(sem("cid"), r => r.cidade), "cid");
+  barrasP($("#pGFonte"), contar(sem("fonte"), r => r.fonte), "fonte", FONTE_NOME);
+  barrasP($("#pGMerc"), contarP(sem("merc"), r => r.mercado).slice(0, 8), "merc");
+  const dif = todos.filter(g => g.dif > 0).sort((a, b) => b.dif - a.dif).slice(0, 6);
+  $("#pGDif").innerHTML = dif.length ? dif.map(g => `<button type="button" class="hb" style="grid-template-columns:1fr auto" data-pa="abrir" data-k="${esc(g.k)}"><span>${esc(g.nome)} <small style="color:var(--muted)">${brl(g.cmp.mn.preco)} → ${brl(g.cmp.mx.preco)}</small></span><em>+${Math.round(g.pct * 100)}%</em></button>`).join("") : '<p class="vazio" style="padding:8px">Nenhum produto com preço em 2+ mercados.</p>';
+  const ord = { nome: (a, b) => a.nome.localeCompare(b.nome, "pt-BR"), menor: (a, b) => (a.mn ? a.mn.preco : 1e9) - (b.mn ? b.mn.preco : 1e9), dif: (a, b) => b.dif - a.dif, pct: (a, b) => b.pct - a.pct, merc: (a, b) => b.nm - a.nm || a.nome.localeCompare(b.nome, "pt-BR"), recente: (a, b) => b.em - a.em };
+  G.sort(ord[PF.ord]);
+  $("#pTit").textContent = `Produtos (${G.length})`;
+  const opLista = LISTAS.map(l => `<option value="${l.id}">${esc(l.nome)}</option>`).join("");
+  $("#plista").innerHTML = (G.length ? G.slice(0, PVER).map(g => {
+    const aberto = ABERTOS.has(g.k), un = g.mn ? tam(g.mn) : "";
+    return `<div class="card pcard" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(g.nome)}</b> <span class="tag ${g.cat ? "cat" : "sem"}">${esc(g.cat ? CAT_NOME(g.cat) : "sem categoria")}</span>${g.fontes.map(f => `<span class="tag off">${FONTE_NOME(f)}</span>`).join("")}
+      <div class="meta">${g.mn ? `menor <b>${brl(g.mn.preco)}</b>${esc(un)} em ${esc(g.mn.mercado)} (${esc(g.mn.cidade)})${g.cmp ? ` · no mesmo tamanho${esc(tam(g.cmp.mn))}: ${brl(g.cmp.mn.preco)} → ${brl(g.cmp.mx.preco)} (${esc(g.cmp.mx.mercado)}) · <b>+${Math.round(g.pct * 100)}%</b>` : ""}` : "sem preço"} · ${g.nm} ${g.nm === 1 ? "mercado" : "mercados"}</div></div>
+      <span><button class="btn sec" data-pa="abrir" data-k="${esc(g.k)}">${aberto ? "Fechar" : "Ver preços"}</button> ${LISTAS.length ? `<select data-pa-add="${esc(g.k)}" aria-label="Adicionar à lista" style="max-width:150px"><option value="">+ Lista…</option>${opLista}</select>` : ""}</span></div>
+      ${aberto ? `<div class="painel">${g.rows.slice().sort((a, b) => a.preco - b.preco).map(r => linhaPreco(r)).join("")}</div>` : ""}</div>`;
+  }).join("") : '<p class="vazio">Nenhum produto com esses filtros.</p>') + (G.length > PVER ? `<p style="text-align:center"><button class="btn sec" data-pa="mais">Mostrar mais (${G.length - PVER} restantes)</button></p>` : "");
+}
+function linhaPreco(r) {
+  const val = r.fonte === "oferta" ? (r.ate ? " · até " + new Date(r.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : " · 14 dias") : "";
+  const acoes = r.fonte === "cupom" ? '<small class="tag off">cupom: só leitura</small>' : `<button class="btn sec" data-pa="editarP" data-fonte="${r.fonte}" data-id="${r.id}">Editar</button> <button class="btn sec bad" data-pa="excluirP" data-fonte="${r.fonte}" data-id="${r.id}">Apagar</button>`;
+  return `<div class="lin"><span><b>${esc(r.nome)}</b>${r.marca ? " · " + esc(r.marca) : ""}${esc(tam(r))} <small>${esc(r.mercado)} · ${esc(r.cidade)} · ${FONTE_NOME(r.fonte)}${val}${r.promo ? " · promo " + brl(r.promo) : ""}</small></span><span><b>${brl(r.preco)}</b> ${acoes}</span></div>`;
+}
+function pLimpar() { $("#pForm").reset(); $("#pId").value = ""; $("#pFonte").value = "oferta"; $("#pCid").value = "Gramado"; $("#pFormTit").textContent = "Adicionar preço de produto"; $("#pSalvar").textContent = "Adicionar"; $("#pCancelar").hidden = true; }
+$("#pCancelar").onclick = pLimpar;
+$("#pForm").onsubmit = async e => {
+  e.preventDefault(); $("#pMsg").textContent = ""; $("#pSalvar").disabled = true;
+  try {
+    const id = $("#pId").value, c = { mercado: $("#pMerc").value, cidade: $("#pCid").value, categoria: $("#pCat").value, preco: $("#pPreco").value };
+    if ($("#pFonte").value === "coleta") await chamar("/api/admin/usuarios", "POST", { coletaId: id, coleta: Object.assign(c, { descricao: $("#pProd").value }) });
+    else await chamar("/api/admin/usuarios", "POST", { oferta: Object.assign(c, { acao: id ? "editar" : "criar", id, produto: $("#pProd").value, marca: $("#pMarca").value, quantidade: $("#pQtd").value, unidade: $("#pUn").value, valido_ate: $("#pAte").value || null }) });
+    toast(id ? "Preço salvo" : "Preço adicionado"); pLimpar(); await carregarProdutos();
+  } catch (err) { $("#pMsg").textContent = err.message; }
+  $("#pSalvar").disabled = false;
+};
+["pBusca", "pfMin", "pfMax"].forEach(i => $("#" + i).oninput = () => { PVER = 60; desenharProdutos(); desenharListas(); });
+$("#pfComp").onclick = () => { PF.comp = !PF.comp; desenharProdutos(); };
+$("#pfLimpar").onclick = () => { Object.assign(PF, { cid: "", cat: "", fonte: "", merc: "", lista: "", comp: false, ord: "nome" }); ["pBusca", "pfMin", "pfMax"].forEach(i => $("#" + i).value = ""); PVER = 60; desenharProdutos(); };
+$("#pv-prods").addEventListener("change", async e => {
+  const m = { pfCid: "cid", pfCat: "cat", pfFonte: "fonte", pfMerc: "merc", pfLista: "lista", pfOrd: "ord" }[e.target.id];
+  if (m) { PF[m] = e.target.value; PVER = 60; desenharProdutos(); return; }
+  const k = e.target.dataset.paAdd; if (!k || !e.target.value) return;
+  const l = LISTAS.find(x => String(x.id) === e.target.value), g = agrupar(PL.filter(r => r.k === k))[0];
+  if (l.itens.some(i => norm(i.nome) === k)) { toast("Já está na lista " + l.nome); e.target.value = ""; return; }
+  try { await chamar("/api/admin/usuarios", "POST", { lista: { acao: "editar", id: l.id, nome: l.nome, descricao: l.descricao, itens: l.itens.concat([{ nome: g.nome, termo: "", qtd: 1 }]) } }); toast(`Adicionado à lista ${l.nome}`); await carregarProdutos(); } catch (err) { toast(err.message); }
+});
+
+/* ---------- listas de produtos ---------- */
+function analisarLista(l) {
+  const por = l.itens.map(i => ({ i, rows: PL.filter(r => r.preco > 0 && casa(i, r)) }));
+  const itens = por.map(({ i, rows }) => ({ i, mn: menorDe(rows), nomes: [...new Set(rows.map(r => r.nome))].slice(0, 3) }));
+  const mk = new Map();
+  por.forEach(({ i, rows }) => { const m = new Map(); rows.forEach(r => { const k = r.mercado + " · " + r.cidade; if (!m.has(k) || r.preco < m.get(k)) m.set(k, r.preco); }); m.forEach((p, k) => { const x = mk.get(k) || { k, n: 0, t: 0 }; x.n++; x.t += p * i.qtd; mk.set(k, x); }); });
+  return { itens, com: itens.filter(x => x.mn).length, total: itens.reduce((a, x) => a + (x.mn ? x.mn.preco * x.i.qtd : 0), 0), mercados: [...mk.values()].sort((a, b) => b.n - a.n || a.t - b.t).slice(0, 3) };
+}
+const linhaItem = (i = {}) => `<div class="lin" data-item style="gap:6px"><input type="text" name="i_nome" list="pNomes" placeholder="Produto (ex.: Picanha)" value="${esc(i.nome || "")}" style="flex:2"><input type="text" name="i_termo" placeholder="busca (opcional)" value="${esc(i.termo || "")}" style="flex:2"><input type="text" name="i_qtd" inputmode="decimal" value="${esc(i.qtd || 1)}" style="width:64px" aria-label="Quantidade"><button type="button" class="btn sec bad" data-pa="rmItem" aria-label="Remover item">×</button></div>`;
+const formLista = l => `<form data-lform="${l ? l.id : "novo"}"><label>Nome da lista</label><input type="text" name="nome" required maxlength="80" value="${esc(l ? l.nome : "")}" placeholder="Churrasco">
+  <label>Descrição (opcional)</label><input type="text" name="descricao" maxlength="200" value="${esc(l && l.descricao || "")}">
+  <label>Itens</label><div data-itens>${(l && l.itens.length ? l.itens : [{}]).map(linhaItem).join("")}</div>
+  <div class="acoes"><button type="button" class="btn sec" data-pa="addItem">+ Item</button><button class="btn" type="submit" style="margin-top:0">Salvar lista</button>${l ? '<button type="button" class="btn sec" data-pa="fecharL">Cancelar</button>' : ""}</div><p class="msg" data-err></p></form>`;
+function desenharListas() {
+  if (!$("#lNovaForm").innerHTML) $("#lNovaForm").innerHTML = formLista(null);
+  $("#llista").innerHTML = LISTAS.length ? LISTAS.map(l => {
+    if (PEDIT === l.id) return `<div class="card">${formLista(l)}</div>`;
+    const a = analisarLista(l), semPreco = a.itens.length - a.com;
+    return `<div class="card"><div class="topo mk" style="margin:0 0 6px"><div><b style="font-size:17px">${esc(l.nome)}</b> <span class="tag">${l.itens.length} itens</span>${semPreco ? `<span class="tag sem">${semPreco} sem preço</span>` : ""}${l.descricao ? `<div class="meta">${esc(l.descricao)}</div>` : ""}</div>
+      <span><button class="btn sec" data-pa="ver" data-id="${l.id}">Ver na lista de produtos</button> <button class="btn sec" data-pa="editarL" data-id="${l.id}">Editar</button> <button class="btn sec bad" data-pa="excluirL" data-id="${l.id}" data-nome="${esc(l.nome)}">Excluir</button></span></div>
+      ${a.itens.map(x => `<div class="lin"><span><b>${esc(x.i.nome)}</b> ${x.i.qtd !== 1 ? `× ${esc(x.i.qtd)}` : ""}<small> ${x.mn ? "· casa com: " + esc(x.nomes.join(", ")) : ""}${x.i.termo ? " · busca “" + esc(x.i.termo) + "”" : ""}</small></span>
+        ${x.mn ? `<span><b>${brl(x.mn.preco)}</b><small> ${esc(x.mn.mercado)} (${esc(x.mn.cidade)})${esc(tam(x.mn))}</small></span>` : '<span class="tag sem">sem preço no banco</span>'}</div>`).join("") || '<p class="vazio" style="padding:8px">Lista vazia. Clique em Editar para adicionar itens.</p>'}
+      ${a.com ? `<div class="painel"><b>Soma dos menores preços: ${brl(a.total)}</b> <small style="color:var(--muted)">(${a.com} de ${a.itens.length} itens; cada item no mercado mais barato dele, sem converter tamanhos)</small>
+        ${a.mercados.length ? `<div style="margin-top:6px;font-size:13px">Mercados que mais cobrem a lista: ${a.mercados.map(m => `<b>${esc(m.k)}</b> ${m.n}/${a.itens.length} itens, ${brl(m.t)}`).join(" · ")}</div>` : ""}</div>` : ""}</div>`;
+  }).join("") : '<p class="vazio">Nenhuma lista ainda. Abra “Nova lista” e monte a primeira (ex.: Churrasco).</p>';
+}
+async function salvarLista(f) {
+  const err = f.querySelector("[data-err]"); err.textContent = "";
+  const itens = [...f.querySelectorAll("[data-item]")].map(d => ({ nome: d.querySelector("[name=i_nome]").value, termo: d.querySelector("[name=i_termo]").value, qtd: d.querySelector("[name=i_qtd]").value })).filter(i => i.nome.trim());
+  const novo = f.dataset.lform === "novo";
+  try {
+    await chamar("/api/admin/usuarios", "POST", { lista: { acao: novo ? "criar" : "editar", id: novo ? undefined : +f.dataset.lform, nome: f.nome.value, descricao: f.descricao.value, itens } });
+    toast("Lista salva"); PEDIT = null; if (novo) { $("#lNovaForm").innerHTML = ""; $("#lNovaDet").open = false; } await carregarProdutos();
+  } catch (x) { err.textContent = x.message; }
+}
+document.addEventListener("submit", e => { const f = e.target.closest("form[data-lform]"); if (f) { e.preventDefault(); salvarLista(f); } });
+function subaba(v) {
+  $("#pv-prods").hidden = v !== "prods"; $("#pv-listas").hidden = v !== "listas";
+  document.querySelectorAll("[data-pa=sub]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+}
+$("#p-produtos").addEventListener("click", async e => {
+  const b = e.target.closest("[data-pa]"); if (!b) return;
+  const a = b.dataset.pa;
+  try {
+    if (a === "sub") subaba(b.dataset.v);
+    else if (a === "filtro") { PF[b.dataset.f] = PF[b.dataset.f] === b.dataset.v ? "" : b.dataset.v; PVER = 60; desenharProdutos(); }
+    else if (a === "abrir") { const k = b.dataset.k; ABERTOS.has(k) ? ABERTOS.delete(k) : ABERTOS.add(k); desenharProdutos(); }
+    else if (a === "mais") { PVER += 60; desenharProdutos(); }
+    else if (a === "editarP") {
+      const r = PL.find(x => x.fonte === b.dataset.fonte && String(x.id) === b.dataset.id); if (!r) return;
+      $("#pId").value = r.id; $("#pFonte").value = r.fonte; $("#pProd").value = r.nome; $("#pMarca").value = r.marca || ""; $("#pCat").value = r.cat || ""; $("#pQtd").value = r.qtd ? String(r.qtd).replace(".", ",") : ""; $("#pUn").value = r.un || "";
+      $("#pMerc").value = r.mercado; $("#pCid").value = r.cidade; $("#pPreco").value = String(r.preco).replace(".", ","); $("#pAte").value = r.ate ? String(r.ate).slice(0, 10) : "";
+      $("#pDet").open = true; $("#pFormTit").textContent = "Editar preço #" + r.id + " (" + FONTE_NOME(r.fonte) + ")"; $("#pSalvar").textContent = "Salvar"; $("#pCancelar").hidden = false; $("#pForm").scrollIntoView({ behavior: "smooth" });
+    }
+    else if (a === "excluirP") {
+      if (!confirm("Apagar este preço?")) return;
+      await chamar("/api/admin/usuarios", "POST", b.dataset.fonte === "coleta" ? { coletaId: b.dataset.id, excluirColeta: true } : { oferta: { acao: "excluir", id: b.dataset.id } });
+      toast("Preço apagado"); await carregarProdutos();
+    }
+    else if (a === "ver") { PF.lista = b.dataset.id; PVER = 60; subaba("prods"); desenharProdutos(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    else if (a === "editarL") { PEDIT = +b.dataset.id; desenharListas(); }
+    else if (a === "fecharL") { PEDIT = null; desenharListas(); }
+    else if (a === "excluirL") { if (!confirm(`Excluir a lista "${b.dataset.nome}"? Os preços não são afetados.`)) return; await chamar("/api/admin/usuarios", "POST", { lista: { acao: "excluir", id: +b.dataset.id } }); toast("Lista excluída"); await carregarProdutos(); }
+    else if (a === "addItem") b.closest("form").querySelector("[data-itens]").insertAdjacentHTML("beforeend", linhaItem());
+    else if (a === "rmItem") { const c = b.closest("[data-itens]"); b.closest("[data-item]").remove(); if (!c.children.length) c.insertAdjacentHTML("beforeend", linhaItem()); }
+  } catch (err) { toast(err.message || "Falha"); }
+});
+
 /* ---------- abas e login ---------- */
 function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
-  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; $("#p-ofertas").hidden = n !== "ofertas";
+  $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; $("#p-ofertas").hidden = n !== "ofertas"; $("#p-produtos").hidden = n !== "produtos";
+  if (n === "produtos") carregarProdutos().catch(e => toast(e.message));
   if (n === "ofertas") carregarOfertas().catch(e => toast(e.message));
   if (n === "coletas") carregarColetas().catch(e => toast(e.message));
   if (n === "usuarios") carregarUsuarios().catch(e => toast(e.message));
