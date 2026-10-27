@@ -82,6 +82,7 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.filtros select{padding:9px 10px;font:inherit;color:var(--ink);max-width:100%}
 .tag.cat{background:#FFD93B;color:#15191A}.tag.sem{background:#f6d9d3;color:var(--bad)}
 .subabas{display:flex;gap:8px;margin-bottom:12px}.subabas .btn.on{background:#FFD93B}.lin input{padding:7px 9px}.lin{flex-wrap:wrap}
+.mkrow{border:2px solid #15191A;border-radius:8px;padding:8px 12px;margin-bottom:8px;background:var(--card)}.mkrow summary{cursor:pointer;list-style:none}.mkrow[open] summary{margin-bottom:6px}
 details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.05em}
 </style>
 </head>
@@ -189,7 +190,7 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
       <div id="plista"></div>
     </div>
     <div id="pv-listas" hidden>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Monte listas de produtos (churrasco, cesta básica, café da manhã...). Cada item procura nos preços que o banco já tem; <b>só entra o que existe</b>, e item sem preço aparece avisando. Em "busca" você afina o que o item procura (ex.: nome "Linguiça", busca "linguiça toscana").</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Cada lista mostra <b>em qual mercado compensa comprar tudo</b>. Informe a quantidade em kg, litros ou unidades: o cálculo usa o preço por kg/litro/unidade, nunca o preço de embalagens de tamanhos diferentes. Item sem preço comparável aparece avisando, e mercado que não tem um item mostra o que falta. Em "busca" você afina o que o item procura (ex.: nome "Linguiça", busca "linguiça toscana").</p>
       <details class="card" id="lNovaDet"><summary>Nova lista</summary><div id="lNovaForm"></div></details>
       <div id="llista"></div>
     </div>
@@ -484,14 +485,15 @@ function passaP(r, ig) {
 function agrupar(rows) {
   const m = new Map();
   rows.forEach(r => { let g = m.get(r.k); if (!g) m.set(r.k, g = { k: r.k, nome: r.nome, rows: [] }); g.rows.push(r); });
+  const nMerc = rs => new Set(rs.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size;
   return [...m.values()].map(g => {
-    const pr = g.rows.filter(r => r.preco > 0), mn = menorDe(pr), nm = new Set(g.rows.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size, cats = contar(g.rows.filter(r => r.cat), r => r.cat);
-    /* a diferença só vale entre preços do MESMO tamanho (3,99 de 4 rolos x 29,95 de 12 não é diferença de mercado): usa o tamanho com mais mercados */
-    const porTam = {}; pr.forEach(r => { const t = r.qtd && r.un ? r.qtd + r.un : "?"; (porTam[t] = porTam[t] || []).push(r); });
-    const mel = Object.values(porTam).map(rs => ({ rs, n: new Set(rs.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size })).sort((a, b) => b.n - a.n)[0];
-    const cmp = mel && mel.n > 1 ? { mn: menorDe(mel.rs), mx: maiorDe(mel.rs) } : null;
-    return Object.assign(g, { mn, mx: cmp && cmp.mx, cmp, nm, cat: cats.length ? cats[0][0] : null, dif: cmp ? cmp.mx.preco - cmp.mn.preco : 0, pct: cmp ? cmp.mx.preco / cmp.mn.preco - 1 : 0,
-      fontes: [...new Set(g.rows.map(r => r.fonte))], em: Math.max(...g.rows.map(r => +new Date(r.em))) });
+    const pr = g.rows.filter(r => r.preco > 0), cats = contar(g.rows.filter(r => r.cat), r => r.cat);
+    /* compara PREÇO POR kg/litro/unidade, nunca o preço de embalagens de tamanhos diferentes; sem tamanho conhecido fica fora da comparação */
+    const bases = {}; pr.forEach(r => { if (r.pu != null) (bases[r.base] = bases[r.base] || []).push(r); });
+    const best = Object.values(bases).sort((a, b) => nMerc(b) - nMerc(a) || b.length - a.length)[0];
+    const mn = best ? best.reduce((a, r) => (r.pu < a.pu ? r : a)) : null, mx = best ? best.reduce((a, r) => (r.pu > a.pu ? r : a)) : null, cmp = !!best && nMerc(best) > 1;
+    return Object.assign(g, { mn, mx, cmp: cmp ? { mn, mx } : null, nm: nMerc(g.rows), semTam: pr.length - (best ? best.length : 0), cat: cats.length ? cats[0][0] : null,
+      dif: cmp ? mx.pu - mn.pu : 0, pct: cmp ? mx.pu / mn.pu - 1 : 0, fontes: [...new Set(g.rows.map(r => r.fonte))], em: Math.max(...g.rows.map(r => +new Date(r.em))) });
   });
 }
 const contarP = (rows, f) => { const m = {}; rows.forEach(r => (m[f(r)] = m[f(r)] || new Set()).add(r.k)); return Object.entries(m).map(([k, s]) => [k, s.size]).sort((a, b) => b[1] - a[1]); };
@@ -518,15 +520,15 @@ function desenharProdutos() {
   barrasP($("#pGFonte"), contar(sem("fonte"), r => r.fonte), "fonte", FONTE_NOME);
   barrasP($("#pGMerc"), contarP(sem("merc"), r => r.mercado).slice(0, 8), "merc");
   const dif = todos.filter(g => g.dif > 0).sort((a, b) => b.dif - a.dif).slice(0, 6);
-  $("#pGDif").innerHTML = dif.length ? dif.map(g => `<button type="button" class="hb" style="grid-template-columns:1fr auto" data-pa="abrir" data-k="${esc(g.k)}"><span>${esc(g.nome)} <small style="color:var(--muted)">${brl(g.cmp.mn.preco)} → ${brl(g.cmp.mx.preco)}</small></span><em>+${Math.round(g.pct * 100)}%</em></button>`).join("") : '<p class="vazio" style="padding:8px">Nenhum produto com preço em 2+ mercados.</p>';
-  const ord = { nome: (a, b) => a.nome.localeCompare(b.nome, "pt-BR"), menor: (a, b) => (a.mn ? a.mn.preco : 1e9) - (b.mn ? b.mn.preco : 1e9), dif: (a, b) => b.dif - a.dif, pct: (a, b) => b.pct - a.pct, merc: (a, b) => b.nm - a.nm || a.nome.localeCompare(b.nome, "pt-BR"), recente: (a, b) => b.em - a.em };
+  $("#pGDif").innerHTML = dif.length ? dif.map(g => `<button type="button" class="hb" style="grid-template-columns:1fr auto" data-pa="abrir" data-k="${esc(g.k)}"><span>${esc(g.nome)} <small style="color:var(--muted)">${brl(g.cmp.mn.pu)}/${g.cmp.mn.base} → ${brl(g.cmp.mx.pu)}/${g.cmp.mn.base}</small></span><em>+${Math.round(g.pct * 100)}%</em></button>`).join("") : '<p class="vazio" style="padding:8px">Nenhum produto com preço em 2+ mercados.</p>';
+  const ord = { nome: (a, b) => a.nome.localeCompare(b.nome, "pt-BR"), menor: (a, b) => (a.mn ? a.mn.pu : 1e9) - (b.mn ? b.mn.pu : 1e9), dif: (a, b) => b.dif - a.dif, pct: (a, b) => b.pct - a.pct, merc: (a, b) => b.nm - a.nm || a.nome.localeCompare(b.nome, "pt-BR"), recente: (a, b) => b.em - a.em };
   G.sort(ord[PF.ord]);
   $("#pTit").textContent = `Produtos (${G.length})`;
   const opLista = LISTAS.map(l => `<option value="${l.id}">${esc(l.nome)}</option>`).join("");
   $("#plista").innerHTML = (G.length ? G.slice(0, PVER).map(g => {
-    const aberto = ABERTOS.has(g.k), un = g.mn ? tam(g.mn) : "";
+    const aberto = ABERTOS.has(g.k);
     return `<div class="card pcard" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(g.nome)}</b> <span class="tag ${g.cat ? "cat" : "sem"}">${esc(g.cat ? CAT_NOME(g.cat) : "sem categoria")}</span>${g.fontes.map(f => `<span class="tag off">${FONTE_NOME(f)}</span>`).join("")}
-      <div class="meta">${g.mn ? `menor <b>${brl(g.mn.preco)}</b>${esc(un)} em ${esc(g.mn.mercado)} (${esc(g.mn.cidade)})${g.cmp ? ` · no mesmo tamanho${esc(tam(g.cmp.mn))}: ${brl(g.cmp.mn.preco)} → ${brl(g.cmp.mx.preco)} (${esc(g.cmp.mx.mercado)}) · <b>+${Math.round(g.pct * 100)}%</b>` : ""}` : "sem preço"} · ${g.nm} ${g.nm === 1 ? "mercado" : "mercados"}</div></div>
+      <div class="meta">${g.mn ? `menor <b>${brl(g.mn.pu)}/${g.mn.base}</b> (${brl(g.mn.preco)}${esc(tam(g.mn))}) em ${esc(g.mn.mercado)} (${esc(g.mn.cidade)})${g.cmp ? (g.pct < 0.005 ? " · mesmo preço nos mercados" : ` · maior ${brl(g.cmp.mx.pu)}/${g.mn.base} em ${esc(g.cmp.mx.mercado)} · <b>+${Math.round(g.pct * 100)}%</b>`) : ""}` : g.rows.some(r => r.preco > 0) ? "tamanho desconhecido: não dá para comparar" : "sem preço"}${g.semTam && g.mn ? ` · ${g.semTam} sem tamanho (fora da comparação)` : ""} · ${g.nm} ${g.nm === 1 ? "mercado" : "mercados"}</div></div>
       <span><button class="btn sec" data-pa="abrir" data-k="${esc(g.k)}">${aberto ? "Fechar" : "Ver preços"}</button> ${LISTAS.length ? `<select data-pa-add="${esc(g.k)}" aria-label="Adicionar à lista" style="max-width:150px"><option value="">+ Lista…</option>${opLista}</select>` : ""}</span></div>
       ${aberto ? `<div class="painel">${g.rows.slice().sort((a, b) => a.preco - b.preco).map(r => linhaPreco(r)).join("")}</div>` : ""}</div>`;
   }).join("") : '<p class="vazio">Nenhum produto com esses filtros.</p>') + (G.length > PVER ? `<p style="text-align:center"><button class="btn sec" data-pa="mais">Mostrar mais (${G.length - PVER} restantes)</button></p>` : "");
@@ -534,7 +536,7 @@ function desenharProdutos() {
 function linhaPreco(r) {
   const val = r.fonte === "oferta" ? (r.ate ? " · até " + new Date(r.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : " · 14 dias") : "";
   const acoes = r.fonte === "cupom" ? '<small class="tag off">cupom: só leitura</small>' : `<button class="btn sec" data-pa="editarP" data-fonte="${r.fonte}" data-id="${r.id}">Editar</button> <button class="btn sec bad" data-pa="excluirP" data-fonte="${r.fonte}" data-id="${r.id}">Apagar</button>`;
-  return `<div class="lin"><span><b>${esc(r.nome)}</b>${r.marca ? " · " + esc(r.marca) : ""}${esc(tam(r))} <small>${esc(r.mercado)} · ${esc(r.cidade)} · ${FONTE_NOME(r.fonte)}${val}${r.promo ? " · promo " + brl(r.promo) : ""}</small></span><span><b>${brl(r.preco)}</b> ${acoes}</span></div>`;
+  return `<div class="lin"><span><b>${esc(r.nome)}</b>${r.marca ? " · " + esc(r.marca) : ""}${esc(tam(r))} <small>${esc(r.mercado)} · ${esc(r.cidade)} · ${FONTE_NOME(r.fonte)}${val}${r.pu != null ? " · " + brl(r.pu) + "/" + r.base : " · sem tamanho"}${r.promo ? " · promo " + brl(r.promo) : ""}</small></span><span><b>${brl(r.preco)}</b> ${acoes}</span></div>`;
 }
 function pLimpar() { $("#pForm").reset(); $("#pId").value = ""; $("#pFonte").value = "oferta"; $("#pCid").value = "Gramado"; $("#pFormTit").textContent = "Adicionar preço de produto"; $("#pSalvar").textContent = "Adicionar"; $("#pCancelar").hidden = true; }
 $("#pCancelar").onclick = pLimpar;
@@ -557,38 +559,56 @@ $("#pv-prods").addEventListener("change", async e => {
   const k = e.target.dataset.paAdd; if (!k || !e.target.value) return;
   const l = LISTAS.find(x => String(x.id) === e.target.value), g = agrupar(PL.filter(r => r.k === k))[0];
   if (l.itens.some(i => norm(i.nome) === k)) { toast("Já está na lista " + l.nome); e.target.value = ""; return; }
-  try { await chamar("/api/admin/usuarios", "POST", { lista: { acao: "editar", id: l.id, nome: l.nome, descricao: l.descricao, itens: l.itens.concat([{ nome: g.nome, termo: "", qtd: 1 }]) } }); toast(`Adicionado à lista ${l.nome}`); await carregarProdutos(); } catch (err) { toast(err.message); }
+  try { await chamar("/api/admin/usuarios", "POST", { lista: { acao: "editar", id: l.id, nome: l.nome, descricao: l.descricao, itens: l.itens.concat([{ nome: g.nome, termo: "", qtd: 1, un: g.mn ? g.mn.base : "kg" }]) } }); toast(`Adicionado à lista ${l.nome}`); await carregarProdutos(); } catch (err) { toast(err.message); }
 });
 
 /* ---------- listas de produtos ---------- */
+/* A lista serve para dizer EM QUAL MERCADO compensa comprar tudo. Cada item vale pelo preço por kg/litro/unidade (nunca preço de embalagens
+   diferentes) vezes a quantidade; em cada mercado entra a opção mais barata de cada item. Mercado sem o item NÃO é dado como mais barato:
+   o ranking põe quem cobre mais itens primeiro e mostra o que falta. */
 function analisarLista(l) {
-  const por = l.itens.map(i => ({ i, rows: PL.filter(r => r.preco > 0 && casa(i, r)) }));
-  const itens = por.map(({ i, rows }) => ({ i, mn: menorDe(rows), nomes: [...new Set(rows.map(r => r.nome))].slice(0, 3) }));
+  const itens = l.itens.map(i => {
+    const u = i.un || "kg", ok = r => r.pu != null && r.base === u;
+    return { i, u, rows: PL.filter(r => ok(r) && casa(i, r)), fora: PL.filter(r => r.preco > 0 && casa(i, r) && !ok(r)).length };
+  });
   const mk = new Map();
-  por.forEach(({ i, rows }) => { const m = new Map(); rows.forEach(r => { const k = r.mercado + " · " + r.cidade; if (!m.has(k) || r.preco < m.get(k)) m.set(k, r.preco); }); m.forEach((p, k) => { const x = mk.get(k) || { k, n: 0, t: 0 }; x.n++; x.t += p * i.qtd; mk.set(k, x); }); });
-  return { itens, com: itens.filter(x => x.mn).length, total: itens.reduce((a, x) => a + (x.mn ? x.mn.preco * x.i.qtd : 0), 0), mercados: [...mk.values()].sort((a, b) => b.n - a.n || a.t - b.t).slice(0, 3) };
+  itens.forEach((it, idx) => it.rows.forEach(r => {
+    const k = r.mercado + "|" + r.cidade; let m = mk.get(k); if (!m) mk.set(k, m = { mercado: r.mercado, cidade: r.cidade, por: new Map() });
+    const a = m.por.get(idx); if (!a || r.pu < a.pu) m.por.set(idx, r);
+  }));
+  const mercados = [...mk.values()].map(m => {
+    let t = 0; m.por.forEach((r, idx) => { t += r.pu * itens[idx].i.qtd; });
+    return Object.assign(m, { n: m.por.size, t, faltam: itens.filter((_, idx) => !m.por.has(idx)).map(it => it.i.nome) });
+  }).sort((a, b) => b.n - a.n || a.t - b.t);
+  return { itens, mercados, semPreco: itens.filter(it => !it.rows.length) };
 }
-const linhaItem = (i = {}) => `<div class="lin" data-item style="gap:6px"><input type="text" name="i_nome" list="pNomes" placeholder="Produto (ex.: Picanha)" value="${esc(i.nome || "")}" style="flex:2"><input type="text" name="i_termo" placeholder="busca (opcional)" value="${esc(i.termo || "")}" style="flex:2"><input type="text" name="i_qtd" inputmode="decimal" value="${esc(i.qtd || 1)}" style="width:64px" aria-label="Quantidade"><button type="button" class="btn sec bad" data-pa="rmItem" aria-label="Remover item">×</button></div>`;
+const QTD = q => String(q).replace(".", ",");
+const linhaItem = (i = {}) => `<div class="lin" data-item style="gap:6px"><input type="text" name="i_nome" list="pNomes" placeholder="Produto (ex.: Picanha)" value="${esc(i.nome || "")}" style="flex:2"><input type="text" name="i_termo" placeholder="busca (opcional)" value="${esc(i.termo || "")}" style="flex:2"><input type="text" name="i_qtd" inputmode="decimal" value="${esc(QTD(i.qtd || 1))}" style="width:64px" aria-label="Quantidade"><select name="i_un" aria-label="Unidade">${["kg", "l", "un"].map(u => `<option${(i.un || "kg") === u ? " selected" : ""}>${u}</option>`).join("")}</select><button type="button" class="btn sec bad" data-pa="rmItem" aria-label="Remover item">×</button></div>`;
 const formLista = l => `<form data-lform="${l ? l.id : "novo"}"><label>Nome da lista</label><input type="text" name="nome" required maxlength="80" value="${esc(l ? l.nome : "")}" placeholder="Churrasco">
   <label>Descrição (opcional)</label><input type="text" name="descricao" maxlength="200" value="${esc(l && l.descricao || "")}">
-  <label>Itens</label><div data-itens>${(l && l.itens.length ? l.itens : [{}]).map(linhaItem).join("")}</div>
+  <label>Itens (quantidade em kg, litros ou unidades)</label><div data-itens>${(l && l.itens.length ? l.itens : [{}]).map(linhaItem).join("")}</div>
   <div class="acoes"><button type="button" class="btn sec" data-pa="addItem">+ Item</button><button class="btn" type="submit" style="margin-top:0">Salvar lista</button>${l ? '<button type="button" class="btn sec" data-pa="fecharL">Cancelar</button>' : ""}</div><p class="msg" data-err></p></form>`;
 function desenharListas() {
   if (!$("#lNovaForm").innerHTML) $("#lNovaForm").innerHTML = formLista(null);
   $("#llista").innerHTML = LISTAS.length ? LISTAS.map(l => {
     if (PEDIT === l.id) return `<div class="card">${formLista(l)}</div>`;
-    const a = analisarLista(l), semPreco = a.itens.length - a.com;
-    return `<div class="card"><div class="topo mk" style="margin:0 0 6px"><div><b style="font-size:17px">${esc(l.nome)}</b> <span class="tag">${l.itens.length} itens</span>${semPreco ? `<span class="tag sem">${semPreco} sem preço</span>` : ""}${l.descricao ? `<div class="meta">${esc(l.descricao)}</div>` : ""}</div>
-      <span><button class="btn sec" data-pa="ver" data-id="${l.id}">Ver na lista de produtos</button> <button class="btn sec" data-pa="editarL" data-id="${l.id}">Editar</button> <button class="btn sec bad" data-pa="excluirL" data-id="${l.id}" data-nome="${esc(l.nome)}">Excluir</button></span></div>
-      ${a.itens.map(x => `<div class="lin"><span><b>${esc(x.i.nome)}</b> ${x.i.qtd !== 1 ? `× ${esc(x.i.qtd)}` : ""}<small> ${x.mn ? "· casa com: " + esc(x.nomes.join(", ")) : ""}${x.i.termo ? " · busca “" + esc(x.i.termo) + "”" : ""}</small></span>
-        ${x.mn ? `<span><b>${brl(x.mn.preco)}</b><small> ${esc(x.mn.mercado)} (${esc(x.mn.cidade)})${esc(tam(x.mn))}</small></span>` : '<span class="tag sem">sem preço no banco</span>'}</div>`).join("") || '<p class="vazio" style="padding:8px">Lista vazia. Clique em Editar para adicionar itens.</p>'}
-      ${a.com ? `<div class="painel"><b>Soma dos menores preços: ${brl(a.total)}</b> <small style="color:var(--muted)">(${a.com} de ${a.itens.length} itens; cada item no mercado mais barato dele, sem converter tamanhos)</small>
-        ${a.mercados.length ? `<div style="margin-top:6px;font-size:13px">Mercados que mais cobrem a lista: ${a.mercados.map(m => `<b>${esc(m.k)}</b> ${m.n}/${a.itens.length} itens, ${brl(m.t)}`).join(" · ")}</div>` : ""}</div>` : ""}</div>`;
+    const a = analisarLista(l), M = l.itens.length, top = a.mercados[0], cheio = top && top.n === M;
+    const veredito = !M ? "Lista vazia. Clique em Editar para adicionar itens."
+      : !top ? "Nenhum mercado tem preço comparável para os itens desta lista."
+      : cheio ? `Compensa comprar em <b>${esc(top.mercado)}</b> (${esc(top.cidade)}): <b>${brl(top.t)}</b> pela lista inteira.`
+      : `<b>Nenhum mercado tem a lista toda.</b> O mais completo é <b>${esc(top.mercado)}</b> (${esc(top.cidade)}), com ${top.n} de ${M} itens: faltam ${esc(top.faltam.join(", "))}.`;
+    return `<div class="card"><div class="topo mk" style="margin:0 0 6px"><div><b style="font-size:17px">${esc(l.nome)}</b> <span class="tag">${M} itens</span>${a.semPreco.length ? `<span class="tag sem">${a.semPreco.length} sem preço</span>` : ""}${l.descricao ? `<div class="meta">${esc(l.descricao)}</div>` : ""}</div>
+      <span><button class="btn sec" data-pa="ver" data-id="${l.id}">Ver produtos</button> <button class="btn sec" data-pa="editarL" data-id="${l.id}">Editar</button> <button class="btn sec bad" data-pa="excluirL" data-id="${l.id}" data-nome="${esc(l.nome)}">Excluir</button></span></div>
+      <div class="painel" style="margin:0 0 8px;font-size:15px">${veredito}</div>
+      ${a.mercados.map((m, n) => `<details class="mkrow"><summary><b>${n + 1}. ${esc(m.mercado)}</b> <small>${esc(m.cidade)}</small> ${m.n === M ? '<span class="tag cat">lista completa</span>' : `<span class="tag sem">faltam ${M - m.n}</span>`} <span style="float:right"><b>${brl(m.t)}</b> <small>${m.n}/${M} itens</small></span></summary>
+        ${a.itens.map((it, idx) => { const r = m.por.get(idx); return r ? `<div class="lin"><span>${esc(it.i.nome)} <small>× ${esc(QTD(it.i.qtd))} ${it.u} · ${esc(r.nome)}${esc(tam(r))}</small></span><span>${brl(r.pu)}/${it.u} → <b>${brl(r.pu * it.i.qtd)}</b></span></div>` : `<div class="lin"><span>${esc(it.i.nome)}</span><span class="tag sem">sem preço neste mercado</span></div>`; }).join("")}</details>`).join("")}
+      ${a.mercados.length ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">Preço por kg/litro/unidade × quantidade, usando a opção mais barata de cada item no mercado. Preços sem tamanho conhecido ficam de fora (nada é suposto). Mercado que não tem um item não entra como mais barato: veja o que falta.</p>' : ""}
+      ${a.semPreco.length ? `<p style="font-size:13px;margin-top:6px"><span class="tag sem">sem preço comparável</span> ${esc(a.semPreco.map(it => it.i.nome + (it.fora ? ` (${it.fora} preço(s) sem tamanho ou em outra unidade)` : "")).join("; "))}</p>` : ""}</div>`;
   }).join("") : '<p class="vazio">Nenhuma lista ainda. Abra “Nova lista” e monte a primeira (ex.: Churrasco).</p>';
 }
 async function salvarLista(f) {
   const err = f.querySelector("[data-err]"); err.textContent = "";
-  const itens = [...f.querySelectorAll("[data-item]")].map(d => ({ nome: d.querySelector("[name=i_nome]").value, termo: d.querySelector("[name=i_termo]").value, qtd: d.querySelector("[name=i_qtd]").value })).filter(i => i.nome.trim());
+  const itens = [...f.querySelectorAll("[data-item]")].map(d => ({ nome: d.querySelector("[name=i_nome]").value, termo: d.querySelector("[name=i_termo]").value, qtd: d.querySelector("[name=i_qtd]").value, un: d.querySelector("[name=i_un]").value })).filter(i => i.nome.trim());
   const novo = f.dataset.lform === "novo";
   try {
     await chamar("/api/admin/usuarios", "POST", { lista: { acao: novo ? "criar" : "editar", id: novo ? undefined : +f.dataset.lform, nome: f.nome.value, descricao: f.descricao.value, itens } });

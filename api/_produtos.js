@@ -10,15 +10,37 @@ const CAT_OFERTA = { "açougue": "carnes", "hortifrúti": "hortifruti", "laticí
   "higiene": "higiene", "padaria": "padaria", "congelados": "congelados", "biscoitos": "mercearia", "frios e embutidos": "frios", "doces e sobremesas": "mercearia", "variedades": "outros" };
 const txt = (v, n) => (v == null ? "" : String(v)).replace(/\s+/g, " ").trim().slice(0, n);
 
+/* Tamanho da embalagem em kg, l ou un, para comparar PREÇO POR UNIDADE (nunca preço de embalagens diferentes).
+   Oferta: qtd+unidade do folheto. Cupom: linha vendida por KG = preço do kg. Em qualquer fonte, o tamanho escrito no nome ("215G", "12X350ML").
+   Sem tamanho conhecido => null (não entra na comparação; nada é suposto). */
+const sem = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function conv(q, u) {
+  u = String(u || "").toLowerCase();
+  if (!(q > 0)) return null;
+  if (u === "kg") return { base: "kg", q }; if (u === "g" || u === "gr") return { base: "kg", q: q / 1000 };
+  if (u === "l" || u === "lt") return { base: "l", q }; if (u === "ml") return { base: "l", q: q / 1000 };
+  if (u === "un") return { base: "un", q }; if (u === "dz") return { base: "un", q: q * 12 };
+  return null;
+}
+function tamanho(r) {
+  if (r.fonte === "oferta" && r.qtd && r.un) return conv(r.qtd, r.un);
+  if (r.fonte === "cupom" && /^kg$/i.test(r.un || "")) return { base: "kg", q: 1 };
+  const m = sem(r.nome).match(/(?:(\d+)\s*x\s*)?(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|lt|l)(?![a-z])/);
+  return m ? conv(parseFloat(m[2].replace(",", ".")) * (m[1] ? +m[1] : 1), m[3]) : null;
+}
+
 async function listar() {
   const q = s => sql().query(s);
-  const [of, co, cu, listas] = await Promise.all([
+  const [of, co, cu, listas, reg] = await Promise.all([
     q(`select id, produto as nome, marca, quantidade as qtd, unidade as un, categoria, mercado, cidade, preco, valido_ate as ate, validade_obs as obs, criado_em as em from ofertas
         where coalesce(valido_ate >= current_date, criado_em > now() - interval '14 days') order by id desc limit 3000`),
     q(`select id, descricao as nome, categoria, mercado_nome as mercado, cidade, preco, promocao_preco as promo, origem, criado_em as em from coletas order by id desc limit 2000`),
-    q(`select id, descricao as nome, categoria, mercado_nome as mercado, cidade, preco_unit as preco, unidade as un, qtd, criado_em as em from precos_cupom order by id desc limit 2000`),
+    q(`select id, descricao as nome, categoria, mercado_nome as mercado, cidade, preco_unit as preco, unidade as un, qtd, cnpj, criado_em as em from precos_cupom order by id desc limit 2000`),
     listasTodas(),
+    q(`select nome, cidade, cnpj from mercados_regiao where ativo`),
   ]);
+  /* um mercado = um nome: o do catálogo da região (cupom casa pelo CNPJ; folheto e coleta pelo nome), para a lista somar tudo do mesmo mercado */
+  const porCnpj = new Map(reg.filter(x => x.cnpj).map(x => [x.cnpj, x.nome])), mapa = await ofertas.mapaOficial();
   const num = v => (v == null ? null : Number(v));
   const linhas = [
     ...of.map(r => ({ fonte: "oferta", id: r.id, nome: r.nome, marca: r.marca, qtd: num(r.qtd), un: r.un, cat: CAT_OFERTA[(r.categoria || "").toLowerCase()] || (IA.CATEGORIAS.includes(r.categoria) ? r.categoria : null),
@@ -26,6 +48,11 @@ async function listar() {
     ...co.map(r => ({ fonte: "coleta", origem: r.origem, id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), promo: num(r.promo), em: r.em })),
     ...cu.map(r => ({ fonte: "cupom", id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), un: r.un, qtd: num(r.qtd), em: r.em })),
   ];
+  linhas.forEach((r, i) => {
+    const cnpj = r.fonte === "cupom" ? cu.find(x => Number(x.id) === r.id) : null;
+    r.mercado = (cnpj && porCnpj.get(cnpj.cnpj)) || (ofertas.oficial(mapa, r.mercado, r.cidade) || {}).nome || r.mercado;
+  });
+  linhas.forEach(r => { const t = r.preco > 0 ? tamanho(r) : null; if (t) { r.base = t.base; r.pu = Math.round(r.preco / t.q * 100) / 100; } });
   return { linhas, listas };
 }
 
@@ -50,7 +77,7 @@ async function oferta(b) {
 }
 
 /* ---------- listas de produtos ---------- */
-/* itens = [{ nome, termo, qtd }]  (termo = o que procurar nos nomes dos produtos; vazio = o próprio nome) */
+/* itens = [{ nome, termo, qtd, un }]  (termo = o que procurar nos nomes dos produtos; vazio = o próprio nome; qtd na unidade un = kg, l ou un) */
 let pronto = false;
 async function tabela() {
   if (pronto) return;
@@ -63,7 +90,7 @@ async function listasTodas() {
 }
 function itensLimpos(l) {
   if (!Array.isArray(l)) return [];
-  return l.slice(0, 100).map(i => ({ nome: txt(i && i.nome, 80), termo: txt(i && i.termo, 80), qtd: Math.min(999, Math.max(0.01, Number(String((i && i.qtd) || 1).replace(",", ".")) || 1)) })).filter(i => i.nome);
+  return l.slice(0, 100).map(i => ({ nome: txt(i && i.nome, 80), termo: txt(i && i.termo, 80), un: ["kg", "l", "un"].includes(i && i.un) ? i.un : "kg", qtd: Math.min(999, Math.max(0.01, Number(String((i && i.qtd) || 1).replace(",", ".")) || 1)) })).filter(i => i.nome);
 }
 async function lista(b) {
   await tabela();
