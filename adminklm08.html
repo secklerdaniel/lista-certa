@@ -364,8 +364,10 @@ function passa(c, ignorar) {
   if (F.dias && Date.now() - new Date(c.criado_em) > F.dias * 864e5) return false;
   return true;
 }
-function opcoes(sel, rotulo, valores, atual) {
-  sel.innerHTML = `<option value="">${rotulo}</option>` + valores.map(v => `<option value="${esc(v)}"${v === atual ? " selected" : ""}>${esc(v)}</option>`).join("");
+/* contar e opcoes também são usados pelas abas Produtos e Listas */
+function contar(l, f) { const m = {}; l.forEach(c => { const k = f(c); m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); }
+function opcoes(sel, rotulo, valores, atual, nome = x => x) {
+  sel.innerHTML = `<option value="">${rotulo}</option>` + valores.map(v => `<option value="${esc(v)}"${v === atual ? " selected" : ""}>${esc(nome(v))}</option>`).join("");
 }
 function desenharColetas() {
   const q = $("#cBusca").value.trim().toLowerCase();
