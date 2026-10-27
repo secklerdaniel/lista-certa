@@ -70,6 +70,18 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 :focus-visible{outline:3px solid #15191A;outline-offset:2px}
 .abas{background:#15191A!important}.aba{border:0!important;background:transparent!important;color:#FFD93B!important;border-radius:6px!important}.aba.on{background:#FFD93B!important;color:#15191A!important}header .btn.sec{background:#fff!important;color:#15191A!important}
 .novas{background:#FFF1B0;border:2px solid #15191A;color:#15191A}.tag{background:#FFF1B0;color:#15191A}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);padding:12px 14px;margin:0}.kpi b{display:block;font-size:30px;line-height:1}.kpi span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi.alerta{background:#FFF1B0}
+.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px}.graficos .card{margin:0}
+.dias{display:flex;align-items:flex-end;gap:4px;height:90px}.dias i{flex:1;background:#FFD93B;border:1.5px solid #15191A;min-height:2px}.dias i.zero{background:transparent;border-color:var(--line)}
+.eixo{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.hb{display:grid;grid-template-columns:96px 1fr 28px;gap:8px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer;border:0;background:none;width:100%;text-align:left}
+.hb .t{height:12px;background:var(--line);border-radius:3px;overflow:hidden}.hb .t i{display:block;height:100%;background:#FFD93B;border-right:2px solid #15191A}
+.hb.on{font-weight:800}.hb.on .t i{background:#15191A}.hb em{font-style:normal;text-align:right;color:var(--muted)}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.filtros select{padding:9px 10px;font:inherit;color:var(--ink);max-width:100%}
+.tag.cat{background:#FFD93B;color:#15191A}.tag.sem{background:#f6d9d3;color:var(--bad)}
+details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.05em}
 </style>
 </head>
 <body>
@@ -150,15 +162,23 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
   <!-- COLETAS -->
   <div id="p-coletas" hidden>
     <div class="topo"><h2 id="cTit">Coletas</h2><input type="search" id="cBusca" placeholder="Buscar produto, mercado ou usuário"></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Preços enviados pelos usuários (últimas 300). Não há aprovação: entram direto na comparação. Aqui você adiciona, edita e apaga.</p>
-    <section class="card"><h2 id="cFormTit">Adicionar coleta</h2>
+    <div class="kpis" id="cKpis"></div>
+    <div class="graficos">
+      <section class="card"><h2 id="cDiasTit">Coletas por dia</h2><div class="dias" id="cDias"></div><div class="eixo" id="cEixo"></div></section>
+      <section class="card"><h2>Por categoria</h2><div id="cGCat"></div></section>
+      <section class="card"><h2>Por cidade e origem</h2><div id="cGCid"></div><div id="cGOri" style="margin-top:8px"></div></section>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Últimas 1000 coletas. Não há aprovação: entram direto na comparação. Toque num gráfico para filtrar.</p>
+    <details class="card" id="cDet"><summary id="cFormTit">Adicionar coleta</summary>
       <form id="cForm"><input type="hidden" id="cId">
         <div class="row"><div><label for="cMerc">Mercado</label><input type="text" id="cMerc" required maxlength="120"></div><div><label for="cCid">Cidade</label><input type="text" id="cCid" required maxlength="80" value="Gramado"></div></div>
         <label for="cDesc">Descrição do produto</label><input type="text" id="cDesc" required maxlength="120" placeholder="Sabonete Palmolive Pétalas de Rosa 85 g">
         <label for="cCat">Categoria</label><select id="cCat"><option value="">Automática (IA escolhe)</option><option value="mercearia">mercearia</option><option value="laticinios">laticínios</option><option value="hortifruti">hortifruti</option><option value="carnes">carnes</option><option value="bebidas">bebidas</option><option value="limpeza">limpeza</option><option value="higiene">higiene</option><option value="padaria">padaria</option><option value="frios">frios</option><option value="congelados">congelados</option><option value="outros">outros</option></select>
         <div class="row"><div><label for="cPreco">Preço (R$)</label><input type="text" id="cPreco" required inputmode="decimal" placeholder="2,79"></div><div><label for="cPromo">Preço promocional (opcional)</label><input type="text" id="cPromo" inputmode="decimal"></div></div>
         <button class="btn" type="submit" id="cSalvar">Adicionar</button> <button class="btn sec" type="button" id="cCancelar" hidden>Cancelar edição</button>
-        <p class="msg" id="cMsg"></p></form></section>
+        <p class="msg" id="cMsg"></p></form></details>
+
+    <div class="filtros"><select id="fCid" aria-label="Cidade"></select><select id="fCat" aria-label="Categoria"></select><select id="fOri" aria-label="Origem"></select><select id="fDias" aria-label="Período"><option value="">Todo o período</option><option value="1">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select><button class="btn sec" type="button" id="fLimpar">Limpar filtros</button></div>
     <div id="clista"></div>
   </div>
 
@@ -268,14 +288,66 @@ $("#fRegiao").onsubmit = async e => {
 /* ---------- coletas ---------- */
 let COLETAS = [];
 async function carregarColetas() { COLETAS = (await chamar("/api/admin/usuarios?coletas=1")).dados; desenharColetas(); }
+const CAT_NOME = c => c === "laticinios" ? "laticínios" : c;
+const SEM = "(sem categoria)";
+const F = { cid: "", cat: "", ori: "", dias: "" };
+const catDe = c => c.categoria || SEM;
+function contar(l, f) { const m = {}; l.forEach(c => { const k = f(c); m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); }
+function passa(c, ignorar) {
+  if (ignorar !== "cid" && F.cid && c.cidade !== F.cid) return false;
+  if (ignorar !== "cat" && F.cat && catDe(c) !== F.cat) return false;
+  if (ignorar !== "ori" && F.ori && c.origem !== F.ori) return false;
+  if (F.dias && Date.now() - new Date(c.criado_em) > F.dias * 864e5) return false;
+  return true;
+}
+function barras(el, dados, chave, nome = x => x) {
+  const max = Math.max(1, ...dados.map(d => d[1]));
+  el.innerHTML = dados.length ? dados.map(([k, n]) => `<button type="button" class="hb${F[chave] === k ? " on" : ""}" data-f="${chave}" data-v="${esc(k)}"><span>${esc(nome(k))}</span><span class="t"><i style="width:${n / max * 100}%"></i></span><em>${n}</em></button>`).join("") : '<p class="vazio" style="padding:8px">—</p>';
+}
+function opcoes(sel, rotulo, valores, atual, nome = x => x) {
+  sel.innerHTML = `<option value="">${rotulo}</option>` + valores.map(v => `<option value="${esc(v)}"${v === atual ? " selected" : ""}>${esc(nome(v))}</option>`).join("");
+}
 function desenharColetas() {
   const q = $("#cBusca").value.trim().toLowerCase();
-  const l = COLETAS.filter(c => !q || [c.descricao, c.mercado_nome, c.usuario, c.gtin].join(" ").toLowerCase().includes(q));
+  const busca = c => !q || [c.descricao, c.mercado_nome, c.usuario, c.gtin].join(" ").toLowerCase().includes(q);
+  const l = COLETAS.filter(c => passa(c) && busca(c));
+  opcoes($("#fCid"), "Todas as cidades", [...new Set(COLETAS.map(c => c.cidade))].sort(), F.cid);
+  opcoes($("#fCat"), "Todas as categorias", [...new Set(COLETAS.map(catDe))].sort(), F.cat, CAT_NOME);
+  opcoes($("#fOri"), "Todas as origens", [...new Set(COLETAS.map(c => c.origem))].sort(), F.ori);
+  $("#fDias").value = F.dias;
+  const hoje = new Date().toDateString(), sem7 = Date.now() - 7 * 864e5;
+  const kpi = (n, t, alerta) => `<div class="kpi card${alerta ? " alerta" : ""}"><b>${n}</b><span>${t}</span></div>`;
+  const semCat = l.filter(c => !c.categoria).length;
+  $("#cKpis").innerHTML = kpi(l.length, "Coletas") + kpi(l.filter(c => new Date(c.criado_em).toDateString() === hoje).length, "Hoje") +
+    kpi(l.filter(c => new Date(c.criado_em) > sem7).length, "Últimos 7 dias") + kpi(new Set(l.map(c => (c.mercado_nome + "|" + c.cidade).toLowerCase())).size, "Mercados") +
+    kpi(new Set(l.filter(c => c.usuario).map(c => c.usuario)).size, "Usuários") + kpi(new Set(l.map(c => c.descricao.toLowerCase())).size, "Produtos") + kpi(semCat, "Sem categoria", semCat > 0);
+  /* por dia: respeita cidade/categoria/origem e a busca; a janela vai da coleta mais antiga até hoje (7 a 30 dias) */
+  const base = COLETAS.filter(c => passa(c) && busca(c)), dias = [];
+  const N = Math.min(30, Math.max(7, COLETAS.length ? Math.ceil((Date.now() - Math.min(...COLETAS.map(c => +new Date(c.criado_em)))) / 864e5) + 1 : 7));
+  $("#cDiasTit").textContent = `Coletas por dia (${N} dias)`;
+  for (let i = N - 1; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); dias.push(d); }
+  const porDia = dias.map(d => base.filter(c => new Date(c.criado_em).toDateString() === d.toDateString()).length), mx = Math.max(...porDia);
+  $("#cDias").innerHTML = porDia.map((n, i) => `<i class="${n ? "" : "zero"}" style="height:${Math.max(n / Math.max(mx, 1) * 100, 2)}%" title="${dias[i].toLocaleDateString("pt-BR")}: ${n}"></i>`).join("");
+  $("#cEixo").innerHTML = `<span>${dias[0].toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span><span>pico: ${mx}/dia</span><span>hoje</span>`;
+  /* cada gráfico ignora o próprio filtro, para dar para trocar de categoria/cidade/origem */
+  const sem = ig => COLETAS.filter(c => passa(c, ig) && busca(c));
+  barras($("#cGCat"), contar(sem("cat"), catDe), "cat", CAT_NOME);
+  barras($("#cGCid"), contar(sem("cid"), c => c.cidade), "cid");
+  barras($("#cGOri"), contar(sem("ori"), c => c.origem), "ori");
   $("#cTit").textContent = `Coletas (${l.length})`;
-  $("#clista").innerHTML = l.length ? l.map(c => `<div class="card" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(c.descricao)}</b> · R$ ${Number(c.preco).toFixed(2).replace(".", ",")}${c.promocao_preco ? ` (promo ${Number(c.promocao_preco).toFixed(2).replace(".", ",")})` : ""}
-    <div class="meta">${esc(c.mercado_nome)} · ${esc(c.cidade)} · ${esc(c.origem)} · ${esc(c.categoria || "sem categoria")} · ${esc(c.usuario || "anônimo")} · ${fmtData(c.criado_em)}</div></div>
-    <span><button class="btn sec" data-ed-coleta="${c.id}">Editar</button> <button class="btn sec" data-ex-coleta="${c.id}">Apagar</button></span></div></div>`).join("") : "<p>Nenhuma coleta.</p>";
+  $("#clista").innerHTML = l.length ? l.map(c => `<div class="card" style="padding:10px 14px"><div class="topo mk" style="margin:0"><div><b>${esc(c.descricao)}</b> · R$ ${Number(c.preco).toFixed(2).replace(".", ",")}${c.promocao_preco ? ` (promo ${Number(c.promocao_preco).toFixed(2).replace(".", ",")})` : ""} <span class="tag ${c.categoria ? "cat" : "sem"}">${esc(c.categoria ? CAT_NOME(c.categoria) : "sem categoria")}</span>
+    <div class="meta">${esc(c.mercado_nome)} · ${esc(c.cidade)} · ${esc(c.origem)} · ${esc(c.usuario || "anônimo")} · ${fmtData(c.criado_em)}</div></div>
+    <span><button class="btn sec" data-ed-coleta="${c.id}">Editar</button> <button class="btn sec" data-ex-coleta="${c.id}">Apagar</button></span></div></div>`).join("") : '<p class="vazio">Nenhuma coleta com esses filtros.</p>';
 }
+$("#p-coletas").addEventListener("click", e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  F[b.dataset.f] = F[b.dataset.f] === b.dataset.v ? "" : b.dataset.v; desenharColetas();
+});
+$("#p-coletas").addEventListener("change", e => {
+  const m = { fCid: "cid", fCat: "cat", fOri: "ori", fDias: "dias" }[e.target.id]; if (!m) return;
+  F[m] = e.target.value; desenharColetas();
+});
+$("#fLimpar").onclick = () => { F.cid = F.cat = F.ori = F.dias = ""; $("#cBusca").value = ""; desenharColetas(); };
 $("#cBusca").oninput = desenharColetas;
 function cLimpar() { $("#cForm").reset(); $("#cId").value = ""; $("#cCid").value = "Gramado"; $("#cFormTit").textContent = "Adicionar coleta"; $("#cSalvar").textContent = "Adicionar"; $("#cCancelar").hidden = true; }
 $("#cCancelar").onclick = cLimpar;
@@ -293,7 +365,7 @@ $("#clista").onclick = async e => {
     const c = COLETAS.find(x => String(x.id) === ed.dataset.edColeta); if (!c) return;
     $("#cId").value = c.id; $("#cMerc").value = c.mercado_nome; $("#cCid").value = c.cidade; $("#cDesc").value = c.descricao; $("#cCat").value = c.categoria || "";
     $("#cPreco").value = String(c.preco).replace(".", ","); $("#cPromo").value = c.promocao_preco ? String(c.promocao_preco).replace(".", ",") : "";
-    $("#cFormTit").textContent = "Editar coleta #" + c.id; $("#cSalvar").textContent = "Salvar"; $("#cCancelar").hidden = false; $("#cForm").scrollIntoView({ behavior: "smooth" }); return;
+    $("#cDet").open = true; $("#cFormTit").textContent = "Editar coleta #" + c.id; $("#cSalvar").textContent = "Salvar"; $("#cCancelar").hidden = false; $("#cForm").scrollIntoView({ behavior: "smooth" }); return;
   }
   const b = e.target.closest("[data-ex-coleta]"); if (!b || !confirm("Apagar este preço?")) return;
   try { await chamar("/api/admin/usuarios", "POST", { coletaId: b.dataset.exColeta, excluirColeta: true }); await carregarColetas(); } catch (err) { toast(err.message); }

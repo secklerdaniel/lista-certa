@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
       }
       if (req.query && req.query.coletas) {
         const r = await sql().query(`select c.id, c.mercado_nome, c.cidade, c.descricao, c.gtin, c.preco, c.promocao_preco, c.origem, c.categoria, c.criado_em, u.nome as usuario
-          from coletas c left join usuarios u on u.id = c.usuario_id order by c.id desc limit 300`);
+          from coletas c left join usuarios u on u.id = c.usuario_id order by c.id desc limit 1000`);
         return enviar(res, 200, { ok: true, dados: r });
       }
       const r = await sql().query(
