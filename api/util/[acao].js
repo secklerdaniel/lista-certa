@@ -2,8 +2,9 @@
    Os endereços públicos continuam os mesmos, via "rewrites" no vercel.json:
    GET /api/versao                    → { v }  id do deploy (a faixa "nova atualização" compara)
    GET /api/v1/cnpj?cnpj=             → dados públicos da Receita para preencher o cadastro
-   GET /api/v1/proximos?lat=&lng=     → mercados num raio de ~1 km (OpenStreetMap); a posição NÃO é guardada */
-const { sql, sha256, enviar, erro } = require("../_lib");
+   GET /api/v1/proximos?lat=&lng=     → mercados num raio de ~1 km (OpenStreetMap); a posição NÃO é guardada
+   GET /api/util/limpeza              → apaga coleta e cupom com mais de 5 dias (cron diário; fechado por CRON_SECRET) */
+const { sql, sha256, enviar, erro, admin, crypto } = require("../_lib");
 const { consultar } = require("../_cnpj");
 const { cnpjValido } = require("../v1/cadastro");
 
@@ -123,10 +124,26 @@ async function cupons(req, res) {
   enviar(res, 200, { ok: true, dados: r.concat(v, o) });
 }
 
+/* ---------- limpeza diária (cron da Vercel) ---------- */
+/* Coleta e cupom com mais de 5 dias saem do banco: preço de duas semanas atrás mostrado como se fosse de hoje engana
+   quem vai ao mercado. Os pontos de quem contribuiu ficam — moram em "contribuicoes", que não é tocada.
+   O cron da Vercel manda "Authorization: Bearer $CRON_SECRET"; sem essa env (e sem a chave do painel), fecha. */
+const DIAS = 5;
+async function limpeza(req, res) {
+  const dado = String(req.headers.authorization || "").replace(/^Bearer /i, "");
+  const ok = k => k && crypto.timingSafeEqual(Buffer.from(sha256(k)), Buffer.from(sha256(dado)));
+  if (!ok(process.env.CRON_SECRET) && !admin(req)) return erro(res, 401, "auth", "Sem permissão.");
+  const apagadas = {};
+  for (const t of ["coletas", "precos_cupom"])
+    apagadas[t] = (await sql().query(`delete from ${t} where criado_em <= now() - ($1 * interval '1 day') returning 1`, [DIAS])).length;
+  enviar(res, 200, { ok: true, dias: DIAS, apagadas });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") return erro(res, 405, "metodo", "Use GET.");
   const acao = (req.query && req.query.acao) || "";
   try {
+    if (acao === "limpeza") return await limpeza(req, res);
     if (acao === "versao") return versao(req, res);
     if (acao === "cnpj") return await cnpj(req, res);
     if (acao === "proximos") return await proximos(req, res);

@@ -53,6 +53,12 @@
       "destination": "/mercado.html"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/util/limpeza",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "functions": {
     "api/v1/precos.js": {
       "maxDuration": 30
