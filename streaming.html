@@ -62,7 +62,7 @@ body.com-res .palco{flex:none}
 .chave::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
 .chave:checked{background:var(--marca)}
 .chave:checked::after{transform:translateX(18px)}
-select{font:inherit;color:#fff;background:var(--papel);border:1px solid var(--linha);border-radius:999px;padding:8px 14px;min-height:44px}select option{color:#000}
+
 
 /* resultados que o agente achou */
 .res{margin:6px 0 20px}
@@ -95,8 +95,6 @@ select{font:inherit;color:#fff;background:var(--papel);border:1px solid var(--li
     <p class="erro" id="aviso" hidden></p>
     <button class="encerrar" id="encerrar" hidden>Encerrar conversa</button>
     <div class="baloes" id="baloes" aria-hidden="true"><span class="balao"></span><span class="balao"></span></div>
-    <div class="local" id="local"><label>Cidade
-      <select id="cidade" aria-label="Cidade"><option value="Gramado">Gramado</option><option value="Canela">Canela</option><option value="Igrejinha">Igrejinha</option><option value="Nova Petrópolis">Nova Petrópolis</option><option value="São Francisco de Paula">São Francisco de Paula</option></select></label></div>
   </section>
 
   <section class="res" id="res" hidden></section>
@@ -129,17 +127,10 @@ setInterval(() => {
   setTimeout(() => { ex++; mostrarExemplos(); $("#baloes").classList.remove("troca"); }, 400);
 }, 4500);
 
-/* cidade: a mesma escolhida no app (lc-city) */
+/* cidade: vem da fala (a IA pergunta se a pessoa não disser); sem ela, a do app (lc-city) */
 const CHAVES = { gramado: "Gramado", canela: "Canela", igrejinha: "Igrejinha", novapetropolis: "Nova Petrópolis", sfpaula: "São Francisco de Paula" };
 let cidade = "Gramado";
 try { cidade = CHAVES[localStorage.getItem("lc-city")] || cidade; } catch (e) {}
-$("#cidade").value = cidade;
-$("#cidade").onchange = (e) => {
-  cidade = e.target.value;
-  try { localStorage.setItem("lc-city", Object.keys(CHAVES).find((k) => CHAVES[k] === cidade)); } catch (er) {}
-  if (refazer) refazer(); /* o resultado que está na tela passa a valer para a nova cidade */
-};
-let refazer = null;
 const cidadeDe = (txt) => { const n = norm(txt); return (n && Object.values(CHAVES).find((c) => norm(c) === n || norm(c).includes(n) || n.includes(norm(c)))) || cidade; };
 
 /* ---------- preços: os mesmos que o app usa (/api/v1/cupons: cupons, vídeos e ofertas de folheto) ---------- */
@@ -201,7 +192,6 @@ const buscar_produto = ({ termo, cidade: c }) => comparar_lista({ itens: [termo]
 
 async function comparar_lista({ itens, cidade: c }) {
   const termos = (Array.isArray(itens) ? itens : [itens]).map(String).filter(Boolean).slice(0, 15);
-  refazer = () => comparar_lista({ itens: termos });
   const cd = cidadeDe(c), linhas = await dados(cd), achados = [], nao = [];
   for (const t of termos) { const a = achar(linhas, t); a ? achados.push({ ...a, qtd: 1 }) : nao.push(t); }
   if (!achados.length) {
@@ -215,7 +205,6 @@ async function comparar_lista({ itens, cidade: c }) {
 async function lista_pronta({ nome, cidade: c }) {
   const listas = (await (await fetch("/api/v1/listas")).json()).dados || [];
   const n = norm(nome), l = listas.find((x) => norm(x.nome) === n) || listas.find((x) => norm(x.nome).includes(n) || n.includes(norm(x.nome)));
-  refazer = () => lista_pronta({ nome });
   if (!l) return `Não há lista pronta com o nome "${nome}". As listas prontas são: ${listas.map((x) => x.nome).join(", ") || "nenhuma por enquanto"}.`;
   const cd = cidadeDe(c), linhas = await dados(cd), achados = [], nao = [];
   for (const i of l.itens) {
@@ -249,7 +238,7 @@ let conversa = null, relogio = null, inicio = 0;
 const mic = $("#mic");
 
 function estado(txt, classe) { $("#estado").textContent = txt; mic.className = "mic " + (classe || "parado"); }
-function emConversa(sim) { $("#baloes").hidden = sim; $("#local").hidden = sim; $("#nota").hidden = sim; }
+function emConversa(sim) { $("#baloes").hidden = sim; $("#nota").hidden = sim; }
 
 async function comecar() {
   mic.disabled = true; aviso(""); estado("Conectando…", "ouvindo"); emConversa(true);

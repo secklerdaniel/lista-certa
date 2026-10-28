@@ -32,7 +32,7 @@ Regras de ouro:
 Ferramentas:
 - buscar_produto: quando a pessoa perguntar de UM produto ("quanto tá o arroz?"). Já devolve os mercados onde ele está mais barato.
 - comparar_lista: quando a pessoa disser vários itens ("arroz, feijão e café"). Devolve em qual mercado a lista sai mais barata.
-- Se a pessoa citar uma cidade (Gramado, Canela, Igrejinha, Nova Petrópolis, São Francisco de Paula), passe a cidade na ferramenta. Se não citar, a ferramenta usa a cidade que ela escolheu no app.
+- TODA ferramenta precisa da cidade (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Se a pessoa não disse de qual cidade é, pergunte ANTES de chamar a ferramenta ("De qual cidade você quer ver os preços?"). Se ela já disse, ou mudar de cidade no meio da conversa, use essa e não pergunte de novo. Se ela mudar de cidade, chame a ferramenta de novo com a nova cidade.
 - Depois da ferramenta, diga direto onde está mais barato e quanto custa (o 1º mercado, e o 2º se for parecido). NUNCA pergunte se a pessoa quer saber onde está mais barato: isso já foi respondido e está na tela.
 - Nas ferramentas, use o nome específico do produto, do jeito que se acha na prateleira: "arroz branco", "feijão carioca", "leite integral", "azeite de oliva", "óleo de soja", "macarrão espaguete". Nunca só "leite" ou "azeite".
 
@@ -58,30 +58,31 @@ const FERRAMENTAS = [
   {
     type: 'client', name: 'lista_pronta', expects_response: true, response_timeout_secs: 25,
     description: 'Compara uma das listas prontas montadas pela equipe da Lista Certa (ex.: "cesta básica") e mostra na tela onde ela sai mais barata. Se o nome não existir, devolve os nomes das listas prontas disponíveis.',
-    parameters: { type: 'object', required: ['nome'], properties: {
+    parameters: { type: 'object', required: ['nome', 'cidade'], properties: {
       nome: { type: 'string', description: 'Nome da lista pronta, como a pessoa falou. Ex.: "cesta básica".' },
-      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Deixe vazio se ela não citou.' },
+      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Pergunte se a pessoa não disse.' },
     } },
   },
   {
     type: 'client', name: 'ver_opcoes', expects_response: true, response_timeout_secs: 20,
     description: 'Mostra quais tipos e tamanhos de um produto existem com preço recente na cidade (ex.: arroz branco ou parboilizado, 1 kg). Use para perguntar a preferência da pessoa antes de comparar.',
-    parameters: { type: 'object', required: ['termo'], properties: { termo: { type: 'string', description: 'O produto genérico. Ex.: "arroz", "feijão", "óleo".' } } },
+    parameters: { type: 'object', required: ['termo', 'cidade'], properties: { termo: { type: 'string', description: 'O produto genérico. Ex.: "arroz", "feijão", "óleo".' },
+      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Pergunte se a pessoa não disse.' } } },
   },
   {
     type: 'client', name: 'buscar_produto', expects_response: true, response_timeout_secs: 20,
     description: 'Busca um produto e mostra na tela os mercados da cidade onde ele está mais barato, com o preço.',
-    parameters: { type: 'object', required: ['termo'], properties: {
+    parameters: { type: 'object', required: ['termo', 'cidade'], properties: {
       termo: { type: 'string', description: 'O produto, como a pessoa falou. Ex.: "arroz", "leite integral", "coca 2 litros".' },
-      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Deixe vazio se ela não citou.' },
+      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Pergunte se a pessoa não disse.' },
     } },
   },
   {
     type: 'client', name: 'comparar_lista', expects_response: true, response_timeout_secs: 25,
     description: 'Compara uma lista de compras entre os mercados da cidade e mostra na tela onde ela sai mais barata.',
-    parameters: { type: 'object', required: ['itens'], properties: {
+    parameters: { type: 'object', required: ['itens', 'cidade'], properties: {
       itens: { type: 'array', description: 'Os produtos da lista, um por item. Ex.: ["arroz", "feijão carioca", "café"].', items: { type: 'string', description: 'Um produto da lista.' } },
-      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Deixe vazio se ela não citou.' },
+      cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Pergunte se a pessoa não disse.' },
     } },
   },
 ];
