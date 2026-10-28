@@ -785,6 +785,9 @@ $("#pv-prods").addEventListener("change", async e => {
    mais itens primeiro e mostra o que falta. */
 const emBase = (tam, tu) => ({ g: ["kg", tam / 1000], kg: ["kg", tam], ml: ["l", tam / 1000], l: ["l", tam], un: ["un", tam] }[tu] || ["kg", tam]);
 const QTD = q => String(Math.round(q * 1000) / 1000).replace(".", ",");
+/* mercado com menos de 70% dos itens nem aparece: "mais barato" com 1 de 6 itens não ajuda quem vai fazer a compra.
+   A conta é em inteiro (n*100 >= M*70) para o 70% cravado nunca escorregar no float. */
+const MIN_PCT = 70;
 function analisarLista(l) {
   const itens = l.itens.map(i => {
     const [base, q] = emBase(Number(i.tam) || 1, i.tu || "kg"), nome = r => casa(i, r), igual = r => r.pu != null && r.base === base && Math.abs(r.q - q) < 1e-6;
@@ -798,7 +801,7 @@ function analisarLista(l) {
   const mercados = [...mk.values()].map(m => {
     let t = 0; m.por.forEach((r, idx) => { t += r.preco * (Number(itens[idx].i.qtd) || 1); });
     return Object.assign(m, { n: m.por.size, t, faltam: itens.filter((_, idx) => !m.por.has(idx)).map(it => it.i.nome) });
-  }).sort((a, b) => b.n - a.n || a.t - b.t);
+  }).filter(m => m.n * 100 >= itens.length * MIN_PCT).sort((a, b) => b.n - a.n || a.t - b.t);
   return { itens, mercados, semPreco: itens.filter(it => !it.rows.length) };
 }
 const linhaItem = (i = {}) => `<div class="lin" data-item style="gap:6px"><input type="text" name="i_nome" list="pNomes" placeholder="Produto (ex.: Óleo de soja)" value="${esc(i.nome || "")}" style="flex:3" aria-label="Produto"><input type="text" name="i_termo" placeholder="busca (opcional)" value="${esc(i.termo || "")}" style="flex:2" aria-label="Busca"><input type="text" name="i_tam" inputmode="decimal" value="${esc(QTD(Number(i.tam) || 1))}" style="width:70px" aria-label="Tamanho da embalagem" title="Tamanho da embalagem"><select name="i_tu" aria-label="Unidade da embalagem">${["g", "kg", "ml", "l", "un"].map(u => `<option${(i.tu || "kg") === u ? " selected" : ""}>${u}</option>`).join("")}</select><span style="font-size:13px">×</span><input type="text" name="i_qtd" inputmode="decimal" value="${esc(QTD(Number(i.qtd) || 1))}" style="width:56px" aria-label="Quantas embalagens" title="Quantas embalagens"><button type="button" class="btn sec bad" data-pa="rmItem" aria-label="Remover item">×</button></div>`;
@@ -823,8 +826,8 @@ function desenharListas() {
     };
     return `<div class="card"><div class="topo mk" style="margin:0 0 6px"><div><b style="font-size:17px">${esc(l.nome)}</b> <span class="tag">${M} itens</span>${a.semPreco.length ? `<span class="tag sem">${a.semPreco.length} sem preço</span>` : ""}${l.descricao ? `<div class="meta">${esc(l.descricao)}</div>` : ""}</div>
       <span><button class="btn sec" data-pa="ver" data-id="${l.id}">Ver produtos</button> <button class="btn sec" data-pa="editarL" data-id="${l.id}">Editar</button> <button class="btn sec bad" data-pa="excluirL" data-id="${l.id}" data-nome="${esc(l.nome)}">Excluir</button></span></div>
-      ${!M ? '<p class="vazio" style="padding:8px">Lista vazia. Clique em Editar para adicionar itens.</p>' : !cidades.length ? '<div class="painel">Nenhum mercado tem preço comparável para os itens desta lista.</div>' : cidades.map(bloco).join("")}
-      ${a.mercados.length ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">Cada item compara só embalagens do MESMO tamanho (1 kg com 1 kg; as marcas podem variar). Em cada mercado vale a embalagem mais barata desse tamanho. Mercado que não tem o item nesse tamanho não entra como mais barato: veja o que falta.</p>' : ""}
+      ${!M ? '<p class="vazio" style="padding:8px">Lista vazia. Clique em Editar para adicionar itens.</p>' : !cidades.length ? '<div class="painel">Nenhum mercado tem pelo menos ' + MIN_PCT + '% dos itens desta lista.</div>' : cidades.map(bloco).join("")}
+      ${a.mercados.length ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">Cada item compara só embalagens do MESMO tamanho (1 kg com 1 kg; as marcas podem variar). Em cada mercado vale a embalagem mais barata desse tamanho. Mercado que não tem o item nesse tamanho não entra como mais barato: veja o que falta. Mercado com menos de ' + MIN_PCT + '% dos itens da lista nem aparece.</p>' : ""}
       ${a.semPreco.length ? `<p style="font-size:13px;margin-top:6px"><span class="tag sem">sem preço comparável</span> ${esc(a.semPreco.map(it => it.i.nome + " " + it.tamTxt + (it.fora ? ` (${it.fora} preço(s) de outro tamanho ou sem tamanho, não comparados)` : "")).join("; "))}</p>` : ""}</div>`;
   }).join("") : '<p class="vazio">Nenhuma lista ainda. Abra “Nova lista” e monte a primeira (ex.: Cesta básica).</p>';
 }
