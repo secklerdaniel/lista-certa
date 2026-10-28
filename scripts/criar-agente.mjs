@@ -1,6 +1,6 @@
-// Cria (ou atualiza, se AGENTE_ID for passado) o agente de voz da Lista Certa na ElevenLabs.
+// Cria (ou atualiza, se AGENTE_ID for passado) o agente de voz da Sacolista na ElevenLabs.
 // Uso: node scripts/criar-agente.mjs [AGENTE_ID]
-// As ferramentas são "client tools": rodam no navegador (streaming.html), que consulta a API da Lista Certa e mostra na tela.
+// As ferramentas são "client tools": rodam no navegador (streaming.html), que consulta a API da Sacolista e mostra na tela.
 // Rodar: node --env-file=../precinho/.env.local scripts/criar-agente.mjs [AGENTE_ID]  (precisa de ELEVENLABS_API_KEY)
 
 // Voz Fernanda (a mesma da Samantha do hotel). ID de voz não é segredo: trocar é editar aqui.
@@ -10,7 +10,7 @@ const VOZ = 'KHmfNHtEjHhLK9eER20w';
 const VOZ_ES = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLAS_VOICE_ID;
 const AJUSTES_VOZ = { stability: 0.5, similarity_boost: 0.75, speed: 1 };
 
-const PROMPT = `Você é a Lista Certa, assistente de voz que ajuda a economizar no supermercado na Serra Gaúcha (Gramado, Canela, Igrejinha, Nova Petrópolis e São Francisco de Paula).
+const PROMPT = `Você é a Sacolista, assistente de voz que ajuda a economizar no supermercado na Serra Gaúcha (Gramado, Canela, Igrejinha, Nova Petrópolis e São Francisco de Paula).
 
 Idiomas: português do Brasil e espanhol.
 - Responda sempre no idioma em que a pessoa está falando. Se ela falar espanhol, troque para espanhol e continue em espanhol até ela mudar.
@@ -44,7 +44,7 @@ Entender a preferência antes de comparar:
 - Depois da resposta, chame comparar_lista com nome e tamanho, ex.: "arroz branco 5 kg", "feijão preto 1 kg", "óleo de soja 900 ml".
 
 Listas prontas da equipe:
-- A Lista Certa tem listas prontas montadas pela equipe (ex.: cesta básica; podem mudar).
+- A Sacolista tem listas prontas montadas pela equipe (ex.: cesta básica; podem mudar).
 - Se a pessoa pedir uma delas, use lista_pronta com o nome. NUNCA monte você mesmo uma lista com esse nome.
 - Na dúvida se uma lista existe, chame lista_pronta: se não existir, ela devolve os nomes disponíveis para você oferecer.
 
@@ -57,7 +57,7 @@ Listas para uma receita ou ocasião:
 const FERRAMENTAS = [
   {
     type: 'client', name: 'lista_pronta', expects_response: true, response_timeout_secs: 25,
-    description: 'Compara uma das listas prontas montadas pela equipe da Lista Certa (ex.: "cesta básica") e mostra na tela onde ela sai mais barata. Se o nome não existir, devolve os nomes das listas prontas disponíveis.',
+    description: 'Compara uma das listas prontas montadas pela equipe da Sacolista (ex.: "cesta básica") e mostra na tela onde ela sai mais barata. Se o nome não existir, devolve os nomes das listas prontas disponíveis.',
     parameters: { type: 'object', required: ['nome', 'cidade'], properties: {
       nome: { type: 'string', description: 'Nome da lista pronta, como a pessoa falou. Ex.: "cesta básica".' },
       cidade: { type: 'string', description: 'Cidade que a pessoa citou (Gramado, Canela, Igrejinha, Nova Petrópolis ou São Francisco de Paula). Pergunte se a pessoa não disse.' },
@@ -88,7 +88,7 @@ const FERRAMENTAS = [
 ];
 
 const corpo = {
-  name: 'Lista Certa',
+  name: 'Sacolista',
   conversation_config: {
     agent: {
       first_message: 'Olá, o que você está pensando em comprar agora?',
