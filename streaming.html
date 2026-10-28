@@ -137,7 +137,9 @@ $("#cidade").value = cidade;
 $("#cidade").onchange = (e) => {
   cidade = e.target.value;
   try { localStorage.setItem("lc-city", Object.keys(CHAVES).find((k) => CHAVES[k] === cidade)); } catch (er) {}
+  if (refazer) refazer(); /* o resultado que está na tela passa a valer para a nova cidade */
 };
+let refazer = null;
 const cidadeDe = (txt) => { const n = norm(txt); return (n && Object.values(CHAVES).find((c) => norm(c) === n || norm(c).includes(n) || n.includes(norm(c)))) || cidade; };
 
 /* ---------- preços: os mesmos que o app usa (/api/v1/cupons: cupons, vídeos e ofertas de folheto) ---------- */
@@ -199,6 +201,7 @@ const buscar_produto = ({ termo, cidade: c }) => comparar_lista({ itens: [termo]
 
 async function comparar_lista({ itens, cidade: c }) {
   const termos = (Array.isArray(itens) ? itens : [itens]).map(String).filter(Boolean).slice(0, 15);
+  refazer = () => comparar_lista({ itens: termos });
   const cd = cidadeDe(c), linhas = await dados(cd), achados = [], nao = [];
   for (const t of termos) { const a = achar(linhas, t); a ? achados.push({ ...a, qtd: 1 }) : nao.push(t); }
   if (!achados.length) {
@@ -212,6 +215,7 @@ async function comparar_lista({ itens, cidade: c }) {
 async function lista_pronta({ nome, cidade: c }) {
   const listas = (await (await fetch("/api/v1/listas")).json()).dados || [];
   const n = norm(nome), l = listas.find((x) => norm(x.nome) === n) || listas.find((x) => norm(x.nome).includes(n) || n.includes(norm(x.nome)));
+  refazer = () => lista_pronta({ nome });
   if (!l) return `Não há lista pronta com o nome "${nome}". As listas prontas são: ${listas.map((x) => x.nome).join(", ") || "nenhuma por enquanto"}.`;
   const cd = cidadeDe(c), linhas = await dados(cd), achados = [], nao = [];
   for (const i of l.itens) {
