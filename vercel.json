@@ -17,6 +17,18 @@
       "destination": "/api/util/cnpj"
     },
     {
+      "source": "/api/v1/listas",
+      "destination": "/api/util/listas"
+    },
+    {
+      "source": "/api/agente",
+      "destination": "/api/util/agente"
+    },
+    {
+      "source": "/streaming",
+      "destination": "/streaming.html"
+    },
+    {
       "source": "/api/versao",
       "destination": "/api/util/versao"
     },

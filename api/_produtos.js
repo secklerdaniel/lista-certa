@@ -108,4 +108,4 @@ async function lista(b) {
   return { status: 400, msg: "Ação inválida." };
 }
 
-module.exports = { listar, oferta, lista };
+module.exports = { listar, oferta, lista, listasTodas };

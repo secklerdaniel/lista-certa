@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lista Certa — fale com a Lista Certa</title>
+<meta name="description" content="Pergunte por voz o preço de um produto ou de uma lista e veja na tela o mercado mais barato da sua cidade.">
+<meta name="theme-color" content="#15191A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23FFD93B'/%3E%3Ctext x='16' y='23' font-size='20' font-weight='700' text-anchor='middle' fill='%2315191A' font-family='sans-serif'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* esta página é sempre escura: superfícies translúcidas e texto branco */
+:root{--marca:#FFD93B;--marca-2:#FFE680;--tinta:#FFFFFF;--suave:rgba(255,255,255,.72);--fundo:#15191A;--papel:rgba(255,255,255,.08);--linha:rgba(255,255,255,.18);--recibo:rgba(255,255,255,.08);--verde:#3FD08A;--velho:#FF8FA3;
+  --titulo:"Archivo",system-ui,sans-serif;--texto:system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:radial-gradient(110% 60% at 50% 38%,rgba(255,217,59,.16),transparent 62%),var(--fundo);color:var(--tinta);font:16px/1.45 var(--texto)}
+a{color:var(--marca)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--marca-2);outline-offset:3px}
+.col{max-width:560px;margin:0 auto;padding:0 16px;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+header{padding:20px 0 4px;display:flex;align-items:center;justify-content:space-between}
+.logo{font:800 28px/1 var(--titulo);letter-spacing:-.03em;color:#fff;text-decoration:none}
+.logo i{font-style:normal;color:var(--marca-2)}
+h1{font:800 clamp(28px,7.5vw,36px)/1.05 var(--titulo);letter-spacing:-.025em;margin:22px 0 4px;text-align:center}
+.sub{color:var(--suave);margin:0;text-align:center}
+
+/* o palco: o microfone é o botão de começar e fica no centro, ao alcance do polegar */
+.palco{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 0;text-align:center}
+body.com-res .palco{flex:none}
+.mic{position:relative;width:168px;height:168px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#FFEA8A,var(--marca) 60%);color:#15191A;box-shadow:0 0 0 14px rgba(255,217,59,.14),0 24px 60px -14px rgba(255,217,59,.55);display:grid;place-items:center}
+.mic svg{width:56px;height:56px}
+.mic::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:3px solid var(--marca-2);opacity:0}
+.mic.ouvindo::after{opacity:.5}
+.mic.falando{background:radial-gradient(circle at 35% 30%,#7BE8B6,var(--verde) 60%);box-shadow:0 0 0 14px rgba(63,208,138,.16),0 24px 60px -14px rgba(63,208,138,.7)}
+.mic.falando::after{border-color:var(--verde);opacity:.5}
+.mic:disabled{opacity:.7;cursor:progress}
+@media (prefers-reduced-motion:no-preference){
+  .mic.parado{animation:respira 3.2s ease-in-out infinite}
+  @keyframes respira{50%{box-shadow:0 0 0 22px rgba(255,217,59,.10),0 24px 60px -14px rgba(255,217,59,.55)}}
+  .mic.ouvindo::after,.mic.falando::after{animation:onda 1.6s ease-out infinite}
+  @keyframes onda{from{transform:scale(.94);opacity:.6}to{transform:scale(1.2);opacity:0}}
+}
+.estado{font:600 18px var(--titulo);margin:0}
+.tempo{color:var(--suave);font-size:14px;margin:0;font-variant-numeric:tabular-nums}
+.encerrar{background:none;border:2px solid var(--linha);border-radius:999px;padding:8px 18px;color:var(--velho);font-weight:600}
+.erro{color:var(--velho);margin:0;max-width:36ch}
+
+/* exemplos como balões de fala, alternando português e espanhol */
+.baloes{width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px;margin-top:10px;min-height:92px}
+.balao{background:var(--papel);border:1px solid var(--linha);padding:9px 14px;border-radius:18px 18px 18px 4px;align-self:flex-start;font-size:15px;color:var(--suave)}
+.balao:nth-child(2){border-radius:18px 18px 4px 18px;align-self:flex-end}
+@media (prefers-reduced-motion:no-preference){.balao{transition:opacity .4s}.baloes.troca .balao{opacity:0}}
+
+/* localização: uma linha discreta com interruptor */
+.local{display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:var(--suave);margin:2px 0 0}
+.local label{display:flex;align-items:center;gap:10px;cursor:pointer;min-height:44px}
+.local svg{width:16px;height:16px;flex:none}
+.chave{appearance:none;width:42px;height:24px;border-radius:999px;background:var(--linha);position:relative;margin:0;cursor:pointer;flex:none;transition:background .2s}
+.chave::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.chave:checked{background:var(--marca)}
+.chave:checked::after{transform:translateX(18px)}
+select{font:inherit;color:#fff;background:var(--papel);border:1px solid var(--linha);border-radius:999px;padding:8px 14px;min-height:44px}select option{color:#000}
+
+/* resultados que o agente achou */
+.res{margin:6px 0 20px}
+.res h2{font:800 22px var(--titulo);margin:0 0 4px}
+.res .pq{color:var(--suave);font-size:14px;margin:0 0 12px}
+.cartao{background:var(--recibo);border:1px solid var(--linha);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center}
+.cartao b{font-weight:600}
+.cartao small{color:var(--suave);font-size:13px;grid-column:1}
+.cartao .p{font:800 22px var(--titulo);color:#fff;font-variant-numeric:tabular-nums;grid-row:span 2;grid-column:2}
+.cartao.top{border:2px solid var(--marca);background:rgba(255,217,59,.14)}
+.cartao .falta{color:var(--velho)}
+.itens{margin:0 0 12px;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.itens li{background:var(--papel);border:1px solid var(--linha);border-radius:999px;padding:4px 10px;font-size:14px}
+
+.nota{margin:auto 0 0;padding:16px 0 calc(16px + env(safe-area-inset-bottom));color:var(--suave);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="col">
+  <header><a class="logo" href="/">lista certa<i>.</i></a><a href="/app">Montar lista</a></header>
+  <h1>Pergunte em voz alta</h1>
+  <p class="sub">Em português ou en español.</p>
+
+  <section class="palco" aria-live="polite">
+    <button class="mic parado" id="mic" aria-label="Começar a conversa">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>
+    </button>
+    <p class="estado" id="estado">Toque e fale</p>
+    <p class="tempo" id="tempo" hidden></p>
+    <p class="erro" id="aviso" hidden></p>
+    <button class="encerrar" id="encerrar" hidden>Encerrar conversa</button>
+    <div class="baloes" id="baloes" aria-hidden="true"><span class="balao"></span><span class="balao"></span></div>
+    <div class="local" id="local"><label>Cidade
+      <select id="cidade" aria-label="Cidade"><option value="Gramado">Gramado</option><option value="Canela">Canela</option><option value="Igrejinha">Igrejinha</option><option value="Nova Petrópolis">Nova Petrópolis</option><option value="São Francisco de Paula">São Francisco de Paula</option></select></label></div>
+  </section>
+
+  <section class="res" id="res" hidden></section>
+
+  <p class="nota" id="nota">Preços de cupons fiscais, vídeos de prateleira e folhetos de ofertas, só da mesma embalagem. Até 3 minutos por conversa. A Lista Certa não grava sua voz.</p>
+</div>
+
+<script type="module">
+import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.28.0/+esm";
+
+const $ = (s) => document.querySelector(s);
+const brl = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const norm = (s) => String(s || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+const titulo = (s) => String(s || "").toLowerCase().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase());
+const MAX_SEG = 180;
+
+/* exemplos: um em português e um em espanhol, trocando de tempos em tempos */
+const EXEMPLOS = [
+  ["“Quanto está o café?”", "“¿Dónde está más barato el arroz?”"],
+  ["“Arroz, feijão e óleo em Canela”", "“Pasta con ajo y aceite para la cena”"],
+  ["“Quanto sai a cesta básica?”", "“¿Cuánto cuesta la leche entera?”"],
+];
+let ex = 0;
+function mostrarExemplos() { const [a, b] = EXEMPLOS[ex % EXEMPLOS.length]; const s = $("#baloes").children; s[0].textContent = a; s[1].textContent = b; }
+mostrarExemplos();
+setInterval(() => {
+  if ($("#baloes").hidden || document.hidden) return;
+  $("#baloes").classList.add("troca");
+  setTimeout(() => { ex++; mostrarExemplos(); $("#baloes").classList.remove("troca"); }, 400);
+}, 4500);
+
+/* cidade: a mesma escolhida no app (lc-city) */
+const CHAVES = { gramado: "Gramado", canela: "Canela", igrejinha: "Igrejinha", novapetropolis: "Nova Petrópolis", sfpaula: "São Francisco de Paula" };
+let cidade = "Gramado";
+try { cidade = CHAVES[localStorage.getItem("lc-city")] || cidade; } catch (e) {}
+$("#cidade").value = cidade;
+$("#cidade").onchange = (e) => {
+  cidade = e.target.value;
+  try { localStorage.setItem("lc-city", Object.keys(CHAVES).find((k) => CHAVES[k] === cidade)); } catch (er) {}
+};
+const cidadeDe = (txt) => { const n = norm(txt); return (n && Object.values(CHAVES).find((c) => norm(c) === n || norm(c).includes(n) || n.includes(norm(c)))) || cidade; };
+
+/* ---------- preços: os mesmos que o app usa (/api/v1/cupons: cupons, vídeos e ofertas de folheto) ---------- */
+const cache = {};
+const dados = (c) => (cache[c] ||= fetch("/api/v1/cupons?cidade=" + encodeURIComponent(c)).then((r) => r.json()).then((j) => (j.dados || []).filter((x) => x.preco > 0)));
+
+/* tamanho da embalagem; sem tamanho conhecido = fora da comparação (nada é suposto) */
+function tamanho(txt, unidade) {
+  const m = norm(txt).match(/(?:(\d+)\s*x\s*)?(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|lt|l|un)(?![a-z])/);
+  if (m) {
+    const q = parseFloat(m[2].replace(",", ".")) * (m[1] ? +m[1] : 1), u = m[3];
+    return u === "kg" ? { b: "kg", q } : u === "g" || u === "gr" ? { b: "kg", q: q / 1000 } : u === "l" || u === "lt" ? { b: "l", q } : u === "ml" ? { b: "l", q: q / 1000 } : { b: "un", q };
+  }
+  return /^kg$/i.test(unidade || "") ? { b: "kg", q: 1 } : null;
+}
+const chaveTam = (t) => t.b + Math.round(t.q * 1000);
+const rotuloTam = (t) => t.b === "kg" ? (t.q < 1 ? Math.round(t.q * 1000) + " g" : t.q.toLocaleString("pt-BR") + " kg")
+  : t.b === "l" ? (t.q < 1 ? Math.round(t.q * 1000) + " ml" : t.q.toLocaleString("pt-BR") + " L") : t.q + " un";
+const SEM_TAM = /(\d+(?:[.,]\d+)?\s*x\s*)?\d+(?:[.,]\d+)?\s*(kg|gr|g|ml|lt|l|un)\b/g;
+const PARADA = new Set(["de", "da", "do", "com", "e", "tipo", "pra", "para"]);
+
+/* linhas que casam com o termo (todas as palavras, no começo de uma palavra do nome) */
+function casar(linhas, termo) {
+  const toks = norm(termo).replace(SEM_TAM, " ").split(/[^a-z0-9]+/).filter((t) => t && !PARADA.has(t)).map((t) => t.replace(/s$/, ""));
+  if (!toks.length) return [];
+  const res = toks.map((t) => new RegExp("\\b" + t));
+  return linhas.filter((x) => { const n = norm(x.descricao); return res.every((r) => r.test(n)); })
+    .map((x) => ({ ...x, t: tamanho(x.descricao, x.unidade) })).filter((x) => x.t);
+}
+const porTamanho = (rs) => { const g = new Map(); rs.forEach((x) => { const k = chaveTam(x.t); (g.get(k) || g.set(k, []).get(k)).push(x); }); return g; };
+const nMercados = (rs) => new Set(rs.map((x) => x.mercado)).size;
+
+/* um item: o tamanho pedido, ou o que aparece em mais mercados; por mercado vale o preço mais baixo */
+function achar(linhas, termo, tam) {
+  const g = porTamanho(casar(linhas, termo));
+  const pedido = tam || tamanho(termo);
+  let k = pedido ? chaveTam(pedido) : null;
+  if (!k || !g.has(k)) { if (pedido || !g.size) return null; k = [...g.keys()].sort((a, b) => nMercados(g.get(b)) - nMercados(g.get(a)) || g.get(b).length - g.get(a).length)[0]; }
+  const grupo = g.get(k), m = new Map();
+  grupo.forEach((x) => { if (!m.has(x.mercado) || x.preco < m.get(x.mercado).preco) m.set(x.mercado, x); });
+  return { termo, tam: grupo[0].t, mercados: m };
+}
+
+function abrirRes() { $("#res").hidden = false; document.body.classList.add("com-res"); return $("#res"); }
+
+/* ---------- ferramentas que o agente chama: consultam o banco e mostram na tela ---------- */
+async function ver_opcoes({ termo, cidade: c }) {
+  const cd = cidadeDe(c), g = porTamanho(casar(await dados(cd), termo));
+  const ops = [...g.values()].sort((a, b) => nMercados(b) - nMercados(a)).slice(0, 6)
+    .map((rs) => ({ nome: rs.slice().sort((a, b) => a.preco - b.preco)[0].descricao, tam: rs[0].t, n: nMercados(rs) }));
+  const res = abrirRes();
+  if (!ops.length) { res.innerHTML = `<h2>${esc(termo)}</h2><p class="pq">Sem preço recente em ${esc(cd)}.</p>`; return `Não há opções com preço recente para "${termo}" em ${cd}.`; }
+  res.innerHTML = `<h2>Opções de ${esc(termo)}</h2><ul class="itens">${ops.map((x) => `<li>${esc(titulo(x.nome))}</li>`).join("")}</ul>`;
+  return `Opções que existem para "${termo}" em ${cd}: ` + ops.map((x) => `${x.nome} (tamanho ${rotuloTam(x.tam)}, em ${x.n} ${x.n === 1 ? "mercado" : "mercados"})`).join("; ")
+    + `. Ofereça só estas. Ao comparar, use o nome e o tamanho escolhidos, ex.: "${termo} ${rotuloTam(ops[0].tam)}".`;
+}
+
+const buscar_produto = ({ termo, cidade: c }) => comparar_lista({ itens: [termo], cidade: c });
+
+async function comparar_lista({ itens, cidade: c }) {
+  const termos = (Array.isArray(itens) ? itens : [itens]).map(String).filter(Boolean).slice(0, 15);
+  const cd = cidadeDe(c), linhas = await dados(cd), achados = [], nao = [];
+  for (const t of termos) { const a = achar(linhas, t); a ? achados.push({ ...a, qtd: 1 }) : nao.push(t); }
+  if (!achados.length) {
+    abrirRes().innerHTML = `<h2>Sua lista</h2><p class="pq">Não achei preço recente desses itens em ${esc(cd)}.</p>`;
+    return `Não encontrei preço recente de nenhum destes itens em ${cd}: ${termos.join(", ")}.`;
+  }
+  return mostrar(achados, nao, cd, null);
+}
+
+/* listas prontas montadas no admin: usa exatamente os itens, tamanhos e quantidades de lá */
+async function lista_pronta({ nome, cidade: c }) {
+  const listas = (await (await fetch("/api/v1/listas")).json()).dados || [];
+  const n = norm(nome), l = listas.find((x) => norm(x.nome) === n) || listas.find((x) => norm(x.nome).includes(n) || n.includes(norm(x.nome)));
+  if (!l) return `Não há lista pronta com o nome "${nome}". As listas prontas são: ${listas.map((x) => x.nome).join(", ") || "nenhuma por enquanto"}.`;
+  const cd = cidadeDe(c), linhas = await dados(cd), achados = [], nao = [];
+  for (const i of l.itens) {
+    const t = i.tu === "g" ? { b: "kg", q: i.tam / 1000 } : i.tu === "ml" ? { b: "l", q: i.tam / 1000 } : { b: i.tu, q: i.tam };
+    const a = achar(linhas, i.termo || i.nome, t);
+    a ? achados.push({ ...a, termo: i.nome, qtd: i.qtd || 1 }) : nao.push(i.nome);
+  }
+  if (!achados.length) return `Nenhum item da lista "${l.nome}" tem preço recente em ${cd}.`;
+  return mostrar(achados, nao, cd, l.nome);
+}
+
+/* ranking como no app: menos itens faltando primeiro, depois o menor total */
+function mostrar(achados, nao, cd, nomeLista) {
+  const ms = new Map();
+  achados.forEach((a, i) => a.mercados.forEach((x, m) => { const r = ms.get(m) || ms.set(m, { m, total: 0, tem: new Set() }).get(m); r.total += x.preco * a.qtd; r.tem.add(i); }));
+  const linhas = [...ms.values()].map((r) => ({ ...r, faltam: achados.length - r.tem.size })).sort((a, b) => a.faltam - b.faltam || a.total - b.total).slice(0, 5);
+  const varios = achados.length > 1, qt = (a) => (a.qtd > 1 ? `${a.qtd}× ` : ""), nm = (a) => `${qt(a)}${titulo(a.termo)} ${rotuloTam(a.tam)}`;
+  abrirRes().innerHTML = `<h2>${nomeLista ? esc(nomeLista) : varios ? "Sua lista" : esc(nm(achados[0]))}</h2>
+    ${varios ? `<ul class="itens">${achados.map((a) => `<li>${esc(nm(a))}</li>`).join("")}</ul>` : ""}
+    ${nao.length ? `<p class="pq">Sem preço recente em ${esc(cd)}: ${esc(nao.join(", "))}.</p>` : ""}
+    <p class="pq">Mercados de ${esc(cd)}, do mais barato ao mais caro (só embalagens do mesmo tamanho).</p>`
+    + linhas.map((r, i) => `<div class="cartao${i === 0 ? " top" : ""}"><b>${i + 1}. ${esc(titulo(r.m))}</b><span class="p">${brl(r.total)}</span>
+        <small>${r.faltam ? `<span class="falta">faltam ${r.faltam}</span>` : varios ? "todos os itens" : "menor preço encontrado"}</small></div>`).join("");
+  return (nomeLista ? `Lista pronta "${nomeLista}". ` : "") + `Em ${cd}, itens comparados: ${achados.map(nm).join(", ")}.`
+    + (nao.length ? ` Sem preço recente: ${nao.join(", ")}.` : "")
+    + linhas.slice(0, 3).map((r, i) => ` ${i + 1}º ${titulo(r.m)}: ${brl(r.total)}${r.faltam ? `, faltando ${r.faltam} ${r.faltam === 1 ? "item" : "itens"}` : ""}.`).join("");
+}
+
+/* ---------- conversa só por voz: o mesmo botão começa e encerra ---------- */
+let conversa = null, relogio = null, inicio = 0;
+const mic = $("#mic");
+
+function estado(txt, classe) { $("#estado").textContent = txt; mic.className = "mic " + (classe || "parado"); }
+function emConversa(sim) { $("#baloes").hidden = sim; $("#local").hidden = sim; $("#nota").hidden = sim; }
+
+async function comecar() {
+  mic.disabled = true; aviso(""); estado("Conectando…", "ouvindo"); emConversa(true);
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    const r = await fetch("/api/agente"); if (!r.ok) throw new Error("agente");
+    const { signedUrl } = await r.json();
+    conversa = await Conversation.startSession({
+      signedUrl,
+      clientTools: { buscar_produto, comparar_lista, ver_opcoes, lista_pronta },
+      onConnect: () => {
+        inicio = Date.now(); $("#tempo").hidden = false; $("#encerrar").hidden = false; mic.disabled = false;
+        mic.setAttribute("aria-label", "Encerrar a conversa");
+        relogio = setInterval(() => { const s = Math.max(0, MAX_SEG - Math.round((Date.now() - inicio) / 1000)); $("#tempo").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} restantes`; }, 500);
+      },
+      onModeChange: ({ mode }) => mode === "speaking" ? estado("Lista Certa falando…", "falando") : estado("Pode falar, estou ouvindo", "ouvindo"),
+      onDisconnect: terminou,
+      onError: () => aviso("A conversa caiu. Toque no microfone para tentar de novo."),
+    });
+  } catch (e) {
+    mic.disabled = false; estado("Toque e fale"); emConversa(false);
+    aviso(e && e.name === "NotAllowedError" ? "Preciso do microfone para conversar. Libere o acesso nas permissões do navegador." : "Não deu para conectar agora. Tente de novo em instantes.");
+  }
+}
+function terminou() {
+  conversa = null; clearInterval(relogio);
+  $("#tempo").hidden = true; $("#encerrar").hidden = true; mic.disabled = false;
+  mic.setAttribute("aria-label", "Começar a conversa"); estado("Toque e fale de novo");
+  emConversa(false);
+}
+async function encerrar() { if (conversa) await conversa.endSession(); terminou(); }
+
+function aviso(txt) { $("#aviso").textContent = txt || ""; $("#aviso").hidden = !txt; }
+mic.onclick = () => conversa ? encerrar() : comecar();
+$("#encerrar").onclick = encerrar;
+</script>
+<script src="/atualizacao.js" data-versao="/api/versao" defer></script>
+</body>
+</html>

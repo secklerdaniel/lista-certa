@@ -139,6 +139,20 @@ async function limpeza(req, res) {
   enviar(res, 200, { ok: true, dias: DIAS, apagadas });
 }
 
+/* GET /api/agente  → link temporário para o navegador conversar com o agente de voz (a chave da ElevenLabs fica aqui; o agente só aceita link assinado; criado por scripts/criar-agente.mjs) */
+const AGENTE = "agent_8001m61sdcj0e1rb7per5szcd11r";
+async function agente(req, res) {
+  const r = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${AGENTE}`, { headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY || "" } });
+  if (!r.ok) return erro(res, 502, "agente", "Agente indisponível.");
+  enviar(res, 200, { ok: true, signedUrl: (await r.json()).signed_url });
+}
+
+/* GET /api/v1/listas  → listas prontas montadas pela equipe no admin (nome + itens), para o agente de voz */
+async function listas(req, res) {
+  const r = await require("../_produtos").listasTodas();
+  enviar(res, 200, { ok: true, dados: r.map(l => ({ nome: l.nome, itens: l.itens })) });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") return erro(res, 405, "metodo", "Use GET.");
   const acao = (req.query && req.query.acao) || "";
@@ -149,6 +163,8 @@ module.exports = async (req, res) => {
     if (acao === "proximos") return await proximos(req, res);
     if (acao === "regiao") return await regiao(req, res);
     if (acao === "cupons") return await cupons(req, res);
+    if (acao === "agente") return await agente(req, res);
+    if (acao === "listas") return await listas(req, res);
     return erro(res, 404, "rota", "Rota não encontrada.");
   } catch (e) { return erro(res, 500, "interno", "Erro interno."); }
 };
