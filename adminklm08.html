@@ -768,7 +768,7 @@ function desenharProdutos() {
 function linhaPreco(r) {
   const val = r.fonte === "oferta" ? (r.ate ? " · até " + new Date(r.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : " · 14 dias") : "";
   const acoes = r.fonte === "cupom" ? '<small class="tag off">cupom: só leitura</small>' : `<button class="btn sec" data-pa="editarP" data-fonte="${r.fonte}" data-id="${r.id}">Editar</button> <button class="btn sec bad" data-pa="excluirP" data-fonte="${r.fonte}" data-id="${r.id}">Apagar</button>`;
-  return `<div class="lin"><span><b>${esc(r.nome)}</b>${r.marca ? " · " + esc(r.marca) : ""}${esc(tam(r))} <small>${esc(r.mercado)} · ${esc(r.cidade)} · ${FONTE_NOME(r.fonte)}${val}${r.pu != null ? "" : " · sem tamanho"}${r.promo ? " · promo " + brl(r.promo) : ""}</small></span><span><b>${brl(r.preco)}</b> ${acoes}</span></div>`;
+  return `<div class="lin"><span><b>${esc(r.nome)}</b>${r.marca ? " · " + esc(r.marca) : ""}${esc(tam(r))}${r.orig ? ` <i style="color:var(--muted)">“${esc(r.orig)}”</i>` : ""} <small>${esc(r.mercado)} · ${esc(r.cidade)} · ${FONTE_NOME(r.fonte)}${val}${r.obs ? " · " + esc(r.obs) : ""}${r.pu != null ? "" : " · sem tamanho"}${r.promo ? " · promo " + brl(r.promo) : ""}</small></span><span><b>${brl(r.preco)}</b> ${acoes}</span></div>`;
 }
 function pLimpar() { $("#pForm").reset(); $("#pId").value = ""; $("#pFonte").value = "oferta"; $("#pCid").value = "Gramado"; $("#pFormTit").textContent = "Adicionar preço de produto"; $("#pSalvar").textContent = "Adicionar"; $("#pCancelar").hidden = true; }
 $("#pCancelar").onclick = pLimpar;

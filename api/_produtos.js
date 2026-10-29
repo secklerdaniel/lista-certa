@@ -32,7 +32,7 @@ function tamanho(r) {
 async function listar() {
   const q = s => sql().query(s);
   const [of, co, cu, listas, reg] = await Promise.all([
-    q(`select id, produto as nome, marca, quantidade as qtd, unidade as un, categoria, mercado, cidade, preco, valido_ate as ate, validade_obs as obs, criado_em as em from ofertas
+    q(`select id, produto as nome, marca, quantidade as qtd, unidade as un, categoria, mercado, cidade, preco, valido_ate as ate, validade_obs as obs, produto_original as orig, criado_em as em from ofertas
         where coalesce(valido_ate >= current_date, criado_em > now() - interval '14 days') order by id desc limit 3000`),
     q(`select id, descricao as nome, categoria, mercado_nome as mercado, cidade, preco, promocao_preco as promo, origem, criado_em as em from coletas order by id desc limit 2000`),
     q(`select id, descricao as nome, categoria, mercado_nome as mercado, cidade, preco_unit as preco, unidade as un, qtd, cnpj, criado_em as em from precos_cupom order by id desc limit 2000`),
@@ -44,7 +44,7 @@ async function listar() {
   const num = v => (v == null ? null : Number(v));
   const linhas = [
     ...of.map(r => ({ fonte: "oferta", id: r.id, nome: r.nome, marca: r.marca, qtd: num(r.qtd), un: r.un, cat: CAT_OFERTA[(r.categoria || "").toLowerCase()] || (IA.CATEGORIAS.includes(r.categoria) ? r.categoria : null),
-      catOriginal: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), ate: r.ate, obs: r.obs, em: r.em })),
+      catOriginal: r.categoria, orig: r.orig, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), ate: r.ate, obs: r.obs, em: r.em })),
     ...co.map(r => ({ fonte: "coleta", origem: r.origem, id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), promo: num(r.promo), em: r.em })),
     ...cu.map(r => ({ fonte: "cupom", id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), un: r.un, qtd: num(r.qtd), em: r.em })),
   ];
@@ -72,8 +72,9 @@ async function oferta(b) {
   const { ok, rejeitados } = ofertas.validar([item], hoje);
   if (!ok.length) return { status: 422, msg: (rejeitados[0] && rejeitados[0].erro) || "Oferta inválida." };
   const mapa = await ofertas.mapaOficial(), of = ofertas.oficial(mapa, ok[0][0], ok[0][1]), x = ok[0];
-  await sql().query(`update ofertas set mercado=$1, cidade=$2, categoria=$3, produto=$4, marca=$5, quantidade=$6, unidade=$7, preco=$8, valido_ate=$9, validade_obs=$10 where id=$11`,
-    [of ? of.nome : x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[9], x[10], parseInt(b.id, 10) || 0]);
+  await sql().query(`update ofertas set mercado=$1, cidade=$2, categoria=$3, produto=$4, marca=$5, quantidade=$6, unidade=$7, preco=$8, valido_ate=$9, validade_obs=$10,
+      produto_original = case when produto = $4 then coalesce($12, produto_original) else $12 end where id=$11`, /* editou sem trocar o produto: o nome do folheto fica */
+    [of ? of.nome : x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[9], x[10], parseInt(b.id, 10) || 0, x[11]]);
   return { status: 200 };
 }
 

@@ -50,7 +50,8 @@ function validar(lista, hoje) {
     if (ate != null && !iso(ate)) { obs = obs || txt(ate, 120); avisos.push(`linha ${i + 1}: valido_ate "${ate}" não é data; guardado como observação`); ate = null; }
     if (ate && ate < hoje) return rej(`valido_ate ${ate} já passou`);
     if (de && ate && ate < de) return rej("valido_ate anterior a valido_de");
-    ok.push([mercado, cidade, txt(it.categoria, 60) || null, produto, txt(it.marca, 60) || null, qtd, un, Math.round(preco * 100) / 100, de, ate, obs]);
+    const bruto = txt(it.produto_normalizado, 120); /* nome como veio do folheto: as nuances (Medalhão, Congelada, Tipo 1) que o nome normalizado tira */
+    ok.push([mercado, cidade, txt(it.categoria, 60) || null, produto, txt(it.marca, 60) || null, qtd, un, Math.round(preco * 100) / 100, de, ate, obs, bruto !== produto ? bruto : null]);
   });
   return { ok, rejeitados, avisos };
 }
@@ -111,13 +112,13 @@ async function carregar(corpo, acrescentar, modo) {
     apagar = ex.filter(o => novos.has(chaveProd(o.mercado, o.cidade, o.produto, o.marca, o.quantidade, o.unidade))).map(o => o.id);
   }
   const r = await sql().query(
-    `with entrada as (select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::numeric[],$7::text[],$8::numeric[],$9::date[],$10::date[],$11::text[])
-         as t(mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs)),
+    `with entrada as (select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::numeric[],$7::text[],$8::numeric[],$9::date[],$10::date[],$11::text[],$13::text[])
+         as t(mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs,produto_original)),
      del as (delete from ofertas where not $12::boolean and (lower(mercado), lower(cidade)) in (select lower(mercado), lower(cidade) from entrada) returning 1),
-     ins as (insert into ofertas (mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs,fonte)
+     ins as (insert into ofertas (mercado,cidade,categoria,produto,marca,quantidade,unidade,preco,valido_de,valido_ate,validade_obs,produto_original,fonte)
          select *, 'admin' from entrada returning 1)
      select (select count(*) from ins)::int as inseridas, (select count(*) from del)::int as substituidas`,
-    [c(0), c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8), c(9), c(10), acrescentar === true || modo === "produto"]);
+    [c(0), c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8), c(9), c(10), acrescentar === true || modo === "produto", c(11)]);
   if (apagar.length) await sql().query(`delete from ofertas where id = any($1::int[])`, [apagar]); /* depois de inserir: se a carga falhar, nada se perde */
   const porMercado = {}; ok.forEach(x => { const k = x[0] + " · " + x[1]; porMercado[k] = (porMercado[k] || 0) + 1; });
   return { status: 200, inseridas: r[0].inseridas, substituidas: modo === "produto" ? apagar.length : r[0].substituidas, porMercado, rejeitados, avisos };
