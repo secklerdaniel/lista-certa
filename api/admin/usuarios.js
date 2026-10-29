@@ -54,6 +54,10 @@ module.exports = async (req, res) => {
       }
       if (req.query && req.query.resumo) return enviar(res, 200, { ok: true, ...(await resumo()) });
       if (req.query && req.query.produtos) return enviar(res, 200, Object.assign({ ok: true }, await produtos.listar()));
+      if (req.query && req.query.ofertas && req.query.mercado) {
+        const r = await sql().query(`select mercado, cidade, categoria, produto, marca, quantidade, unidade, preco, valido_ate, validade_obs from ofertas where lower(mercado) = lower($1) and lower(cidade) = lower($2) order by produto, preco`, [req.query.mercado, req.query.cidade || ""]);
+        return enviar(res, 200, { ok: true, dados: r });
+      }
       if (req.query && req.query.ofertas) {
         const r = await sql().query(`select mercado, cidade, count(*)::int as itens, min(valido_ate) as ate, max(criado_em) as carregado_em from ofertas group by 1,2 order by max(criado_em) desc`);
         return enviar(res, 200, { ok: true, dados: r });

@@ -554,8 +554,21 @@ $("#oCopiar").onclick = () => { navigator.clipboard.writeText(ESQUEMA).then(() =
 async function carregarOfertas() {
   const l = (await chamar("/api/admin/usuarios?ofertas=1")).dados; OAR = l;
   $("#oTit").textContent = `Ofertas no ar (${l.reduce((a, x) => a + x.itens, 0)})`;
-  $("#olista").innerHTML = l.map(x => `<div class="card"><b>${esc(x.mercado)}</b> · ${esc(x.cidade)}<div class="meta">${x.itens} ofertas · ${x.ate ? "até " + new Date(x.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "sem data (14 dias)"} · carregado em ${fmtData(x.carregado_em)}</div></div>`).join("") || '<p class="msg">Nenhuma oferta no ar.</p>';
+  $("#olista").innerHTML = l.map(x => `<div class="card"><b>${esc(x.mercado)}</b> · ${esc(x.cidade)}<div class="meta">${x.itens} ofertas · ${x.ate ? "até " + new Date(x.ate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "sem data (14 dias)"} · carregado em ${fmtData(x.carregado_em)}</div><button class="btn sec" type="button" data-oabrir="${esc(x.mercado)}|${esc(x.cidade)}" style="margin-top:6px">Abrir para editar</button></div>`).join("") || '<p class="msg">Nenhuma oferta no ar.</p>';
 }
+$("#olista").addEventListener("click", async e => {
+  const b = e.target.closest("[data-oabrir]"); if (!b) return;
+  const [m, c] = b.dataset.oabrir.split("|");
+  if (ORV.length && !confirm("Já há ofertas na tabela de conferência. Abrir estas e manter as outras?")) return;
+  try {
+    const l = (await chamar("/api/admin/usuarios?ofertas=1&mercado=" + encodeURIComponent(m) + "&cidade=" + encodeURIComponent(c))).dados;
+    ORV.splice(0, ORV.length, ...ORV.filter(r => !(norm(r.mercado) === norm(m) && norm(r.cidade) === norm(c))));
+    l.forEach(x => ORV.push({ id: ++ORID, sel: true, arquivo: "salvas", mercado: x.mercado, cidade: x.cidade, produto: x.produto, marca: x.marca || "", qtd: x.quantidade == null ? "" : String(+x.quantidade).replace(".", ","),
+      un: x.unidade || "", preco: String(+x.preco).replace(".", ","), ate: x.valido_ate ? String(x.valido_ate).slice(0, 10) : "", obs: x.validade_obs || "", cat: x.categoria || "", erro: "" }));
+    $("#oModo").value = "mercado"; desenharRev(); $("#oRev").scrollIntoView({ behavior: "smooth" });
+    $("#oRes2").style.color = ""; $("#oRes2").textContent = `${l.length} ofertas de ${m} abertas. Edite, remova (×) ou corrija e salve: o modo "substituir tudo do mercado" troca as que estão no ar por estas.`;
+  } catch (err) { toast(err.message); }
+});
 $("#oEnviar").onclick = async () => {
   let j; $("#oRes").textContent = "";
   try { j = JSON.parse($("#oJson").value); } catch (e) { $("#oRes").textContent = "JSON inválido: " + e.message; return; }
