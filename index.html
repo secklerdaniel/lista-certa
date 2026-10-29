@@ -116,6 +116,26 @@ h2.cartaz{font-size:clamp(46px,7.4vw,96px);max-width:11em}
 .codigo{background:var(--carbono);color:#E8EDE9;font-family:var(--mono);font-size:13px;line-height:1.7;padding:22px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:10px solid var(--etiqueta)}
 .codigo .c{color:#8FA39A}.codigo .s{color:var(--etiqueta)}
 
+/* ---------- anuncie no grupo ---------- */
+.anuncie{background:var(--papel);border-top:3px solid var(--carbono)}
+.anuncie .selo{display:inline-block;background:var(--carbono);color:var(--etiqueta);font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;padding:7px 14px;border-radius:99px;margin-bottom:18px}
+.planos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin-top:48px;align-items:stretch}
+.plano{position:relative;display:flex;flex-direction:column;background:#fff;border:3px solid var(--carbono);border-radius:18px;padding:30px 26px 26px;box-shadow:8px 8px 0 rgba(21,25,26,.12)}
+.plano.top{background:#FFFDF0;box-shadow:8px 8px 0 var(--carbono)}
+.plano .fita{position:absolute;top:-17px;left:24px;background:var(--etiqueta);border:3px solid var(--carbono);border-radius:99px;font-weight:800;font-size:12px;letter-spacing:.06em;padding:4px 14px}
+.plano h3{font-size:28px;font-stretch:80%;font-weight:900;line-height:1.05}
+.plano .para{color:#555;font-size:15px;margin-top:6px}
+.preco{margin:22px 0 20px;border:3px solid var(--carbono);border-radius:14px;padding:16px 18px}
+.plano.top .preco{background:var(--etiqueta)}
+.preco b{font-size:52px;font-stretch:80%;font-weight:900;line-height:1}
+.preco span{font-weight:800;font-size:17px}.preco small{display:block;margin-top:6px;font-weight:700;font-size:13.5px;color:var(--serra)}
+.plano ul{list-style:none;padding:0;margin:0 0 20px;font-size:16px;display:grid;gap:12px}
+.plano li{display:flex;gap:10px}.plano li::before{content:"✓";flex:none;width:24px;height:24px;border-radius:50%;background:var(--serra);color:#fff;font-size:13px;font-weight:900;display:grid;place-items:center;margin-top:1px}
+.bonus{margin-top:auto;border:2px solid var(--serra);background:var(--serra-claro);color:var(--serra);border-radius:12px;padding:10px 14px;font-weight:800;font-size:14px}
+.bonus.sem{background:#F2F1EC;color:#555;border-color:#9a9a96;font-weight:600}
+.anuncie .rodape{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;justify-content:space-between;margin-top:44px}
+.anuncie .rodape p{font-size:16px;max-width:34em}
+@media(max-width:860px){.planos{grid-template-columns:1fr;max-width:460px;gap:34px}}
 /* ---------- fecho ---------- */
 .fecho{background:var(--etiqueta);text-align:left}
 .fecho h2.cartaz{max-width:9em}
@@ -238,6 +258,39 @@ curl -X POST https://lista-certa-omega.vercel.app/api/v1/precos \
     </div>
   </section>
 
+  <section class="anuncie" id="anuncie" aria-labelledby="anuncie-t">
+    <div class="wrap">
+      <span class="selo">Publicidade local · Gramado e Canela</span>
+      <h2 class="cartaz" id="anuncie-t">Anuncie no Grupo Sacolista.</h2>
+      <p class="texto">Mais de 600 moradores no WhatsApp procurando as ofertas do dia a dia. Seu anúncio vai direto para quem compra na cidade.</p>
+      <div class="planos">
+        <article class="plano">
+          <h3>Anúncio Avulso</h3><p class="para">Para testar ou divulgar uma oferta pontual</p>
+          <div class="preco"><b>R$ 97</b> <span>/ único</span><small>1 disparo completo no grupo</small></div>
+          <ul><li><span><b>1 publicação exclusiva</b> no grupo de moradores</span></li><li><span><b>Horário livre</b> à sua escolha (ex.: 11h, 18h, 19h30)</span></li><li><span><b>Foto ou arte</b> do produto + texto com preço</span></li><li><span><b>Link direto</b> pro cliente pedir no seu WhatsApp</span></li></ul>
+          <p class="bonus sem">Sem menção nas ofertas diárias das 12h</p>
+        </article>
+        <article class="plano top">
+          <span class="fita">★ MAIS ESCOLHIDO</span>
+          <h3>Plano Semanal</h3><p class="para">Presença toda semana para os moradores</p>
+          <div class="preco"><b>R$ 347</b> <span>/ mês</span><small>4 anúncios no mês (R$ 86,75 cada)</small></div>
+          <ul><li><span><b>1 publicação por semana</b> (4 disparos/mês)</span></li><li><span><b>Horário livre</b> à sua escolha no dia combinado</span></li><li><span><b>Foto ou arte</b> + link direto pro seu WhatsApp</span></li><li><span><b>Destaque fixo</b> para mais de 600 moradores locais</span></li></ul>
+          <p class="bonus">🎁 Bônus: 1 menção “Oferecimento” por semana junto às ofertas das 12h</p>
+        </article>
+        <article class="plano">
+          <h3>Plano Duplo</h3><p class="para">Máxima lembrança e giro toda semana</p>
+          <div class="preco"><b>R$ 597</b> <span>/ mês</span><small>8 anúncios no mês (R$ 74,60 cada)</small></div>
+          <ul><li><span><b>2 publicações por semana</b> (8 disparos/mês)</span></li><li><span><b>Horários livres</b> em 2 dias da semana (ex.: 4ª e 6ª)</span></li><li><span><b>Foto ou arte</b> + link direto pro seu WhatsApp</span></li><li><span><b>Prioridade de agenda</b> nos horários de pico</span></li></ul>
+          <p class="bonus">🎁 Bônus: 2 menções “Oferecimento” por semana junto às ofertas das 12h</p>
+        </article>
+      </div>
+      <div class="rodape">
+        <p>Exclusivo para comércios de <b>Gramado e Canela</b> voltados a moradores. Anúncio não mexe no ranking de preços do app: o mais barato é sempre o mais barato.</p>
+        <a class="btn cheio" href="https://wa.me/5554993264627?text=Ol%C3%A1!%20Quero%20anunciar%20no%20Grupo%20Sacolista." target="_blank" rel="noopener">Falar no WhatsApp · (54) 99326-4627</a>
+      </div>
+    </div>
+  </section>
+
   <section class="fecho">
     <div class="wrap">
       <h2 class="cartaz">Pague menos já nesta semana.</h2>
@@ -249,7 +302,7 @@ curl -X POST https://lista-certa-omega.vercel.app/api/v1/precos \
 <footer>
   <div class="wrap">
     <span>Feito com ❤️ por <a href="https://portfolio-daniel-seckler.vercel.app" target="_blank" rel="noopener">Seckler Digital</a></span>
-    <nav><a href="/app">Abrir o app</a><a href="/mercado">Portal do mercado</a><a href="/docs">API</a><a href="/termos">Termos</a><a href="/privacidade">Privacidade</a></nav>
+    <nav><a href="/app">Abrir o app</a><a href="/mercado">Portal do mercado</a><a href="#anuncie">Anuncie</a><a href="/docs">API</a><a href="/termos">Termos</a><a href="/privacidade">Privacidade</a></nav>
   </div>
 </footer>
 
