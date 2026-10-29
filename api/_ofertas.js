@@ -21,7 +21,7 @@ const SINONIMO = {
   "coxa com sobrecoxa": "Coxa e Sobrecoxa",
   "coxao de dentro": "Coxão Mole", "coxao duro": "Coxão de Fora",
   "coxinha da asa de frango": "Coxinha da Asa",
-  "linguica toscana": "Linguiça",
+  /* "Linguiça" e "Linguiça Toscana" são produtos diferentes: não juntar */
 };
 const nomeProduto = p => {
   const n = String(p || "").replace(QUALIF, "").replace(SOBRA, "").replace(/\s+/g, " ").trim();
