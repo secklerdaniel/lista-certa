@@ -820,10 +820,10 @@ function analisarLista(l) {
   }).filter(m => m.n * 100 >= itens.length * MIN_PCT).sort((a, b) => b.n - a.n || a.t - b.t);
   return { itens, mercados, semPreco: itens.filter(it => !it.rows.length) };
 }
-const linhaItem = (i = {}) => `<div class="lin" data-item style="gap:6px"><input type="text" name="i_nome" list="pNomes" placeholder="Produto (ex.: Óleo de soja)" value="${esc(i.nome || "")}" style="flex:3" aria-label="Produto"><input type="text" name="i_termo" placeholder="busca (opcional)" value="${esc(i.termo || "")}" style="flex:2" aria-label="Busca"><input type="text" name="i_tam" inputmode="decimal" value="${esc(QTD(Number(i.tam) || 1))}" style="width:70px" aria-label="Tamanho da embalagem" title="Tamanho da embalagem"><select name="i_tu" aria-label="Unidade da embalagem">${["g", "kg", "ml", "l", "un"].map(u => `<option${(i.tu || "kg") === u ? " selected" : ""}>${u}</option>`).join("")}</select><span style="font-size:13px">×</span><input type="text" name="i_qtd" inputmode="decimal" value="${esc(QTD(Number(i.qtd) || 1))}" style="width:56px" aria-label="Quantas embalagens" title="Quantas embalagens"><button type="button" class="btn sec bad" data-pa="rmItem" aria-label="Remover item">×</button></div>`;
+const linhaItem = (i = {}) => `<div class="lin" data-item style="gap:6px"><input type="text" name="i_nome" list="pNomes" placeholder="Produto (ex.: Óleo de soja)" value="${esc(i.nome || "")}" style="flex:3" aria-label="Produto"><input type="text" name="i_termo" placeholder="busca (opcional)" value="${esc(i.termo || "")}" style="flex:2" aria-label="Busca"><input type="text" name="i_tam" inputmode="decimal" value="${i.tam ? esc(QTD(Number(i.tam))) : ""}" placeholder="auto" style="width:70px" aria-label="Tamanho da embalagem (vazio = o que mais mercados vendem)" title="Vazio = a embalagem que mais mercados vendem"><select name="i_tu" aria-label="Unidade da embalagem">${["g", "kg", "ml", "l", "un"].map(u => `<option${(i.tu || "kg") === u ? " selected" : ""}>${u}</option>`).join("")}</select><span style="font-size:13px">×</span><input type="text" name="i_qtd" inputmode="decimal" value="${esc(QTD(Number(i.qtd) || 1))}" style="width:56px" aria-label="Quantas embalagens" title="Quantas embalagens"><button type="button" class="btn sec bad" data-pa="rmItem" aria-label="Remover item">×</button></div>`;
 const formLista = l => `<form data-lform="${l ? l.id : "novo"}"><label>Nome da lista</label><input type="text" name="nome" required maxlength="80" value="${esc(l ? l.nome : "")}" placeholder="Cesta básica">
   <label>Descrição (opcional)</label><input type="text" name="descricao" maxlength="200" value="${esc(l && l.descricao || "")}">
-  <label>Itens: produto · busca · tamanho da embalagem · × quantas embalagens</label><div data-itens>${(l && l.itens.length ? l.itens : [{}]).map(linhaItem).join("")}</div>
+  <label>Itens: só o produto basta. Tamanho vazio = a embalagem que mais mercados vendem; × quantas (padrão 1)</label><div data-itens>${(l && l.itens.length ? l.itens : [{}]).map(linhaItem).join("")}</div>
   <div class="acoes"><button type="button" class="btn sec" data-pa="addItem">+ Item</button><button class="btn" type="submit" style="margin-top:0">Salvar lista</button>${l ? '<button type="button" class="btn sec" data-pa="fecharL">Cancelar</button>' : ""}</div><p class="msg" data-err></p></form>`;
 function desenharListas() {
   if (!$("#lNovaForm").innerHTML) $("#lNovaForm").innerHTML = formLista(null);
@@ -851,10 +851,21 @@ function desenharListas() {
 async function salvarLista(f) {
   const err = f.querySelector("[data-err]"); err.textContent = "";
   const itens = [...f.querySelectorAll("[data-item]")].map(d => ({ nome: d.querySelector("[name=i_nome]").value, termo: d.querySelector("[name=i_termo]").value, tam: d.querySelector("[name=i_tam]").value, tu: d.querySelector("[name=i_tu]").value, qtd: d.querySelector("[name=i_qtd]").value })).filter(i => i.nome.trim());
+  /* tamanho vazio = a embalagem que mais mercados vendem (mais mercados da mesma cidade; empate: mais preços) */
+  const auto = [], sem = [];
+  itens.forEach(i => {
+    if (String(i.tam).trim()) return;
+    const t = {}; PL.filter(r => r.pu != null && casa(i, r)).forEach(r => { const k = r.base + "|" + r.q; (t[k] = t[k] || { base: r.base, q: r.q, m: new Set(), n: 0 }).m.add(r.mercado + "|" + r.cidade); t[k].n++; });
+    const b = Object.values(t).sort((x, y) => y.m.size - x.m.size || y.n - x.n)[0];
+    if (!b) return sem.push(i.nome);
+    [i.tam, i.tu] = b.base === "un" ? [b.q, "un"] : b.q >= 1 ? [b.q, b.base] : [Math.round(b.q * 1000), b.base === "kg" ? "g" : "ml"];
+    auto.push(`${i.nome} ${QTD(i.tam)} ${i.tu}`);
+  });
+  if (sem.length) { err.textContent = `Sem preço com tamanho para: ${sem.join(", ")}. Confira o nome ou informe o tamanho.`; return; }
   const novo = f.dataset.lform === "novo";
   try {
     await chamar("/api/admin/usuarios", "POST", { lista: { acao: novo ? "criar" : "editar", id: novo ? undefined : +f.dataset.lform, nome: f.nome.value, descricao: f.descricao.value, itens } });
-    toast("Lista salva"); PEDIT = null; if (novo) { $("#lNovaForm").innerHTML = ""; $("#lNovaDet").open = false; } await carregarProdutos();
+    toast("Lista salva" + (auto.length ? ` · tamanho escolhido: ${auto.join(", ")}` : "")); PEDIT = null; if (novo) { $("#lNovaForm").innerHTML = ""; $("#lNovaDet").open = false; } await carregarProdutos();
   } catch (x) { err.textContent = x.message; }
 }
 document.addEventListener("submit", e => { const f = e.target.closest("form[data-lform]"); if (f) { e.preventDefault(); salvarLista(f); } });
