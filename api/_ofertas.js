@@ -25,6 +25,7 @@ const SINONIMO = {
 };
 const nomeProduto = p => {
   const n = String(p || "").replace(QUALIF, "").replace(SOBRA, "").replace(/\s+/g, " ").trim();
+  if (/^ponta de peito/i.test(n)) return "Ponta de Peito"; /* com osso, sem osso: é ponta de peito */
   if (/picanha/i.test(n)) return "Picanha"; /* picanha é picanha: medalhão, fatiada, bife... ponytail: pegaria "linguiça sabor picanha" se aparecer */
   return SINONIMO[sem(n)] || n;
 };
