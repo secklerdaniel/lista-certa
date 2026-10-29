@@ -242,7 +242,7 @@ h1,h2,h3,.display,.lead,.best .tot,.mk .hd .p,.split .big,.nome{font-family:"Arc
 .chip{border:2px solid #15191A;border-radius:99px;background:#fff}
 .cats{display:flex;gap:8px;overflow-x:auto;margin:12px -16px 4px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cats::-webkit-scrollbar{display:none}
 .cat{flex:none;padding:7px 14px;border-radius:99px;border:2px solid #15191A;background:#fff;color:#15191A;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}.cat.on{background:#15191A;color:#FFD93B}
-.catp{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}.catp button{display:flex;justify-content:space-between;gap:10px;text-align:left;padding:10px 12px;border:2px solid #15191A;border-radius:10px;background:#fff;color:#15191A;font:inherit;font-size:14px;cursor:pointer}.catp small{color:#555;white-space:nowrap}
+.catp{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}.catp button{display:flex;justify-content:space-between;gap:10px;text-align:left;padding:10px 12px;border:2px solid #15191A;border-radius:10px;background:#fff;color:#15191A;font:inherit;font-size:14px;cursor:pointer}.catp small{color:#555;white-space:nowrap}.catp button.on{background:#15191A;color:#FFD93B}.catp button.on small{color:#FFD93B}
 .chip:active{background:var(--gold)}
 nav.tabs{border-top:2.5px solid #15191A;background:#fff}
 nav.tabs button.on{color:#15191A;font-weight:800}
@@ -300,7 +300,6 @@ nav.tabs button.on::before{background:#15191A;height:4px}
         <input id="q" type="text" placeholder="Adicionar: leite, café, arroz…" autocomplete="off" enterkeyhint="done" aria-label="Adicionar produto">
         <div class="sugg" id="sugg" hidden></div>
       </div>
-      <div class="chips" id="chips"></div>
       <div class="cats" id="cats" role="tablist" aria-label="Categorias"></div>
       <div class="catp" id="catp" hidden></div>
       <div class="sec"><h2 id="count">Sua lista</h2><button id="clear" hidden>Limpar</button></div>
@@ -441,7 +440,6 @@ function renderList(){
   /* só sugere o que existe no banco: os 4 termos que mais aparecem nos produtos coletados (POOL), sem os que já estão na lista */
   const emLista=new Set(list.map(x=>CATALOG[x.id].key));
   renderCats();
-  $("#chips").innerHTML=termosTop().filter(w=>!emLista.has("g|"+norm(w))).map(w=>`<button class="chip" data-gen="${w.replace(/[&<>"]/g,"")}">+ ${w.replace(/[&<>"]/g,"")}</button>`).join("");
   save();
 }
 function blocoFiltros(x,c){const F=facetas(c);if(!F)return "";const f=x.f||{};
@@ -454,11 +452,6 @@ $("#items").onchange=e=>{const i=e.target.closest("[data-fk]");if(!i)return;cons
   aplicarPool();renderList()};
 $("#items").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const id=+b.dataset.id,x=list.find(i=>i.id===id);
   if(b.dataset.a==="+")x.qty=Math.min(x.qty+1,99);else if(b.dataset.a==="-")x.qty=Math.max(x.qty-1,1);else list=list.filter(i=>i.id!==id);renderList()};
-const PREFIXO=new Set(["flv","pd","ac","hf","pad","hort","merc","promo","mist"]); /* siglas de seção que vêm antes do nome no cupom */
-function termosTop(n=4){const c={};
-  POOL.forEach(x=>{const w=x.nome.split(" ").find(w=>w.length>=4&&!PREFIXO.has(norm(w)));if(!w)return;const k=norm(w),r=c[k]=c[k]||{w,n:0};r.n++});
-  return Object.values(c).sort((a,b)=>b.n-a.n).slice(0,n).map(r=>r.w)}
-$("#chips").onclick=e=>{const b=e.target.closest("[data-gen]");if(b)addGen(b.dataset.gen)};
 /* menu de categorias: só as que têm produto na cidade; tocar abre os produtos dela para adicionar */
 const CAT_NOME={mercearia:"Mercearia",hortifruti:"Hortifrúti",carnes:"Carnes",laticinios:"Laticínios",frios:"Frios",padaria:"Padaria",bebidas:"Bebidas",congelados:"Congelados",limpeza:"Limpeza",higiene:"Higiene",outros:"Outros"};
 let CAT=null;
@@ -467,10 +460,12 @@ function renderCats(){
   const cs=Object.keys(CAT_NOME).filter(c=>n[c]);if(CAT&&!n[CAT])CAT=null;
   $("#cats").innerHTML=cs.map(c=>`<button class="cat${c===CAT?" on":""}" role="tab" aria-selected="${c===CAT}" data-cat="${c}">${CAT_NOME[c]}</button>`).join("");
   const p=$("#catp");p.hidden=!CAT;if(!CAT){p.innerHTML="";return}
+  const naLista=new Set(list.map(x=>CATALOG[x.id].key));
   const g={};POOL.filter(x=>x.cat===CAT).forEach(x=>{const r=g[x.k]=g[x.k]||{k:x.k,nome:x.nome,p:x.p,m:new Set()};r.m.add(x.mid);if(x.p<r.p)r.p=x.p});
-  p.innerHTML=Object.values(g).sort((a,b)=>b.m.size-a.m.size||a.nome.localeCompare(b.nome)).slice(0,40).map(r=>`<button data-pool="${r.k.replace(/[&<>"]/g,"")}"><span>+ ${r.nome.replace(/[&<>"]/g,"")}</span><small>${r.m.size>1?`${r.m.size} mercados · a partir de `:""}${r.p.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</small></button>`).join("")}
+  p.innerHTML=Object.values(g).sort((a,b)=>b.m.size-a.m.size||a.nome.localeCompare(b.nome)).slice(0,40).map(r=>`<button data-pool="${r.k.replace(/[&<>"]/g,"")}"${naLista.has("p|"+r.k)?' class="on" aria-pressed="true"':' aria-pressed="false"'}><span>${naLista.has("p|"+r.k)?"✓":"+"} ${r.nome.replace(/[&<>"]/g,"")}</span><small>${r.m.size>1?`${r.m.size} mercados · a partir de `:""}${r.p.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</small></button>`).join("")}
 $("#cats").onclick=e=>{const b=e.target.closest("[data-cat]");if(!b)return;CAT=CAT===b.dataset.cat?null:b.dataset.cat;renderCats()};
-$("#catp").onclick=e=>{const b=e.target.closest("[data-pool]");if(b)addPool(b.dataset.pool)};
+$("#catp").onclick=e=>{const b=e.target.closest("[data-pool]");if(!b)return;const c=CATALOG.find(x=>x.key==="p|"+b.dataset.pool);
+  if(c&&list.some(x=>x.id===c.id)){list=list.filter(x=>x.id!==c.id);renderList()}else addPool(b.dataset.pool)}; /* tocar de novo tira da lista */
 $("#clear").onclick=()=>{list=[];renderList()};
 let matches=[],POOL=[];
 /* abreviações de cupom/etiqueta: valem para BUSCAR (desodorante acha DESOD) e para mostrar o nome */
