@@ -387,11 +387,11 @@ try{JSON.parse(localStorage.getItem("lc-extra")||"[]").forEach(e=>CATALOG.push({
 /* Cidades disponíveis. Mercados só entram quando houver dados reais da API,
    de cupons fiscais ou de contribuições verificadas. */
 const CITIES={
- gramado:{name:"Gramado",markets:[]},
- canela:{name:"Canela",markets:[]},
- igrejinha:{name:"Igrejinha",markets:[]},
- novapetropolis:{name:"Nova Petrópolis",markets:[]},
- sfpaula:{name:"São Francisco de Paula",markets:[]}
+ gramado:{name:"Gramado",markets:[],ll:[-29.3787,-50.8737]},
+ canela:{name:"Canela",markets:[],ll:[-29.3655,-50.8155]},
+ igrejinha:{name:"Igrejinha",markets:[],ll:[-29.5745,-50.7907]},
+ novapetropolis:{name:"Nova Petrópolis",markets:[],ll:[-29.3757,-51.1136]},
+ sfpaula:{name:"São Francisco de Paula",markets:[],ll:[-29.4480,-50.5836]}
 };
 let city="gramado";
 try{const c=localStorage.getItem("lc-city");if(CITIES[c])city=c}catch(e){}
@@ -1120,7 +1120,20 @@ $("#cities").onclick=e=>{const b=e.target.closest("[data-city]");if(b)setCity(b.
 $("#sheet").onclick=e=>{if(e.target===$("#sheet"))sheet(false)};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet").classList.contains("on"))sheet(false)});
 
-cityUI();renderList();renderContr();carregarApi();carregarCupons();meCarregar();
+/* primeira visita (sem cidade escolhida): pede a localização uma vez e abre na cidade mais perto (até 40 km).
+   A posição fica no aparelho: só serve para escolher a cidade, nada é enviado. */
+function cidadePelaLocalizacao(){
+  let ja=false;try{ja=!!localStorage.getItem("lc-city")||!!localStorage.getItem("lc-geo")}catch(e){}
+  if(ja||!navigator.geolocation)return;
+  try{localStorage.setItem("lc-geo","1")}catch(e){}
+  navigator.geolocation.getCurrentPosition(p=>{
+    const km=([a,b])=>{const r=x=>x*Math.PI/180,la=r(a-p.coords.latitude),lo=r(b-p.coords.longitude),h=Math.sin(la/2)**2+Math.cos(r(a))*Math.cos(r(p.coords.latitude))*Math.sin(lo/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+    const [k,d]=Object.entries(CITIES).map(([k,c])=>[k,km(c.ll)]).sort((a,b)=>a[1]-b[1])[0];
+    if(d<=40&&k!==city)setCity(k);
+  },()=>{},{timeout:10000,maximumAge:36e5});
+}
+
+cityUI();renderList();renderContr();carregarApi();carregarCupons();meCarregar();cidadePelaLocalizacao();
 </script>
 <script src="/atualizacao.js" data-versao="/api/versao" defer></script>
 </body>
