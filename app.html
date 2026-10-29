@@ -435,7 +435,7 @@ function renderList(){
   $("#items").innerHTML=n?list.map(x=>{const c=CATALOG[x.id];return `<div class="item"><div class="nm"><b>${c.name}</b><small>${c.unit}</small></div>
     <div class="step"><button data-a="-" data-id="${x.id}" aria-label="Menos">−</button><span>${x.qty}</span><button data-a="+" data-id="${x.id}" aria-label="Mais">+</button></div>
     <button class="rm" data-a="x" data-id="${x.id}" aria-label="Remover ${c.name}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>${blocoFiltros(x,c)}</div>`}).join("")
-    :`<div class="empty">Sua lista está vazia.<br>Digite um produto acima ou toque numa sugestão.</div>`;
+    :`<div class="empty">Nada na lista ainda.<br>Busque um produto ou escolha por categoria, logo acima.</div>`;
   const inList=new Set(list.map(x=>x.id));
   /* só sugere o que existe no banco: os 4 termos que mais aparecem nos produtos coletados (POOL), sem os que já estão na lista */
   const emLista=new Set(list.map(x=>CATALOG[x.id].key));
