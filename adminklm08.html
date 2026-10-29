@@ -70,7 +70,8 @@ input,textarea,select{border:2px solid #15191A!important;border-radius:6px!impor
 :focus-visible{outline:3px solid #15191A;outline-offset:2px}
 .abas{background:#15191A!important}.aba{border:0!important;background:transparent!important;color:#FFD93B!important;border-radius:6px!important}.aba.on{background:#FFD93B!important;color:#15191A!important}header .btn.sec{background:#fff!important;color:#15191A!important}
 .novas{background:#FFF1B0;border:2px solid #15191A;color:#15191A}.tag{background:#FFF1B0;color:#15191A}
-main.largo{max-width:1240px}
+main.largo{max-width:1240px}main.ofertas{max-width:none}
+.tabrol{overflow-x:auto}#oTab{border-collapse:separate;border-spacing:0 6px;width:100%}#oTab input:not([type=checkbox]),#oTab select{padding:6px 8px;font-size:14px;margin:0}#oTab input[data-f=mercado]{min-width:170px}#oTab input[data-f=cidade]{min-width:110px}#oTab input[data-f=produto]{min-width:260px}#oTab input[data-f=marca]{min-width:120px}#oTab input[data-f=obs]{min-width:240px}#oTab th{padding:4px 6px;font-size:12px;text-align:left;white-space:nowrap}#oTab td{padding:0 3px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:var(--card);padding:12px 14px;margin:0}.kpi b{display:block;font-size:30px;line-height:1}.kpi span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .kpi.alerta{background:#FFF1B0}
@@ -871,7 +872,7 @@ document.querySelector("main").addEventListener("click", async e => {
 /* ---------- abas e login ---------- */
 function aba(n) {
   document.querySelectorAll(".aba").forEach(b => b.classList.toggle("on", b.dataset.aba === n));
-  $("#p-dashboard").hidden = n !== "dashboard"; $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; document.querySelector("main").classList.toggle("largo", n === "coletas" || n === "dashboard" || n === "produtos"); $("#p-ofertas").hidden = n !== "ofertas"; $("#p-produtos").hidden = n !== "produtos"; $("#p-listas").hidden = n !== "listas";
+  $("#p-dashboard").hidden = n !== "dashboard"; $("#p-mercados").hidden = n !== "mercados"; $("#p-usuarios").hidden = n !== "usuarios"; $("#p-regiao").hidden = n !== "regiao"; $("#p-coletas").hidden = n !== "coletas"; document.querySelector("main").classList.toggle("ofertas", n === "ofertas"); document.querySelector("main").classList.toggle("largo", n === "coletas" || n === "dashboard" || n === "produtos"); $("#p-ofertas").hidden = n !== "ofertas"; $("#p-produtos").hidden = n !== "produtos"; $("#p-listas").hidden = n !== "listas";
   $("#menu").classList.remove("on"); $("#velo").hidden = true;
   if (n === "dashboard") carregarDashboard().catch(e => toast(e.message));
   if (n === "produtos" || n === "listas") carregarProdutos().catch(e => toast(e.message));
