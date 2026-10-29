@@ -461,7 +461,7 @@ function renderCats(){
   $("#cats").innerHTML=cs.map(c=>`<button class="cat${c===CAT?" on":""}" role="tab" aria-selected="${c===CAT}" data-cat="${c}">${CAT_NOME[c]}</button>`).join("");
   const p=$("#catp");p.hidden=!CAT;if(!CAT){p.innerHTML="";return}
   const naLista=new Set(list.map(x=>CATALOG[x.id].key));
-  const g={};POOL.filter(x=>x.cat===CAT).forEach(x=>{const r=g[x.k]=g[x.k]||{k:x.k,nome:x.nome,p:x.p,m:new Set()};r.m.add(x.mid);if(x.p<r.p)r.p=x.p});
+  const g={};POOL.filter(x=>x.cat===CAT).forEach(x=>{const gk=x.g||x.k,r=g[gk]=g[gk]||{k:gk,nome:x.ng||x.nome,p:x.p,m:new Set()};r.m.add(x.mid);if(x.p<r.p)r.p=x.p});
   p.innerHTML=Object.values(g).sort((a,b)=>b.m.size-a.m.size||a.nome.localeCompare(b.nome)).slice(0,40).map(r=>`<button data-pool="${r.k.replace(/[&<>"]/g,"")}"${naLista.has("p|"+r.k)?' class="on" aria-pressed="true"':' aria-pressed="false"'}><span>${naLista.has("p|"+r.k)?"✓":"+"} ${r.nome.replace(/[&<>"]/g,"")}</span><small>${r.m.size>1?`${r.m.size} mercados · a partir de `:""}${r.p.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</small></button>`).join("")}
 $("#cats").onclick=e=>{const b=e.target.closest("[data-cat]");if(!b)return;CAT=CAT===b.dataset.cat?null:b.dataset.cat;renderCats()};
 $("#catp").onclick=e=>{const b=e.target.closest("[data-pool]");if(!b)return;const c=CATALOG.find(x=>x.key==="p|"+b.dataset.pool);
@@ -473,9 +473,9 @@ const ABREV={desod:"desodorante",sab:"sabonete",sabon:"sabonete",sh:"shampoo",sh
 const expandir=t=>t.toLowerCase().split(/\s+/).map(w=>ABREV[norm(w)]||w).join(" ");
 const bonito=t=>expandir(t).replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()).replace(/ (De|Da|Do|Dos|Das|E|Com|Em|Para) /g,x=>x.toLowerCase());
 function addPool(k){
-  const it=POOL.find(x=>x.k===k);if(!it)return;
+  const it=POOL.find(x=>(x.g||x.k)===k)||POOL.find(x=>x.k===k);if(!it)return;
   const key="p|"+k;let c=CATALOG.find(x=>x.key===key);
-  if(!c){c={id:CATALOG.length,name:it.nome,unit:"un",base:0,key,extra:true};CATALOG.push(c);
+  if(!c){c={id:CATALOG.length,name:it.ng||it.nome,unit:"un",base:0,key,extra:true};CATALOG.push(c);
     try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:"un",base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
   aplicarPool();add(c.id)}
 /* preenche o preço dos itens "p|..." da lista em todos os mercados que venderam esse produto */
@@ -486,7 +486,14 @@ function tamanho(k){const m=/(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|lt|litros?)\b/.exec(
   if(u==="g"&&q>=1000){q/=1000;u="kg"}if(u==="ml"&&q>=1000){q/=1000;u="l"}
   return (+q.toFixed(2))+" "+(u==="l"?"L":u)}
 function tiposDe(k){const r=[];let t=k;TIPOS.forEach(w=>{if(new RegExp("\\b"+w+"\\b").test(t)){r.push(w);t=t.replace(w," ")}});return r}
-const casaItem=(c,x)=>{const tk=norm(c.name).split(/\s+/).filter(Boolean);return c.key.slice(0,2)==="p|"?x.k===c.key.slice(2):tk.every(t=>x.k.includes(t))};
+/* grupo = mesmo produto e mesmo tamanho, marca livre (como no admin). Oferta: nome normalizado do folheto + embalagem;
+   cupom/coleta: o nome inteiro (o ERP mistura marca e tamanho no texto). */
+function grupoDe(x){
+  if(x.tipo!=="oferta"||!x.produto)return {};
+  const t=x.qtd_emb?tamanho(norm(x.qtd_emb+" "+(x.un_emb||""))):null;
+  return {g:norm(x.produto)+"|"+(t||"?"),ng:bonito(x.produto)+(t?" "+t:"")};
+}
+const casaItem=(c,x)=>{const tk=norm(c.name).split(/\s+/).filter(Boolean),pk=c.key.slice(2);return c.key.slice(0,2)==="p|"?(x.g||x.k)===pk||x.k===pk:tk.every(t=>x.k.includes(t))};
 function facetas(c){
   if(!c.key||c.key.slice(0,2)==="p|"||!(c.extra&&c.base===0))return null;
   const T=new Set(),P=new Set();POOL.forEach(x=>{if(casaItem(c,x)){if(x.tam)T.add(x.tam);x.tp.forEach(p=>P.add(p))}});
@@ -511,7 +518,7 @@ function addLivre(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replac
     try{const e=JSON.parse(localStorage.getItem("lc-extra")||"[]");e.push({name:c.name,unit:c.unit,base:0,key});localStorage.setItem("lc-extra",JSON.stringify(e))}catch(e){}}
   add(c.id)}
 function buscaPool(tokens){
-  const g={};POOL.forEach(x=>{if(tokens.every(t=>x.k.includes(t))){const r=g[x.k]=g[x.k]||{k:x.k,nome:x.nome,n:new Set(),min:1e9};r.n.add(x.mid);r.min=Math.min(r.min,x.p)}});
+  const g={};POOL.forEach(x=>{if(tokens.every(t=>x.k.includes(t))){const gk=x.g||x.k,r=g[gk]=g[gk]||{k:gk,nome:x.ng||x.nome,n:new Set(),min:1e9};r.n.add(x.mid);r.min=Math.min(r.min,x.p)}});
   return Object.values(g).sort((a,b)=>b.n.size-a.n.size||a.min-b.min)}
 function addGen(txt){const nome=bonito(txt.replace(/[<>&"]/g,"").trim().replace(/\s+/g," ")),key="g|"+norm(nome);
   let c=CATALOG.find(x=>x.key===key);
@@ -918,7 +925,7 @@ async function carregarCupons(){
       let ult=0;
       g.itens.forEach(x=>{
         const it={nome:x.descricao,unit:x.preco,un:x.unidade||"UN"};
-        POOL.push({cat:x.categoria||null,k:norm(expandir(x.descricao)),tam:tamanho(norm(x.descricao)),tp:tiposDe(norm(expandir(x.descricao))),nome:bonito(x.descricao),mid:id,p:x.preco,age:Math.max(0,Math.floor((Date.now()-new Date(x.emissao))/864e5))});
+        POOL.push({cat:x.categoria||null,...grupoDe(x),k:norm(expandir(x.descricao)),tam:tamanho(norm(x.descricao)),tp:tiposDe(norm(expandir(x.descricao))),nome:bonito(x.descricao),mid:id,p:x.preco,age:Math.max(0,Math.floor((Date.now()-new Date(x.emissao))/864e5))});
         const y=casar(it)||(quem[norm(x.descricao)].size>=2?obterExtra(it):null); // item fora do catálogo só entra se 2+ mercados vendem
         if(!y)return;
         const t=new Date(x.emissao).getTime();if(x.tipo!=="oferta")ult=Math.max(ult,t);
@@ -1098,7 +1105,7 @@ $("#manual").onsubmit=e=>{e.preventDefault();tratar($("#chave").value,false)};
 /* seletor de cidade */
 function cityUI(){
   $("#cityName").textContent=CITIES[city].name;
-  const n=new Set(POOL.map(x=>x.k)).size; /* produtos diferentes com preço na cidade (POOL = o que veio da API) */
+  const n=new Set(POOL.map(x=>x.g||x.k)).size; /* produtos diferentes com preço na cidade (POOL = o que veio da API) */
   $("#subCity").textContent=n?`Compare preços reais de ${n.toLocaleString("pt-BR")} produtos em ${CITIES[city].name}.`:`Compare preços reais disponíveis em ${CITIES[city].name}.`;
 }
 function sheet(on){const s=$("#sheet");s.classList.toggle("on",on);s.setAttribute("aria-hidden",!on);
