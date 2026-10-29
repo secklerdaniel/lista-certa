@@ -1098,7 +1098,8 @@ $("#manual").onsubmit=e=>{e.preventDefault();tratar($("#chave").value,false)};
 /* seletor de cidade */
 function cityUI(){
   $("#cityName").textContent=CITIES[city].name;
-  $("#subCity").textContent=`Compare preços reais disponíveis em ${CITIES[city].name}.`;
+  const n=new Set(POOL.map(x=>x.k)).size; /* produtos diferentes com preço na cidade (POOL = o que veio da API) */
+  $("#subCity").textContent=n?`Compare preços reais de ${n.toLocaleString("pt-BR")} produtos em ${CITIES[city].name}.`:`Compare preços reais disponíveis em ${CITIES[city].name}.`;
 }
 function sheet(on){const s=$("#sheet");s.classList.toggle("on",on);s.setAttribute("aria-hidden",!on);
   if(on){$("#cities").innerHTML=Object.entries(CITIES).map(([k,c])=>`<button data-city="${k}" class="${k===city?"on":""}" aria-pressed="${k===city}">
