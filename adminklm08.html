@@ -193,7 +193,7 @@ details.card>summary{cursor:pointer;font-weight:800;text-transform:uppercase;fon
     </section>
     <section class="card" id="oRev" hidden>
       <h2 id="oRevTit">Conferir antes de salvar</h2>
-      <div class="filtros"><button class="btn sec" type="button" id="oTodas">Marcar todas</button><button class="btn sec" type="button" id="oNenhuma">Desmarcar todas</button><button class="btn sec" type="button" id="oSoErro">Só com problema</button>
+      <div class="filtros"><button class="btn sec" type="button" id="oTodas">Marcar todas</button><button class="btn sec" type="button" id="oNenhuma">Desmarcar todas</button><button class="btn sec" type="button" id="oSoErro">Só com problema</button><button class="btn sec bad" type="button" id="oFechar">Fechar</button>
         <select id="oModo" aria-label="Ao salvar"><option value="produto">Ao salvar: substituir só o mesmo produto (recomendado)</option><option value="mercado">Ao salvar: substituir tudo do mercado</option><option value="acrescentar">Ao salvar: só acrescentar</option></select></div>
       <div class="tabrol"><table id="oTab"></table></div>
       <datalist id="oMercados"></datalist>
@@ -621,6 +621,7 @@ $("#oTab").addEventListener("click", e => { const b = e.target.closest("[data-or
 $("#oTodas").onclick = () => { ORV.forEach(r => r.sel = true); desenharRev(); };
 $("#oNenhuma").onclick = () => { ORV.forEach(r => r.sel = false); desenharRev(); };
 $("#oSoErro").onclick = () => { OSO = !OSO; desenharRev(); };
+$("#oFechar").onclick = () => { if (ORV.length && !confirm("Fechar a conferência? O que você editou e não salvou será perdido.")) return; ORV.length = 0; $("#oFila").innerHTML = ""; $("#oRes2").textContent = ""; OFILES.clear(); desenharRev(); };
 $("#oDescartar").onclick = () => { if (!ORV.length || !confirm("Descartar todas as ofertas lidas? Nada foi salvo.")) return; ORV.length = 0; $("#oFila").innerHTML = ""; $("#oRes2").textContent = ""; OFILES.clear(); desenharRev(); };
 
 /* imagem -> JPEG de até 2000 px (o servidor aceita ~4 MB por chamada) */
