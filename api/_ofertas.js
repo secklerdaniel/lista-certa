@@ -11,10 +11,24 @@ const iso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNa
    Serve para salvar (aqui) e para agrupar o que já existe (_produtos.listar). O que muda o produto de verdade (Parboilizado, Integral, Temperada) fica.
    ponytail: lista fixa de qualificadores; cresce quando aparecer outro. */
 const QUALIF = /\s+(tipo\s*(?:1|2|i|ii)|tradicional|especial|extra|de\s+(?:primeira|segunda|1[aªº]?|2[aªº]?))(?=\s|$)/gi;
-const nomeProduto = p => {
-  const n = String(p || "").replace(QUALIF, "").replace(/\s+/g, " ").trim();
-  return /^arroz$/i.test(n) ? "Arroz Branco" : n;
+/* "Bovino" é a própria categoria; congelado/resfriado é estado, não produto (vai para a observação, ver estado()). */
+const SOBRA = /\s+(bovin[oa]|congelad[oa]|resfriad[oa])(?=\s|$)/gi;
+/* nomes diferentes do mesmo corte -> um nome (chave sem acento, minúscula) */
+const SINONIMO = {
+  "arroz": "Arroz Branco",
+  "chuleta medalhao": "Chuleta", "chuleta bife ou medalhao": "Chuleta",
+  "ponta de peito com osso": "Ponta de Peito",
+  "coxa com sobrecoxa": "Coxa e Sobrecoxa",
+  "coxao de dentro": "Coxão Mole", "coxao duro": "Coxão de Fora",
+  "coxinha da asa de frango": "Coxinha da Asa",
+  "linguica toscana": "Linguiça",
 };
+const nomeProduto = p => {
+  const n = String(p || "").replace(QUALIF, "").replace(SOBRA, "").replace(/\s+/g, " ").trim();
+  if (/picanha/i.test(n)) return "Picanha"; /* picanha é picanha: medalhão, fatiada, bife... ponytail: pegaria "linguiça sabor picanha" se aparecer */
+  return SINONIMO[sem(n)] || n;
+};
+const estado = p => { const m = String(p || "").match(/\b(congelad[oa]|resfriad[oa])\b/i); return m ? m[1][0].toUpperCase() + m[1].slice(1).toLowerCase() : null; };
 function validar(lista, hoje) {
   const ok = [], rejeitados = [], avisos = [];
   lista.forEach((it, i) => {
@@ -29,6 +43,7 @@ function validar(lista, hoje) {
     const un = it.unidade_medida == null ? null : txt(it.unidade_medida, 4).toLowerCase();
     if (un && !UNIDADES.has(un)) return rej(`unidade_medida deve ser uma de: ${[...UNIDADES].join(", ")}`);
     let de = it.valido_de == null ? null : it.valido_de, ate = it.valido_ate == null ? null : it.valido_ate, obs = txt(it.observacao, 120) || null;
+    const est = estado(it.produto_normalizado); if (est && !sem(obs || "").includes(sem(est))) obs = txt(est + (obs ? " · " + obs : ""), 120);
     if (de != null && !iso(de)) { avisos.push(`linha ${i + 1}: valido_de "${de}" não é AAAA-MM-DD; ignorado`); de = null; }
     if (ate != null && !iso(ate)) { obs = obs || txt(ate, 120); avisos.push(`linha ${i + 1}: valido_ate "${ate}" não é data; guardado como observação`); ate = null; }
     if (ate && ate < hoje) return rej(`valido_ate ${ate} já passou`);

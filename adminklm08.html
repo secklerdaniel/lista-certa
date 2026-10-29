@@ -697,7 +697,7 @@ const decNum = v => { const x = parseFloat(String(v).replace(",", ".")); return 
 async function carregarProdutos() {
   const d = await chamar("/api/admin/usuarios?produtos=1");
   PL = d.linhas; LISTAS = d.listas;
-  PL.forEach(r => { r.k = norm(r.nome + " " + (r.marca || "")).replace(/\s+/g, " ").trim(); r.bn = r.k + " " + norm(r.marca); r.busca = r.bn + " " + norm(r.mercado + " " + r.cidade); });
+  PL.forEach(r => { r.k = norm(r.nome).replace(/\s+/g, " ").trim(); /* marca não separa grupo: marcas podem variar */ r.bn = r.k + " " + norm(r.marca); r.busca = r.bn + " " + norm(r.mercado + " " + r.cidade); });
   $("#pNomes").innerHTML = [...new Set(PL.map(r => r.nome))].sort().slice(0, 600).map(n => `<option value="${esc(n)}">`).join("");
   $("#pMercados").innerHTML = [...new Set(PL.map(r => r.mercado))].sort().map(n => `<option value="${esc(n)}">`).join("");
   desenharProdutos(); desenharListas();
@@ -716,7 +716,7 @@ function passaP(r, ig) {
 }
 function agrupar(rows) {
   const m = new Map();
-  rows.forEach(r => { let g = m.get(r.k); if (!g) m.set(r.k, g = { k: r.k, nome: r.nome + (r.marca ? " · " + r.marca : ""), rows: [] }); g.rows.push(r); });
+  rows.forEach(r => { let g = m.get(r.k); if (!g) m.set(r.k, g = { k: r.k, nome: r.nome, rows: [] }); g.rows.push(r); });
   const nMerc = rs => new Set(rs.map(r => (r.mercado + "|" + r.cidade).toLowerCase())).size;
   return [...m.values()].map(g => {
     const pr = g.rows.filter(r => r.preco > 0), cats = contar(g.rows.filter(r => r.cat), r => r.cat);
