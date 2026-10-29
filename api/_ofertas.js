@@ -7,12 +7,15 @@ const MAX = 2000;
 const txt = (v, n) => (v == null ? "" : String(v)).replace(/\s+/g, " ").trim().slice(0, n);
 const iso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
 
+/* "Carne Moída de Segunda/Primeira" é a mesma coisa que "Carne Moída": um nome só, para o produto agrupar e comparar.
+   ponytail: regra fixa por produto; vira tabela de sinônimos se aparecerem mais casos. */
+const nomeProduto = p => p.replace(/^(carne mo[ií]da)\s+(de\s+)?(1[aªº]?|2[aªº]?|primeira|segunda|especial|extra)$/i, "Carne Moída");
 function validar(lista, hoje) {
   const ok = [], rejeitados = [], avisos = [];
   lista.forEach((it, i) => {
     const rej = msg => rejeitados.push({ linha: i + 1, produto: it && it.produto_normalizado, erro: msg });
     if (!it || typeof it !== "object") return rej("item não é um objeto");
-    const mercado = txt(it.mercado, 120), cidade = txt(it.cidade, 80), produto = txt(it.produto_normalizado, 120);
+    const mercado = txt(it.mercado, 120), cidade = txt(it.cidade, 80), produto = nomeProduto(txt(it.produto_normalizado, 120));
     if (!mercado || !cidade || !produto) return rej("mercado, cidade e produto_normalizado são obrigatórios");
     const preco = typeof it.preco === "number" ? it.preco : parseFloat(String(it.preco).replace(",", "."));
     if (!(preco > 0 && preco < 100000)) return rej("preco deve ser número maior que zero");
