@@ -7,9 +7,14 @@ const MAX = 2000;
 const txt = (v, n) => (v == null ? "" : String(v)).replace(/\s+/g, " ").trim().slice(0, n);
 const iso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
 
-/* "Carne Moída de Segunda/Primeira" é a mesma coisa que "Carne Moída": um nome só, para o produto agrupar e comparar.
-   ponytail: regra fixa por produto; vira tabela de sinônimos se aparecerem mais casos. */
-const nomeProduto = p => p.replace(/^(carne mo[ií]da)\s+(de\s+)?(1[aªº]?|2[aªº]?|primeira|segunda|especial|extra)$/i, "Carne Moída");
+/* Um produto, um nome: tira o que é só classificação/qualidade ("Tipo 1", "Tradicional", "de Segunda", "Extra"...) e junta "Arroz" puro com "Arroz Branco".
+   Serve para salvar (aqui) e para agrupar o que já existe (_produtos.listar). O que muda o produto de verdade (Parboilizado, Integral, Temperada) fica.
+   ponytail: lista fixa de qualificadores; cresce quando aparecer outro. */
+const QUALIF = /\s+(tipo\s*(?:1|2|i|ii)|tradicional|especial|extra|de\s+(?:primeira|segunda|1[aªº]?|2[aªº]?))(?=\s|$)/gi;
+const nomeProduto = p => {
+  const n = String(p || "").replace(QUALIF, "").replace(/\s+/g, " ").trim();
+  return /^arroz$/i.test(n) ? "Arroz Branco" : n;
+};
 function validar(lista, hoje) {
   const ok = [], rejeitados = [], avisos = [];
   lista.forEach((it, i) => {
@@ -101,4 +106,4 @@ async function carregar(corpo, acrescentar, modo) {
   return { status: 200, inseridas: r[0].inseridas, substituidas: modo === "produto" ? apagar.length : r[0].substituidas, porMercado, rejeitados, avisos };
 }
 
-module.exports = { carregar, validar, mapaOficial, oficial };
+module.exports = { carregar, validar, mapaOficial, oficial, nomeProduto };

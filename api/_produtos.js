@@ -48,6 +48,7 @@ async function listar() {
     ...co.map(r => ({ fonte: "coleta", origem: r.origem, id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), promo: num(r.promo), em: r.em })),
     ...cu.map(r => ({ fonte: "cupom", id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), un: r.un, qtd: num(r.qtd), em: r.em })),
   ];
+  linhas.forEach(r => { r.nome = ofertas.nomeProduto(r.nome); });
   linhas.forEach((r, i) => {
     const cnpj = r.fonte === "cupom" ? cu.find(x => Number(x.id) === r.id) : null;
     r.mercado = (cnpj && porCnpj.get(cnpj.cnpj)) || (ofertas.oficial(mapa, r.mercado, r.cidade) || {}).nome || r.mercado;
