@@ -118,9 +118,10 @@ async function cupons(req, res) {
   await sql().query(`delete from ofertas where coalesce(valido_ate < current_date, criado_em < now() - interval '14 days')`);
   /* pelo nome, a oferta se liga ao mesmo mercado do catálogo (e ao CNPJ), então funde com os cupons do mesmo mercado */
   const o = await sql().query(
-    `select g.cnpj, coalesce(g.nome, f.mercado) as mercado, 'oferta' as tipo, concat_ws(' ', f.produto, f.marca, f.quantidade::float8::text, f.unidade) as descricao, 'UN' as unidade, f.preco::float as preco, null::text as categoria, coalesce(f.valido_de::timestamptz, f.criado_em) as emissao
+    `select g.cnpj, coalesce(g.nome, f.mercado) as mercado, 'oferta' as tipo, concat_ws(' ', f.produto, f.marca, f.quantidade::float8::text, f.unidade) as descricao, 'UN' as unidade, f.preco::float as preco, f.categoria, coalesce(f.valido_de::timestamptz, f.criado_em) as emissao
        from ofertas f left join mercados_regiao g on lower(g.nome) = lower(f.mercado) and lower(g.cidade) = lower(f.cidade)
       where ${cidade ? "lower(f.cidade) = lower($1) and " : ""}coalesce(f.valido_ate >= current_date, f.criado_em > now() - interval '14 days') limit 2000`, cidade ? [cidade] : []);
+  const { catOferta } = require("../_produtos"); o.forEach(x => { x.categoria = catOferta(x.categoria); });
   enviar(res, 200, { ok: true, dados: r.concat(v, o) });
 }
 

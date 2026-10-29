@@ -43,7 +43,7 @@ async function listar() {
   const porCnpj = new Map(reg.filter(x => x.cnpj).map(x => [x.cnpj, x.nome])), mapa = await ofertas.mapaOficial();
   const num = v => (v == null ? null : Number(v));
   const linhas = [
-    ...of.map(r => ({ fonte: "oferta", id: r.id, nome: r.nome, marca: r.marca, qtd: num(r.qtd), un: r.un, cat: CAT_OFERTA[(r.categoria || "").toLowerCase()] || (IA.CATEGORIAS.includes(r.categoria) ? r.categoria : null),
+    ...of.map(r => ({ fonte: "oferta", id: r.id, nome: r.nome, marca: r.marca, qtd: num(r.qtd), un: r.un, cat: catOferta(r.categoria),
       catOriginal: r.categoria, orig: r.orig, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), ate: r.ate, obs: r.obs, em: r.em })),
     ...co.map(r => ({ fonte: "coleta", origem: r.origem, id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), promo: num(r.promo), em: r.em })),
     ...cu.map(r => ({ fonte: "cupom", id: Number(r.id), nome: r.nome, cat: r.categoria, mercado: r.mercado, cidade: r.cidade, preco: num(r.preco), un: r.un, qtd: num(r.qtd), em: r.em })),
@@ -110,4 +110,6 @@ async function lista(b) {
   return { status: 400, msg: "Ação inválida." };
 }
 
-module.exports = { listar, oferta, lista, listasTodas };
+/* categoria do folheto (texto livre ou a do Gemini) -> a do app; null se não der para saber */
+const catOferta = c => CAT_OFERTA[(c || "").toLowerCase()] || (IA.CATEGORIAS.includes(c) ? c : null);
+module.exports = { listar, oferta, lista, listasTodas, catOferta };
