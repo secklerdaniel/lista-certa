@@ -49,7 +49,7 @@ Para testar localmente: `npx vercel dev` com um `.env.local`. O `.gitignore` já
 | Variável | Obrigatória | Para quê |
 |---|---|---|
 | `DATABASE_URL` | sim | Conexão Postgres. O segredo do cookie de sessão é derivado dela: trocar o banco desconecta todo mundo |
-| `ADMIN_KEY` | sim | Senha do painel admin. **Sem ela o admin fica fechado.** Use algo longo e aleatório |
+| `ADMIN_KEY` | sim | Chave do painel admin (header `x-admin-key`). Use algo longo e aleatório |
 | `CRON_SECRET` | recomendada | Autentica o cron diário de limpeza (`/api/util/limpeza`); a Vercel envia sozinha se a env existir |
 | `OPENAI_API_KEY` | não | Padroniza nome de produto por GTIN e lê etiquetas do vídeo. Sem ela cai no casamento por nome |
 | `GEMINI_API_KEY` | não | Lê imagens de folheto na aba Ofertas do admin e em `scripts/ler-ofertas.js` |
@@ -58,9 +58,9 @@ Para testar localmente: `npx vercel dev` com um `.env.local`. O `.gitignore` já
 
 ### Painel admin
 
-Abra `/adminklm08` e digite o valor de `ADMIN_KEY`. A chave fica salva no navegador (botão **Sair** apaga).
-O endereço do painel não é segredo: quem protege é a chave. O painel só consulta e apaga coletas; não há
-aprovação de coletas pela equipe (decisão de produto).
+Abra `/adminklm08`: a página entra sozinha, com o token `TOKEN_PAINEL` de `api/_lib.js` (o endereço da página é o
+segredo). A `ADMIN_KEY` também vale. **Troque o `TOKEN_PAINEL` por um valor seu** antes de usar em produção.
+O painel só consulta e apaga coletas; não há aprovação de coletas pela equipe (decisão de produto).
 
 ## Regras que não podem quebrar
 
