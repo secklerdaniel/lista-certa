@@ -315,7 +315,7 @@ const brl = n => Number(n).toLocaleString("pt-BR", { style: "currency", currency
 const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const cnpjFmt = c => c && c.length === 14 ? c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : (c || "");
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 2400); }
-function guardar(k) { try { k ? sessionStorage.setItem("lc-admin", k) : sessionStorage.removeItem("lc-admin"); } catch (e) {} }
+function guardar(k) { try { k ? localStorage.setItem("lc-admin", k) : localStorage.removeItem("lc-admin"); } catch (e) {} }
 
 async function chamar(url, method, body) {
   const r = await fetch(url, { method: method || "GET", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
@@ -1015,7 +1015,7 @@ document.addEventListener("click", async e => {
   } catch (err) { toast(err.message || "Falha"); }
 });
 
-entrar("5bddf8c652336b9fda190d48a1bd96fd"); // sem senha: o endereço da página é o segredo (ver api/_lib.js)
+try { const salva = localStorage.getItem("lc-admin"); if (salva) entrar(salva); } catch (e) {} // digita a chave uma vez por aparelho
 </script>
 </body>
 </html>
