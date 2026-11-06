@@ -44,8 +44,8 @@ Para testar localmente: `npx vercel dev` com um `.env.local`. O `.gitignore` já
 | `DATABASE_URL` | sim | Conexão Postgres. O segredo do cookie de sessão é derivado dela: trocar o banco desconecta todo mundo |
 | `ADMIN_KEY` | sim | Chave do painel admin (header `x-admin-key`). Use algo longo e aleatório |
 | `CRON_SECRET` | recomendada | Autentica o cron diário de limpeza (`/api/util/limpeza`); a Vercel envia sozinha se a env existir |
-| `OPENAI_API_KEY` | não | Padroniza nome de produto por GTIN e lê etiquetas do vídeo. Sem ela cai no casamento por nome |
-| `GEMINI_API_KEY` | não | Lê imagens de folheto na aba Ofertas do admin e em `scripts/ler-ofertas.js` |
+| `OPENAI_API_KEY` | sim | Padroniza nome de produto por GTIN e lê etiquetas do vídeo |
+| `GEMINI_API_KEY` | sim | Lê imagens de folheto na aba Ofertas do admin e em `scripts/ler-ofertas.js` |
 | `ELEVENLABS_API_KEY` | não | Só para `scripts/criar-agente.mjs` e para o link assinado do agente de voz (`/api/agente`) |
 | `ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL` | não | Voz e modelo do agente |
 
