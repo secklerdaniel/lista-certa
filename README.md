@@ -87,10 +87,3 @@ O app segue a LGPD (ver `privacidade.html` e `termos.html`). Usuários entram co
 coleta é primeiro nome + inicial. Cada pessoa pode editar o nome, excluir coletas e excluir a conta. Contas de mercado
 usam e-mail e senha (hash scrypt) e não têm recuperação por e-mail: o admin gera uma senha provisória.
 O uso público é limitado por IP, guardando só o hash.
-
-## Pendências conhecidas
-
-- Verificar preços de mercado novo antes de aparecerem publicamente.
-- E-mail de recuperação de senha de mercado.
-- Parte da ligação GTIN → produto ainda fica guardada por aparelho.
-- O vídeo de prateleira só foi testado com etiquetas desenhadas; falta testar com gôndola real.
