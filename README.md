@@ -25,13 +25,6 @@ hospedado na **Vercel**, banco **Postgres** (Neon). Só duas dependências: `@ne
 | `schema.sql` | Todas as tabelas do banco |
 | `scripts/` | Cargas e manutenção, rodados na sua máquina (ver abaixo) |
 
-### Limite de 12 funções (importante)
-
-O plano Hobby da Vercel aceita no máximo **12 funções por deploy**. Cada `api/**/*.js` sem `_` conta uma.
-Se passar disso, o deploy falha em segundos e a versão antiga continua no ar (só as rotas novas dão 404).
-Por isso várias rotas vivem dentro de `api/util/[acao].js` e `api/admin/usuarios.js`, com `rewrites` em `vercel.json`.
-Antes de criar um arquivo novo em `api/`, conte quantos já existem. Em plano pago o limite some.
-
 ## Rodando do zero
 
 1. **Banco**: crie um Postgres (Neon, plano grátis serve) e rode `psql "$DATABASE_URL" -f schema.sql`.
